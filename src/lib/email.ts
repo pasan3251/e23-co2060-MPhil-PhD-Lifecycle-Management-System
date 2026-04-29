@@ -240,6 +240,33 @@ export function buildWelcomeAccountTemplate(input: {
   return { subject, html, text };
 }
 
+export function buildApplicationSubmittedTemplate(input: {
+  administratorName: string;
+  applicantName: string;
+  applicantEmail: string;
+  programTypeLabel: string;
+  researchArea: string;
+}): EmailTemplate {
+  const subject = `New ${input.programTypeLabel} application submitted`;
+  const text = [
+    `Dear ${input.administratorName},`,
+    "",
+    `${input.applicantName} has submitted a new ${input.programTypeLabel} application.`,
+    `Applicant email: ${input.applicantEmail}`,
+    `Research area: ${input.researchArea}`,
+    "Please review the application in the admissions workflow.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.administratorName},</p>
+    <p><strong>${input.applicantName}</strong> has submitted a new <strong>${input.programTypeLabel}</strong> application.</p>
+    <p><strong>Applicant email:</strong> ${input.applicantEmail}</p>
+    <p><strong>Research area:</strong> ${input.researchArea}</p>
+    <p>Please review the application in the admissions workflow.</p>
+  `;
+
+  return { subject, html, text };
+}
+
 export async function notifyRegistrationExpiry(input: {
   recipientUserId: string;
   to: string;
@@ -301,6 +328,25 @@ export async function notifyWelcomeAccountCreated(input: {
   loginUrl: string;
 }) {
   const template = buildWelcomeAccountTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.APPLICATION_STATUS_CHANGED,
+    ...template,
+  });
+}
+
+export async function notifyApplicationSubmittedToAdministrator(input: {
+  recipientUserId: string;
+  to: string;
+  administratorName: string;
+  applicantName: string;
+  applicantEmail: string;
+  programTypeLabel: string;
+  researchArea: string;
+}) {
+  const template = buildApplicationSubmittedTemplate(input);
 
   return sendEmail({
     to: input.to,

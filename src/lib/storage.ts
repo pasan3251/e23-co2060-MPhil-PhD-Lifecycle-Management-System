@@ -3,7 +3,9 @@ import type { AuthenticatedUserContext } from "@/types/auth";
 
 export const STORAGE_URL_EXPIRATION_MS = 15 * 60 * 1000;
 export const MAX_STORAGE_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+export const MAX_APPLICATION_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 export const PROTECTED_STORAGE_ROOTS = [
+  "applications",
   "proposals",
   "theses",
   "progress-reports",
@@ -76,6 +78,15 @@ export function buildProposalStoragePath(
   );
 }
 
+export function buildApplicationAttachmentStoragePath(
+  draftId: string,
+  fileName: string,
+) {
+  return normalizeStoragePath(
+    `applications/${draftId}/${sanitizeFileName(fileName)}`,
+  );
+}
+
 export function buildThesisStoragePath(studentId: string, fileName: string) {
   return normalizeStoragePath(
     `theses/${studentId}/${sanitizeFileName(fileName)}`,
@@ -123,6 +134,33 @@ export function assertFileUploadConstraints({
   }
 
   normalizeStoragePath(path);
+}
+
+export function assertApplicationAttachmentConstraints({
+  contentType,
+  fileSizeBytes,
+  path,
+}: UploadConstraintsInput): void {
+  if (contentType !== "application/pdf") {
+    throw new StorageAccessError("Only PDF documents are allowed.", 400);
+  }
+
+  if (fileSizeBytes <= 0) {
+    throw new StorageAccessError("File size must be greater than zero.", 400);
+  }
+
+  if (fileSizeBytes > MAX_APPLICATION_UPLOAD_SIZE_BYTES) {
+    throw new StorageAccessError("File exceeds the 10MB upload limit.", 413);
+  }
+
+  const normalizedPath = normalizeStoragePath(path);
+
+  if (!normalizedPath.startsWith("applications/")) {
+    throw new StorageAccessError(
+      "Application documents must be uploaded to the applications directory.",
+      400,
+    );
+  }
 }
 
 export function getStorageObjectOwnerId(storagePath: string): string {

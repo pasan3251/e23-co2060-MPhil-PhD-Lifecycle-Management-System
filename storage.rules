@@ -13,8 +13,9 @@ service firebase.storage {
       return isAuthenticated() && request.auth.token.userId == studentId;
     }
 
-    function withinFileSizeLimit() {
-      return request.resource.size <= 50 * 1024 * 1024;
+    match /applications/{draftId}/{fileName} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     match /proposals/{studentId}/{version}/{fileName} {
