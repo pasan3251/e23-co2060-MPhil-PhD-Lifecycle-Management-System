@@ -1,0 +1,54 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next
+/out
+.vercel
+
+# production
+/build
+/dist
+
+# misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# env files
+.env
+.env.*
+!.env.example
+.env*.local
+vercel.json.local
+
+# typescript
+*.tsbuildinfo
+
+# test output
+/coverage
+/playwright-report
+/test-results
+/.cache
+/tmp
+*.tmp
+*.temp
+*.dmp
+*.stackdump
+*.heapprofile
+/profiles
+/diagnostics
+
+# local database / prisma
+prisma/*.db
+prisma/*.db-journal
+
+# editor
+.vscode/
