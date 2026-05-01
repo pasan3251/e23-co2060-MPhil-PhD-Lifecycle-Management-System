@@ -25,22 +25,22 @@ export default function HomePage() {
             <p className="mt-2 text-sm text-slate-400">Access your account and manage personal details.</p>
           </Link>
 
-          <Link href="/student" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
+          <Link href="/dashboard/student" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
             <h3 className="text-lg font-semibold text-white group-hover:text-green-400">Student Portal &rarr;</h3>
             <p className="mt-2 text-sm text-slate-400">View progress reports and manage your studies.</p>
           </Link>
 
-          <Link href="/supervisor" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
+          <Link href="/dashboard/supervisor" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
             <h3 className="text-lg font-semibold text-white group-hover:text-purple-400">Supervisor Portal &rarr;</h3>
             <p className="mt-2 text-sm text-slate-400">Manage students and review progress reports.</p>
           </Link>
 
-          <Link href="/examiner" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
+          <Link href="/dashboard/examiner" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
             <h3 className="text-lg font-semibold text-white group-hover:text-amber-400">Examiner Portal &rarr;</h3>
             <p className="mt-2 text-sm text-slate-400">Evaluate theses and submit examination reports.</p>
           </Link>
 
-          <Link href="/admin" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
+          <Link href="/dashboard/admin" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
             <h3 className="text-lg font-semibold text-white group-hover:text-red-400">Admin Dashboard &rarr;</h3>
             <p className="mt-2 text-sm text-slate-400">System configuration and user management.</p>
           </Link>

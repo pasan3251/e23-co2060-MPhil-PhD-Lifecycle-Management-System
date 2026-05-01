@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 
 const adminManagedRoles = [
+  "STUDENT",
   "SUPERVISOR",
   "EXAMINER",
   "ADMINISTRATOR",
@@ -23,6 +24,7 @@ type AdminUserListItem = {
   createdAt: string;
   department: string | null;
   specialization: string | null;
+  programType?: string | null;
 };
 
 const createUserSchema = z.object({
@@ -31,6 +33,7 @@ const createUserSchema = z.object({
   role: z.enum(adminManagedRoles),
   department: z.string().optional(),
   specialization: z.string().optional(),
+  programType: z.string().optional(),
 });
 
 async function getAuthorizationHeader() {
@@ -58,9 +61,10 @@ export function UserManagementPanel() {
   const [formValues, setFormValues] = useState({
     email: "",
     displayName: "",
-    role: "SUPERVISOR" as AdminManagedRole,
+    role: "STUDENT" as AdminManagedRole,
     department: "",
     specialization: "",
+    programType: "MPHIL",
   });
 
   async function loadUsers(roleFilter: "ALL" | AdminManagedRole) {
@@ -140,9 +144,10 @@ export function UserManagementPanel() {
       setFormValues({
         email: "",
         displayName: "",
-        role: "SUPERVISOR",
+        role: "STUDENT",
         department: "",
         specialization: "",
+        programType: "MPHIL",
       });
       await loadUsers(selectedRole);
     } catch (error) {
@@ -190,10 +195,9 @@ export function UserManagementPanel() {
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
             Administrator User Management
           </p>
-          <h1 className="text-3xl font-semibold text-white">Manage staff accounts</h1>
+          <h1 className="text-3xl font-semibold text-white">Manage system accounts</h1>
           <p className="max-w-2xl text-sm text-slate-300">
-            Create and deactivate supervisor, examiner, and administrator accounts.
-            Student onboarding stays outside this flow by design.
+            Create and deactivate students, supervisors, examiners, and administrators.
           </p>
         </div>
 
@@ -206,6 +210,7 @@ export function UserManagementPanel() {
             className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 outline-none focus:border-sky-400"
           >
             <option value="ALL">All roles</option>
+            <option value="STUDENT">Students</option>
             <option value="SUPERVISOR">Supervisors</option>
             <option value="EXAMINER">Examiners</option>
             <option value="ADMINISTRATOR">Administrators</option>
@@ -241,7 +246,7 @@ export function UserManagementPanel() {
             <tr>
               <th className="px-5 py-4 text-left font-medium">Name</th>
               <th className="px-5 py-4 text-left font-medium">Role</th>
-              <th className="px-5 py-4 text-left font-medium">Department</th>
+              <th className="px-5 py-4 text-left font-medium">Details (Dept / Program)</th>
               <th className="px-5 py-4 text-left font-medium">Status</th>
               <th className="px-5 py-4 text-left font-medium">Action</th>
             </tr>
@@ -268,10 +273,16 @@ export function UserManagementPanel() {
                   </td>
                   <td className="px-5 py-4">{user.role}</td>
                   <td className="px-5 py-4">
-                    <div>{user.department ?? "Not set"}</div>
-                    {user.specialization ? (
-                      <div className="text-slate-400">{user.specialization}</div>
-                    ) : null}
+                    {user.role === "STUDENT" ? (
+                      <div>{user.programType ?? "Not set"} Program</div>
+                    ) : (
+                      <>
+                        <div>{user.department ?? "Not set"}</div>
+                        {user.specialization ? (
+                          <div className="text-slate-400">{user.specialization}</div>
+                        ) : null}
+                      </>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     <span
@@ -308,8 +319,7 @@ export function UserManagementPanel() {
               <div>
                 <h2 className="text-2xl font-semibold text-white">Create New User</h2>
                 <p className="mt-2 text-sm text-slate-400">
-                  Available roles here are limited to supervisors, examiners, and
-                  administrators.
+                  Select the role and fill out the details appropriately.
                 </p>
               </div>
               <button
@@ -367,42 +377,66 @@ export function UserManagementPanel() {
                     }
                     className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
                   >
+                    <option value="STUDENT">Student</option>
                     <option value="SUPERVISOR">Supervisor</option>
                     <option value="EXAMINER">Examiner</option>
                     <option value="ADMINISTRATOR">Administrator</option>
                   </select>
                 </label>
 
+                {formValues.role === "STUDENT" ? (
+                  <label className="space-y-2 text-sm text-slate-200">
+                    <span>Program Type</span>
+                    <select
+                      value={formValues.programType}
+                      onChange={(event) =>
+                        setFormValues((current) => ({
+                          ...current,
+                          programType: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
+                    >
+                      <option value="MPHIL">MPhil</option>
+                      <option value="PHD">PhD</option>
+                      <option value="MSC">MSc</option>
+                      <option value="MENG">MEng</option>
+                    </select>
+                  </label>
+                ) : (
+                  <label className="space-y-2 text-sm text-slate-200">
+                    <span>Department</span>
+                    <input
+                      value={formValues.department}
+                      onChange={(event) =>
+                        setFormValues((current) => ({
+                          ...current,
+                          department: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
+                      placeholder="Computer Engineering"
+                    />
+                  </label>
+                )}
+              </div>
+
+              {formValues.role !== "STUDENT" && formValues.role !== "ADMINISTRATOR" ? (
                 <label className="space-y-2 text-sm text-slate-200">
-                  <span>Department</span>
+                  <span>Specialization</span>
                   <input
-                    value={formValues.department}
+                    value={formValues.specialization}
                     onChange={(event) =>
                       setFormValues((current) => ({
                         ...current,
-                        department: event.target.value,
+                        specialization: event.target.value,
                       }))
                     }
                     className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                    placeholder="Computer Engineering"
+                    placeholder="Distributed Systems"
                   />
                 </label>
-              </div>
-
-              <label className="space-y-2 text-sm text-slate-200">
-                <span>Specialization</span>
-                <input
-                  value={formValues.specialization}
-                  onChange={(event) =>
-                    setFormValues((current) => ({
-                      ...current,
-                      specialization: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                  placeholder="Distributed Systems"
-                />
-              </label>
+              ) : null}
 
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button

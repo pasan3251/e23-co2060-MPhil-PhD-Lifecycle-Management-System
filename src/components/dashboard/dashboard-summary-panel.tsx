@@ -120,7 +120,7 @@ export function DashboardSummaryPanel({
               {summary.subtitle}
             </p>
           </div>
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-500" suppressHydrationWarning>
             Refreshed {new Date(summary.lastUpdatedIso).toLocaleTimeString()}
           </p>
         </div>

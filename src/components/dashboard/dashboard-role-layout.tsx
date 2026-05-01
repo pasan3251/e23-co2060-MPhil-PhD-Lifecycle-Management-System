@@ -35,6 +35,12 @@ export function DashboardRoleLayout({
             {role === "student" ? (
               <>
                 <Link
+                  href="/dashboard/student/proposals"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Submit Proposal
+                </Link>
+                <Link
                   href="/dashboard/student/progress-reports/submit"
                   className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
                 >
