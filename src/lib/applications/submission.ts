@@ -31,6 +31,8 @@ import {
   ApplicationUploadRequest,
 } from "@/lib/applications/schemas";
 
+export { applicationSubmissionSchema, applicationUploadRequestSchema };
+
 export class ApplicationSubmissionError extends Error {
   status: 400 | 404 | 409 | 413 | 500;
 

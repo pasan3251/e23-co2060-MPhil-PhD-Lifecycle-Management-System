@@ -74,7 +74,7 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           id: "view-proposal-status",
           label: "View Proposal Status",
           description: "Check the current review state of your proposal submission.",
-          href: "/dashboard/student",
+          href: "/dashboard/student/proposals",
         },
         {
           id: "manage-thesis-documents",
@@ -89,7 +89,7 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           id: "review-proposals",
           label: "Review Proposals",
           description: "Open the queue of proposal submissions awaiting your attention.",
-          href: "/dashboard/supervisor",
+          href: "/dashboard/supervisor/proposals/evaluate",
         },
         {
           id: "sign-progress-reports",

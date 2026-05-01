@@ -1,6 +1,7 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Protected uploads are issued through signed URLs and capped at 50 * 1024 * 1024 bytes.
     function isAuthenticated() {
       return request.auth != null;
     }

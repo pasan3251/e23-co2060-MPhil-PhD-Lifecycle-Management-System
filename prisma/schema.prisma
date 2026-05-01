@@ -234,12 +234,11 @@ model EvaluationForm {
   id                String           @id @default(cuid())
   researchProposalId String
   supervisorId      String
-  score             Int
+  numericalScore    Int
   feedback          String
+  submissionDate    DateTime         @default(now())
   researchProposal  ResearchProposal @relation(fields: [researchProposalId], references: [id], onDelete: Cascade)
   supervisor        Supervisor       @relation(fields: [supervisorId], references: [id], onDelete: Restrict)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
 
   @@unique([researchProposalId, supervisorId])
   @@map("evaluation_forms")

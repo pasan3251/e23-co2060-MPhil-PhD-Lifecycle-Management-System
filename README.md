@@ -4,7 +4,7 @@ A Next.js-based lifecycle management platform for handling postgraduate research
 
 ## Overview
 
-This branch contains the early project foundation and core platform work for:
+This branch contains the implemented foundation, student lifecycle, and proposal workflow work for:
 
 - project scaffolding with Next.js App Router
 - Prisma domain modeling for the postgraduate lifecycle
@@ -13,6 +13,8 @@ This branch contains the early project foundation and core platform work for:
 - SMTP email integration and notification logging
 - administrator user management
 - role-specific dashboard home pages
+- student application, admission, registration, and profile management
+- proposal evaluation and version-history access control
 
 ## Tech Stack
 
@@ -50,7 +52,9 @@ prisma/
 tests/
 ```
 
-## Implemented Areas
+## Implementation Status
+
+Implemented correctly:
 
 - `PB-001` Project foundation and directory scaffolding
 - `PB-002` Prisma ORM schema and domain model setup
@@ -61,6 +65,22 @@ tests/
 - `PB-010` Firebase login page and session management
 - `PB-011` Administrator user management
 - `PB-012` Role-specific dashboard home pages
+- `PB-020` Application submission and status workflow
+- `PB-021` Admission-driven student account/profile/registration creation
+- `PB-022` Registration renewal, lapse checks, and reminder maintenance
+- `PB-023` Student profile access control and admin edit restrictions
+- `PB-031` Supervisor proposal evaluation flow
+- `PB-032` Proposal version history, access control, and signed downloads
+
+Partially implemented:
+
+- `PB-030` Proposal submission and versioning are implemented, but the workflow does not yet fully auto-route a newly submitted proposal to `UNDER_REVIEW` when supervisors are assigned, so this item is not counted as fully complete.
+
+Not yet fully implemented:
+
+- `PB-040` onward
+- `PB-043` onward
+- thesis, viva, repository, audit, reporting, and broader hardening/mobile backlog items
 
 ## Environment Variables
 
@@ -121,6 +141,7 @@ Open the app at `http://localhost:3000`.
 - Firebase, PostgreSQL, and SMTP must be configured before auth, storage, and email flows can work end-to-end.
 - Some tests and runtime flows depend on local database and Firebase setup.
 - Playwright end-to-end tests should be run separately from Vitest.
+- The README status reflects the code and automated test coverage in this branch rather than the original earlier milestone snapshot.
 
 ## Branch
 

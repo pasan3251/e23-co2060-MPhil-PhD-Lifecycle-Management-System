@@ -267,6 +267,33 @@ export function buildApplicationSubmittedTemplate(input: {
   return { subject, html, text };
 }
 
+export function buildProposalEvaluationSubmittedTemplate(input: {
+  administratorName: string;
+  supervisorName: string;
+  studentName: string;
+  proposalTitle: string;
+  numericalScore: number;
+}): EmailTemplate {
+  const subject = `Proposal evaluation received: ${input.proposalTitle}`;
+  const text = [
+    `Dear ${input.administratorName},`,
+    "",
+    `${input.supervisorName} has submitted a proposal evaluation for ${input.studentName}.`,
+    `Proposal title: ${input.proposalTitle}`,
+    `Score: ${input.numericalScore}/100`,
+    "You can review the submitted evaluation and aggregate score in the proposal workflow.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.administratorName},</p>
+    <p><strong>${input.supervisorName}</strong> has submitted a proposal evaluation for <strong>${input.studentName}</strong>.</p>
+    <p><strong>Proposal title:</strong> ${input.proposalTitle}</p>
+    <p><strong>Score:</strong> ${input.numericalScore}/100</p>
+    <p>You can review the submitted evaluation and aggregate score in the proposal workflow.</p>
+  `;
+
+  return { subject, html, text };
+}
+
 export async function notifyRegistrationExpiry(input: {
   recipientUserId: string;
   to: string;
@@ -352,6 +379,25 @@ export async function notifyApplicationSubmittedToAdministrator(input: {
     to: input.to,
     recipientUserId: input.recipientUserId,
     event: NotificationEvent.APPLICATION_STATUS_CHANGED,
+    ...template,
+  });
+}
+
+export async function notifyProposalEvaluationSubmittedToAdministrator(input: {
+  recipientUserId: string;
+  to: string;
+  administratorName: string;
+  supervisorName: string;
+  studentName: string;
+  proposalTitle: string;
+  numericalScore: number;
+}) {
+  const template = buildProposalEvaluationSubmittedTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.PROPOSAL_STATUS_CHANGED,
     ...template,
   });
 }
