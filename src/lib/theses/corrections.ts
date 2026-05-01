@@ -8,6 +8,7 @@ import {
 import { z } from "zod";
 
 import { notifyCorrectionSubmittedToAdministrator } from "@/lib/email";
+import { notifyInBackground } from "@/lib/notifications";
 import { assertValidThesisStatusTransition } from "@/lib/prisma/thesis-status";
 import { prisma } from "@/lib/prisma/client";
 import {
@@ -502,6 +503,13 @@ export async function archiveThesisAfterCorrections(
       student: {
         select: {
           academicStatus: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              displayName: true,
+            },
+          },
         },
       },
       corrections: {
@@ -555,7 +563,7 @@ export async function archiveThesisAfterCorrections(
     }
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const updatedThesis =
       thesis.status === ThesisStatus.FINAL_ARCHIVE
         ? await tx.thesis.findUniqueOrThrow({
@@ -611,4 +619,16 @@ export async function archiveThesisAfterCorrections(
       student: updatedStudent,
     };
   });
+
+  if (thesis.student.user.email) {
+    notifyInBackground({
+      event: "THESIS_ARCHIVED",
+      recipientUserId: thesis.student.user.id,
+      to: thesis.student.user.email,
+      studentName: thesis.student.user.displayName,
+      thesisTitle: result.thesis.title,
+    });
+  }
+
+  return result;
 }

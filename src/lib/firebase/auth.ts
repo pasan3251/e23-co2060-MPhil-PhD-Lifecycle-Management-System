@@ -8,6 +8,10 @@ import {
   verifyFirebaseToken,
 } from "@/lib/firebase/admin";
 import { assertRoleAuthorized } from "@/lib/firebase/authorization";
+import {
+  SESSION_ACTIVITY_COOKIE_NAME,
+  hasSessionExpiredByInactivity,
+} from "@/lib/security/session";
 import { type AppUserRole, type AuthenticatedUserContext } from "@/types/auth";
 
 export class AuthError extends Error {
@@ -53,6 +57,27 @@ export function extractBearerToken(
   return authorizationHeader.slice("Bearer ".length).trim();
 }
 
+function assertSessionActivityCookieIsFresh(
+  headers: Headers | Pick<Headers, "get">,
+) {
+  const sessionActivityCookie = getSessionCookieFromHeadersByName(
+    headers,
+    SESSION_ACTIVITY_COOKIE_NAME,
+  );
+
+  if (hasSessionExpiredByInactivity(sessionActivityCookie)) {
+    throw new AuthError("Session expired due to inactivity.", 401);
+  }
+}
+
+function getSessionCookieFromHeadersByName(
+  headers: Headers | Pick<Headers, "get">,
+  cookieName: string,
+) {
+  const cookieHeader = headers.get("cookie") ?? "";
+  return getCookieValue(cookieHeader, cookieName);
+}
+
 async function resolveAuthenticatedUser(
   decodedToken: VerifiedFirebaseToken | null,
 ): Promise<AuthenticatedUserContext | null> {
@@ -90,13 +115,18 @@ export async function getCurrentUser(
   const cookieHeader = request.headers.get("cookie") ?? "";
   const sessionCookie = getCookieValue(cookieHeader, SESSION_COOKIE_NAME);
 
-  const decodedToken = bearerToken
-    ? await verifyFirebaseToken(bearerToken)
-    : sessionCookie
-      ? await verifyFirebaseSessionCookie(sessionCookie)
-      : null;
+  try {
+    const decodedToken = bearerToken
+      ? await verifyFirebaseToken(bearerToken)
+      : sessionCookie
+        ? (assertSessionActivityCookieIsFresh(request.headers),
+          await verifyFirebaseSessionCookie(sessionCookie))
+        : null;
 
-  return resolveAuthenticatedUser(decodedToken);
+    return resolveAuthenticatedUser(decodedToken);
+  } catch {
+    return null;
+  }
 }
 
 export async function authenticateBearerRequest(
@@ -115,7 +145,8 @@ export async function authenticateBearerRequest(
   try {
     decodedToken = bearerToken
       ? await verifyFirebaseToken(bearerToken)
-      : await verifyFirebaseSessionCookie(sessionCookie as string);
+      : (assertSessionActivityCookieIsFresh(request.headers),
+        await verifyFirebaseSessionCookie(sessionCookie as string));
   } catch {
     throw new AuthError("Invalid or expired token.", 401);
   }

@@ -29,7 +29,6 @@ import { getAuth } from "firebase-admin/auth";
 import { getStorage } from "firebase-admin/storage";
 
 import { GET as downloadProposalVersion } from "@/app/api/proposals/[id]/versions/[v]/download/route";
-import { DELETE as deleteProposalVersion } from "@/app/api/proposals/[id]/versions/[v]/route";
 import { prisma } from "@/lib/prisma/client";
 
 describe("proposal version integration", () => {
@@ -161,25 +160,9 @@ describe("proposal version integration", () => {
     });
   });
 
-  it("returns 403 when a non-admin attempts to delete a proposal version", async () => {
-    const response = await deleteProposalVersion(
-      new Request("http://localhost/api/proposals/proposal-1/versions/1", {
-        method: "DELETE",
-        headers: {
-          authorization: "Bearer STUDENT",
-        },
-      }) as never,
-      {
-        params: {
-          id: "proposal-1",
-          v: "1",
-        },
-      } as never,
-    );
+  it("does not expose a delete handler for proposal versions", async () => {
+    const route = await import("@/app/api/proposals/[id]/versions/[v]/route");
 
-    expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "Forbidden.",
-    });
+    expect("DELETE" in route).toBe(false);
   });
 });

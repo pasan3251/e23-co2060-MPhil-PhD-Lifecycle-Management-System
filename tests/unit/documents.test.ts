@@ -34,6 +34,9 @@ vi.mock("@/lib/prisma/client", () => ({
           id: "doc-001",
           documentType: "THESIS",
           fileName: "thesis-v1.pdf",
+          title: null,
+          summary: null,
+          tags: ["thesis", "current"],
           mimeType: "application/pdf",
           version: 1,
           isCurrentVersion: true,
@@ -47,6 +50,13 @@ vi.mock("@/lib/prisma/client", () => ({
           correctionDocumentId: null,
           createdAt: new Date(),
           updatedAt: new Date(),
+          researchProposal: null,
+          progressReport: null,
+          thesis: {
+            title: "AI for Thesis Review",
+            abstract: "A searchable thesis abstract.",
+            status: "UNDER_EXAMINATION",
+          },
         },
       ]),
       findUnique: vi.fn().mockResolvedValue({
@@ -109,7 +119,12 @@ describe("searchDocuments", () => {
     await searchDocuments({}, mockStudentAuth);
 
     const callArgs = findManySpy.mock.calls[0]?.[0];
-    expect(callArgs?.where).toMatchObject({ isDeleted: false });
+    expect(callArgs?.where).toMatchObject({
+      AND: expect.arrayContaining([
+        { isDeleted: false },
+        { documentType: { in: ["PROPOSAL", "THESIS", "PROGRESS_REPORT"] } },
+      ]),
+    });
   });
 
   it("blocks Examiners from requesting non-THESIS category", async () => {
@@ -141,7 +156,60 @@ describe("searchDocuments", () => {
     await searchDocuments({ category: "THESIS" }, mockAdminAuth);
 
     const callArgs = findManySpy.mock.calls[0]?.[0];
-    expect(callArgs?.where).toMatchObject({ documentType: "THESIS" });
+    expect(callArgs?.where).toMatchObject({
+      AND: expect.arrayContaining([{ documentType: "THESIS" }]),
+    });
+  });
+
+  it("applies tag filters for repository searches", async () => {
+    const { prisma } = await import("@/lib/prisma/client");
+    const findManySpy = vi.spyOn(prisma.document, "findMany");
+
+    await searchDocuments({ tag: "overdue" }, mockAdminAuth);
+
+    const callArgs = findManySpy.mock.calls[0]?.[0];
+    expect(callArgs?.where).toMatchObject({
+      AND: expect.arrayContaining([
+        {
+          progressReport: {
+            is: {
+              isOverdue: true,
+            },
+          },
+        },
+      ]),
+    });
+  });
+
+  it("searches related abstract fields in addition to filenames", async () => {
+    const { prisma } = await import("@/lib/prisma/client");
+    const findManySpy = vi.spyOn(prisma.document, "findMany");
+
+    await searchDocuments({ q: "searchable" }, mockAdminAuth);
+
+    const callArgs = findManySpy.mock.calls[0]?.[0];
+    expect(callArgs?.where).toMatchObject({
+      AND: expect.arrayContaining([
+        {
+          OR: expect.arrayContaining([
+            {
+              thesis: {
+                is: {
+                  OR: expect.arrayContaining([
+                    {
+                      abstract: {
+                        contains: "searchable",
+                        mode: "insensitive",
+                      },
+                    },
+                  ]),
+                },
+              },
+            },
+          ]),
+        },
+      ]),
+    });
   });
 });
 

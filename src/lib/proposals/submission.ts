@@ -6,7 +6,7 @@ import {
   UserRole,
 } from "@prisma/client";
 
-import { notifyProposalStatusChange } from "@/lib/email";
+import { notify } from "@/lib/notifications";
 import { assertValidProposalStatusTransition } from "@/lib/prisma/proposal-status";
 import { prisma } from "@/lib/prisma/client";
 import {
@@ -93,6 +93,7 @@ function mapProposalRecord(proposal: ProposalRecord) {
 type StudentProposalContext = {
   id: string;
   hasActiveRegistration: boolean;
+  hasAssignedSupervisors: boolean;
   user: {
     id: string;
     email: string;
@@ -128,6 +129,12 @@ async function findStudentProposalContext(
             gte: new Date(),
           },
         },
+        select: {
+          id: true,
+        },
+        take: 1,
+      },
+      supervisorAssignments: {
         select: {
           id: true,
         },
@@ -177,6 +184,7 @@ async function findStudentProposalContext(
     return {
       id: student.id,
       hasActiveRegistration: student.registrations.length > 0,
+      hasAssignedSupervisors: student.supervisorAssignments.length > 0,
       user: student.user,
       application: student.application,
     };
@@ -225,6 +233,12 @@ function getExpectedNextVersion(proposal: ProposalRecord | null): number {
   }
 
   return proposal.currentVersion + 1;
+}
+
+function resolveInitialProposalStatus(student: StudentProposalContext) {
+  return student.hasAssignedSupervisors
+    ? ProposalStatus.UNDER_REVIEW
+    : ProposalStatus.SUBMITTED;
 }
 
 async function requireStudentProposalContext(
@@ -324,6 +338,7 @@ export async function submitResearchProposal(
   const student = await requireStudentProposalContext(auth, true);
   const existingProposal = student.application.researchProposal;
   const nextVersion = getExpectedNextVersion(existingProposal);
+  const nextStatus = resolveInitialProposalStatus(student);
   const expectedStoragePath = assertValidProposalUploadFile({
     studentId: student.id,
     version: nextVersion,
@@ -347,7 +362,7 @@ export async function submitResearchProposal(
           applicationId: student.application.id,
           title: parsed.data.title,
           abstract: parsed.data.abstract,
-          status: ProposalStatus.SUBMITTED,
+          status: nextStatus,
           currentVersion: 1,
           documents: {
             create: {
@@ -408,7 +423,7 @@ export async function submitResearchProposal(
       data: {
         title: parsed.data.title,
         abstract: parsed.data.abstract,
-        status: ProposalStatus.SUBMITTED,
+        status: nextStatus,
         currentVersion: nextVersion,
         documents: {
           create: {
@@ -609,7 +624,8 @@ export async function updateResearchProposalStatus(
   });
 
   if (proposal.student.user.email) {
-    await notifyProposalStatusChange({
+    await notify({
+      event: "PROPOSAL_STATUS_CHANGED",
       recipientUserId: proposal.student.user.id,
       to: proposal.student.user.email,
       studentName: proposal.student.user.displayName,

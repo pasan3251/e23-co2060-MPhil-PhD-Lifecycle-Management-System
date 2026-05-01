@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { z } from "zod";
-
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import {
+  optionalSanitizedString,
+  sanitizedEmail,
+  sanitizedString,
+} from "@/lib/validation/schemas";
+import { z } from "zod";
 
 const adminManagedRoles = [
   "STUDENT",
@@ -28,12 +32,12 @@ type AdminUserListItem = {
 };
 
 const createUserSchema = z.object({
-  email: z.string().email("Enter a valid email address."),
-  displayName: z.string().min(1, "Display name is required."),
+  email: sanitizedEmail,
+  displayName: sanitizedString.min(1, "Display name is required."),
   role: z.enum(adminManagedRoles),
-  department: z.string().optional(),
-  specialization: z.string().optional(),
-  programType: z.string().optional(),
+  department: optionalSanitizedString,
+  specialization: optionalSanitizedString,
+  programType: optionalSanitizedString,
 });
 
 async function getAuthorizationHeader() {
@@ -240,7 +244,7 @@ export function UserManagementPanel() {
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/70">
+      <div className="hidden overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/70 md:block">
         <table className="min-w-full divide-y divide-slate-800 text-sm">
           <thead className="bg-slate-900/80 text-slate-300">
             <tr>
@@ -310,6 +314,73 @@ export function UserManagementPanel() {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="space-y-4 md:hidden">
+        {isLoading ? (
+          <div className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-400">
+            Loading accounts...
+          </div>
+        ) : users.length === 0 ? (
+          <div className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-400">
+            No administrator-managed users found for this filter.
+          </div>
+        ) : (
+          users.map((user) => (
+            <article
+              key={user.id}
+              className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-4 shadow-[0_18px_40px_rgba(2,6,23,0.34)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="break-words text-base font-semibold text-white">
+                    {user.displayName}
+                  </p>
+                  <p className="mt-1 break-all text-sm text-slate-400">
+                    {user.email}
+                  </p>
+                </div>
+                <span className="rounded-full border border-slate-700 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200">
+                  {user.role}
+                </span>
+              </div>
+              <div className="mt-4 space-y-2 text-sm text-slate-300">
+                <p>
+                  <span className="text-slate-500">Details:</span>{" "}
+                  {user.role === "STUDENT"
+                    ? `${user.programType ?? "Not set"} Program`
+                    : user.department ?? "Not set"}
+                </p>
+                {user.specialization ? (
+                  <p>
+                    <span className="text-slate-500">Specialization:</span>{" "}
+                    {user.specialization}
+                  </p>
+                ) : null}
+                <p>
+                  <span className="text-slate-500">Status:</span>{" "}
+                  <span
+                    className={
+                      user.isActive
+                        ? "text-emerald-200"
+                        : "text-slate-300"
+                    }
+                  >
+                    {user.isActive ? "Active" : "Inactive"}
+                  </span>
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={!user.isActive}
+                onClick={() => void handleDeactivate(user.id)}
+                className="mt-4 w-full rounded-2xl border border-slate-700 px-3 py-3 text-sm font-semibold text-slate-100 transition hover:border-rose-400 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Deactivate
+              </button>
+            </article>
+          ))
+        )}
       </div>
 
       {isModalOpen ? (

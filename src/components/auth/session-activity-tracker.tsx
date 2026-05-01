@@ -3,8 +3,10 @@
 import { useEffect, useRef } from "react";
 
 import { signOutUser } from "@/lib/firebase/client";
-
-const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+import {
+  SESSION_INACTIVITY_TIMEOUT_MS,
+  SESSION_REFRESH_THROTTLE_MS,
+} from "@/lib/security/session";
 const ACTIVITY_EVENTS = [
   "click",
   "keydown",
@@ -15,6 +17,7 @@ const ACTIVITY_EVENTS = [
 
 export function SessionActivityTracker() {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastRefreshRef = useRef(0);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -51,20 +54,48 @@ export function SessionActivityTracker() {
       clearTimer();
       timeoutRef.current = setTimeout(() => {
         void expireSession();
-      }, INACTIVITY_TIMEOUT_MS);
+      }, SESSION_INACTIVITY_TIMEOUT_MS);
+    };
+
+    const refreshServerSession = async () => {
+      const now = Date.now();
+
+      if (now - lastRefreshRef.current < SESSION_REFRESH_THROTTLE_MS) {
+        return;
+      }
+
+      lastRefreshRef.current = now;
+
+      try {
+        const response = await fetch("/api/auth/session", {
+          method: "PATCH",
+          cache: "no-store",
+        });
+
+        if (response.status === 401) {
+          await expireSession();
+        }
+      } catch {
+        // Ignore refresh failures and rely on the inactivity timeout fallback.
+      }
     };
 
     resetTimer();
+    void refreshServerSession();
+    const handleActivity = () => {
+      resetTimer();
+      void refreshServerSession();
+    };
 
     for (const eventName of ACTIVITY_EVENTS) {
-      window.addEventListener(eventName, resetTimer);
+      window.addEventListener(eventName, handleActivity);
     }
 
     return () => {
       clearTimer();
 
       for (const eventName of ACTIVITY_EVENTS) {
-        window.removeEventListener(eventName, resetTimer);
+        window.removeEventListener(eventName, handleActivity);
       }
     };
   }, []);

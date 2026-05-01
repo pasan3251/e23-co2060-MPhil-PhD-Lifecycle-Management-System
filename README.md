@@ -70,12 +70,9 @@ Implemented correctly:
 - `PB-021` Admission-driven student account/profile/registration creation
 - `PB-022` Registration renewal, lapse checks, and reminder maintenance
 - `PB-023` Student profile access control and admin edit restrictions
+- `PB-030` Proposal submission, versioning, and supervisor-aware auto-routing to review
 - `PB-031` Supervisor proposal evaluation flow
 - `PB-032` Proposal version history, access control, and signed downloads
-
-Partially implemented:
-
-- `PB-030` Proposal submission and versioning are implemented, but the workflow does not yet fully auto-route a newly submitted proposal to `UNDER_REVIEW` when supervisors are assigned, so this item is not counted as fully complete.
 
 Not yet fully implemented:
 

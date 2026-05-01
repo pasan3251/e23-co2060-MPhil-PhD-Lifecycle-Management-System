@@ -2,14 +2,11 @@ import { NextRequest } from "next/server";
 import { UserRole } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// ---------------------------------------------------------------------------
-// Mocks — all factories use inline data only (no top-level variable references)
-// ---------------------------------------------------------------------------
-
 vi.mock("@/lib/firebase/auth", () => ({
   authenticateBearerRequest: vi.fn(),
   AuthError: class AuthError extends Error {
     status: 401 | 403;
+
     constructor(message: string, status: 401 | 403) {
       super(message);
       this.status = status;
@@ -19,6 +16,10 @@ vi.mock("@/lib/firebase/auth", () => ({
 
 vi.mock("@/lib/prisma/client", () => ({
   prisma: {
+    registration: {
+      findMany: vi.fn().mockResolvedValue([]),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
     supervisor: {
       findFirst: vi.fn(),
     },
@@ -54,19 +55,12 @@ vi.mock("@/lib/email", () => ({
   sendEmail: vi.fn().mockResolvedValue({ success: true }),
 }));
 
-// ---------------------------------------------------------------------------
-// Imports after mocks
-// ---------------------------------------------------------------------------
-
 import { GET, PATCH } from "@/app/api/notifications/route";
-import { notify } from "@/lib/notifications";
 import { notifyProgressReportSubmitted } from "@/lib/email";
 import { authenticateBearerRequest } from "@/lib/firebase/auth";
+import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+import { runRegistrationMaintenance } from "@/lib/registrations";
 
 function makeRequest(method = "GET", url = "http://localhost/api/notifications") {
   return new NextRequest(url, {
@@ -83,11 +77,7 @@ const supervisorAuth = {
   email: "supervisor@example.com",
 };
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-describe("GET /api/notifications — in-app display", () => {
+describe("GET /api/notifications - in-app display", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -116,7 +106,7 @@ describe("GET /api/notifications — in-app display", () => {
   });
 });
 
-describe("PATCH /api/notifications — bulk mark as read", () => {
+describe("PATCH /api/notifications - bulk mark as read", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -141,7 +131,7 @@ describe("Integration: progress report submission triggers supervisor notificati
     vi.clearAllMocks();
   });
 
-  it("sends email to primary supervisor when a progress report is submitted", async () => {
+  it("sends email to the primary supervisor when a progress report is submitted", async () => {
     await notify({
       event: "PROGRESS_REPORT_SUBMITTED",
       recipientUserId: "user-supervisor-1",
@@ -185,19 +175,47 @@ describe("Integration: progress report submission triggers supervisor notificati
   });
 });
 
-describe("Integration: 14-day registration expiry cron identifies students and logs attempts", () => {
+describe("Integration: 14-day registration expiry maintenance", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("logs a FAILED NotificationLog entry when SMTP fails but does not throw", async () => {
-    // Simulate SMTP failure — the mock returns success:false
+  it("identifies registrations expiring in 14 days and dispatches reminders", async () => {
+    vi.mocked(prisma.registration.findMany).mockResolvedValueOnce([
+      {
+        id: "reg-1",
+        expirationDate: new Date("2026-05-15T00:00:00.000Z"),
+        student: {
+          user: {
+            id: "user-student-1",
+            email: "student@example.com",
+            displayName: "Alice",
+          },
+        },
+      },
+    ] as never);
+
+    const result = await runRegistrationMaintenance(
+      new Date("2026-05-01T00:00:00.000Z"),
+    );
+
+    expect(result.reminderCount).toBe(1);
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipientId: "user-student-1",
+          event: "REGISTRATION_EXPIRY_APPROACHING",
+        }),
+      }),
+    );
+  });
+
+  it("does not throw when SMTP delivery fails and still records the in-app notification", async () => {
     vi.mocked(notifyProgressReportSubmitted).mockResolvedValueOnce({
       success: false,
       error: "ECONNREFUSED",
     });
 
-    // notify() should not throw even when email fails
     await expect(
       notify({
         event: "PROGRESS_REPORT_SUBMITTED",
@@ -209,5 +227,7 @@ describe("Integration: 14-day registration expiry cron identifies students and l
         periodLabel: "Q1 2026",
       }),
     ).resolves.toBeUndefined();
+
+    expect(prisma.notification.create).toHaveBeenCalledOnce();
   });
 });

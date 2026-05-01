@@ -9,13 +9,12 @@ import {
   signInWithEmailPassword,
   signOutUser,
 } from "@/lib/firebase/client";
+import { sanitizedEmail, securePassword } from "@/lib/validation/schemas";
 import { isAppUserRole, type AppUserRole } from "@/types/auth";
 
 const loginSchema = z.object({
-  email: z.string().email("Enter a valid email address."),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters long."),
+  email: sanitizedEmail,
+  password: securePassword,
 });
 
 const roleRedirectMap: Record<AppUserRole, string> = {

@@ -4,7 +4,7 @@ import {
   type User,
 } from "@prisma/client";
 
-import { notifyRegistrationExpiry } from "@/lib/email";
+import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
@@ -118,7 +118,8 @@ export async function sendRegistrationAdvanceReminders(referenceDate = new Date(
     registrations
       .filter((registration) => registration.student.user.email)
       .map((registration) =>
-        notifyRegistrationExpiry({
+        notify({
+          event: "REGISTRATION_EXPIRY_APPROACHING",
           recipientUserId: registration.student.user.id,
           to: registration.student.user.email,
           studentName: registration.student.user.displayName,

@@ -13,6 +13,7 @@ export const GET = withAuth(async (request: NextRequest, { auth }) => {
   const query = {
     q: searchParams.get("q") ?? undefined,
     category: searchParams.get("category") ?? undefined,
+    tag: searchParams.get("tag") ?? undefined,
     startDate: searchParams.get("startDate") ?? undefined,
     endDate: searchParams.get("endDate") ?? undefined,
     page: searchParams.get("page") ? Number(searchParams.get("page")) : 1,

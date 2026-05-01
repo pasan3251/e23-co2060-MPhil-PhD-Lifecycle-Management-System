@@ -4,6 +4,7 @@ import {
   ApplicationSubmissionError,
   createApplicationSubmission,
 } from "@/lib/applications/submission";
+import { createServerErrorResponse } from "@/lib/http/errors";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -25,9 +26,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
 
-    return NextResponse.json(
-      { error: "Unable to submit the application." },
-      { status: 500 },
-    );
+    return createServerErrorResponse({
+      error,
+      message: "Unable to submit the application.",
+      route: "/api/applications",
+      method: "POST",
+    });
   }
 }

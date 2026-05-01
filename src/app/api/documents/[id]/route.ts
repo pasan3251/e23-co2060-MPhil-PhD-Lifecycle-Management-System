@@ -39,7 +39,7 @@ export const GET = withAuth(
   ],
 );
 
-export const DELETE = withAuth(
+export const PATCH = withAuth(
   async (_request: NextRequest, { params }: WithAuthContext<Params>) => {
     const { softDeleteDocument } = await import("@/lib/documents");
     const documentId = params?.id;
@@ -57,7 +57,7 @@ export const DELETE = withAuth(
       }
 
       return NextResponse.json(
-        { error: "Unable to delete document." },
+        { error: "Unable to archive document." },
         { status: 500 },
       );
     }

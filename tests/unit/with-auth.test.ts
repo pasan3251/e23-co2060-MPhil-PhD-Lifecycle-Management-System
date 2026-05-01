@@ -133,6 +133,9 @@ describe("withAuth", () => {
   });
 
   it("accepts a valid session cookie when no bearer token is present", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-01T10:00:00.000Z"));
+
     vi.mocked(getAuth).mockReturnValue({
       verifySessionCookie: vi.fn().mockResolvedValue({
         uid: "firebase-supervisor-2",
@@ -160,7 +163,9 @@ describe("withAuth", () => {
     const response = await guardedHandler(
       new Request("http://localhost/api/test", {
         headers: {
-          cookie: "pgsms_session=session-cookie-token",
+          cookie: `pgsms_session=session-cookie-token; pgsms_session_activity=${new Date(
+            "2026-05-01T09:59:00.000Z",
+          ).getTime()}`,
         },
       }) as never,
     );
@@ -171,5 +176,32 @@ describe("withAuth", () => {
       uid: "firebase-supervisor-2",
       role: "SUPERVISOR",
     });
+
+    vi.useRealTimers();
+  });
+
+  it("rejects an expired inactivity cookie even when the session cookie exists", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-01T10:00:00.000Z"));
+
+    const handler = vi.fn(async () => NextResponse.json({ ok: true }));
+    const guardedHandler = withAuth(handler, ["SUPERVISOR"]);
+    const staleActivityAt = new Date("2026-05-01T09:29:59.000Z").getTime();
+
+    const response = await guardedHandler(
+      new Request("http://localhost/api/test", {
+        headers: {
+          cookie: `pgsms_session=session-cookie-token; pgsms_session_activity=${staleActivityAt}`,
+        },
+      }) as never,
+    );
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Invalid or expired token.",
+    });
+
+    vi.useRealTimers();
   });
 });

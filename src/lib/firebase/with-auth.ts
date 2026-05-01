@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { AuthError, authenticateBearerRequest } from "@/lib/firebase/auth";
+import { createServerErrorResponse } from "@/lib/http/errors";
 import {
   type AppUserRole,
   type AuthenticatedUserContext,
@@ -45,12 +46,12 @@ export function withAuth<TParams = Record<string, string | string[]>>(
         );
       }
 
-      return NextResponse.json(
-        {
-          error: "Authentication middleware failure.",
-        },
-        { status: 500 },
-      );
+      return createServerErrorResponse({
+        error,
+        message: "Authentication middleware failure.",
+        route: request.nextUrl.pathname,
+        method: request.method,
+      });
     }
   };
 }

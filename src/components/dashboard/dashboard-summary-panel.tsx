@@ -30,9 +30,9 @@ function DashboardKpi({
   return (
     <article className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
       <div className="flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium text-slate-300">{card.title}</p>
-          <p className="mt-3 text-3xl font-semibold text-white sm:text-4xl">
+          <p className="mt-3 break-words text-3xl font-semibold text-white sm:text-4xl">
             {card.value}
           </p>
         </div>
@@ -126,7 +126,7 @@ export function DashboardSummaryPanel({
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 min-[360px]:grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
         {summary.cards.map((card) => (
           <DashboardKpi key={card.id} card={card} />
         ))}
@@ -140,7 +140,7 @@ export function DashboardSummaryPanel({
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 min-[360px]:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {summary.quickActions.map((action) => (
             <QuickActionCard key={action.id} action={action} />
           ))}
