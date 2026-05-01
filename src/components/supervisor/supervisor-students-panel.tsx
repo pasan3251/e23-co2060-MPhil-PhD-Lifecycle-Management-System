@@ -49,28 +49,28 @@ function formatDateLabel(value: string | Date | null | undefined) {
 function getRegistrationBadgeClassName(status: RegistrationStatus | "UNKNOWN") {
   switch (status) {
     case RegistrationStatus.ACTIVE:
-      return "border border-emerald-400/30 bg-emerald-500/10 text-emerald-100";
+      return "border border-gray-300 bg-transparent text-black";
     case RegistrationStatus.LAPSED:
-      return "border border-rose-400/30 bg-rose-500/10 text-rose-100";
+      return "border border-gray-300 bg-transparent text-black";
     case RegistrationStatus.ARCHIVED:
-      return "border border-slate-500/30 bg-slate-500/10 text-slate-200";
+      return "border border-gray-400/30 bg-transparent text-black";
     default:
-      return "border border-slate-600/40 bg-slate-800/60 text-slate-200";
+      return "border border-gray-300/40 bg-transparent text-black";
   }
 }
 
 function getProposalBadgeClassName(status: string | null) {
   switch (status) {
     case "APPROVED":
-      return "border border-emerald-400/30 bg-emerald-500/10 text-emerald-100";
+      return "border border-gray-300 bg-transparent text-black";
     case "UNDER_REVIEW":
-      return "border border-sky-400/30 bg-sky-500/10 text-sky-100";
+      return "border border-gray-300 bg-transparent text-black";
     case "REJECTED":
-      return "border border-rose-400/30 bg-rose-500/10 text-rose-100";
+      return "border border-gray-300 bg-transparent text-black";
     case "SUBMITTED":
-      return "border border-amber-400/30 bg-amber-500/10 text-amber-100";
+      return "border border-gray-300 bg-transparent text-black";
     default:
-      return "border border-slate-600/40 bg-slate-800/60 text-slate-200";
+      return "border border-gray-300/40 bg-transparent text-black";
   }
 }
 
@@ -168,36 +168,36 @@ export function SupervisorStudentsPanel({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-800 bg-slate-950/75 p-5 shadow-[0_24px_80px_rgba(2,6,23,0.45)] sm:p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-sky-300">
+      <section className="rounded-[2rem] border border-gray-200 bg-white/75 p-5 shadow-xl sm:p-7">
+        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-black">
           Supervisor Workspace
         </p>
         <h2 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">
           My Students
         </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-black">
           Review assigned postgraduate researchers, spot lapsed registrations, and
           jump directly to each student&apos;s profile, proposal history, and progress
           reporting context.
         </p>
       </section>
 
-      <section className="grid gap-3 rounded-[2rem] border border-slate-800 bg-slate-950/70 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
-        <label className="space-y-2 text-sm text-slate-200">
+      <section className="grid gap-3 rounded-[2rem] border border-gray-200 bg-white/70 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+        <label className="space-y-2 text-sm text-black">
           <span>Program Type</span>
           <select
             value={programFilter}
             onChange={(event) =>
               setProgramFilter(event.target.value as typeof programFilter)
             }
-            className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
+            className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
           >
             <option value="ALL">All programmes</option>
             <option value="MPHIL">MPhil</option>
             <option value="PHD">PhD</option>
           </select>
         </label>
-        <label className="space-y-2 text-sm text-slate-200">
+        <label className="space-y-2 text-sm text-black">
           <span>Registration Status</span>
           <select
             value={registrationFilter}
@@ -206,15 +206,15 @@ export function SupervisorStudentsPanel({
                 event.target.value as typeof registrationFilter,
               )
             }
-            className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
+            className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
           >
             <option value="ALL">All registrations</option>
             <option value="ACTIVE">Active</option>
             <option value="LAPSED">Lapsed</option>
           </select>
         </label>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-4 text-sm text-slate-300">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+        <div className="rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-4 text-sm text-black">
+          <p className="text-xs uppercase tracking-[0.2em] text-black0">
             Filtered students
           </p>
           <p className="mt-2 text-2xl font-semibold text-white">
@@ -224,28 +224,28 @@ export function SupervisorStudentsPanel({
       </section>
 
       {errorMessage ? (
-        <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <div className="rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
           {errorMessage}
         </div>
       ) : null}
 
       {isLoading ? (
-        <div className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-6 text-sm text-slate-300">
+        <div className="rounded-[2rem] border border-gray-200 bg-white/70 p-6 text-sm text-black">
           Loading assigned students...
         </div>
       ) : null}
 
       {!isLoading && filteredStudents.length === 0 ? (
-        <div className="rounded-[2rem] border border-dashed border-slate-700 bg-slate-950/50 px-5 py-8 text-sm text-slate-300">
+        <div className="rounded-[2rem] border border-dashed border-gray-300 bg-white/50 px-5 py-8 text-sm text-black">
           No assigned students matched the current filters.
         </div>
       ) : null}
 
       {!isLoading && filteredStudents.length > 0 ? (
         <>
-          <div className="hidden overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-950/70 sm:block">
+          <div className="hidden overflow-hidden rounded-[2rem] border border-gray-200 bg-white/70 sm:block">
             <table className="min-w-full divide-y divide-slate-800 text-sm">
-              <thead className="bg-slate-900/70 text-left text-slate-300">
+              <thead className="bg-gray-50/70 text-left text-black">
                 <tr>
                   <th className="px-5 py-4 font-medium">Student</th>
                   <th className="px-5 py-4 font-medium">Programme</th>
@@ -266,17 +266,17 @@ export function SupervisorStudentsPanel({
                       <td className="px-5 py-5">
                         <Link
                           href={`/dashboard/supervisor/students/${entry.student.id}`}
-                          className="text-base font-semibold text-white transition hover:text-sky-300"
+                          className="text-base font-semibold text-white transition hover:text-black"
                         >
                           {entry.student.displayName}
                         </Link>
-                        <p className="mt-1 text-slate-400">{entry.student.email}</p>
-                        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-500">
+                        <p className="mt-1 text-black">{entry.student.email}</p>
+                        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-black0">
                           {entry.isPrimary ? "Primary supervisor" : "Co-supervisor"} ·
                           Assigned {formatDateLabel(entry.assignedAt)}
                         </p>
                       </td>
-                      <td className="px-5 py-5 text-slate-200">
+                      <td className="px-5 py-5 text-black">
                         {entry.student.programType}
                       </td>
                       <td className="px-5 py-5">
@@ -288,7 +288,7 @@ export function SupervisorStudentsPanel({
                         >
                           {registrationLabel}
                         </span>
-                        <p className="mt-2 text-xs text-slate-500">
+                        <p className="mt-2 text-xs text-black0">
                           Expires{" "}
                           {formatDateLabel(entry.currentRegistration?.expirationDate)}
                         </p>
@@ -301,7 +301,7 @@ export function SupervisorStudentsPanel({
                         >
                           {proposalLabel}
                         </span>
-                        <p className="mt-2 text-xs text-slate-500">
+                        <p className="mt-2 text-xs text-black0">
                           {entry.latestProposal
                             ? `${entry.latestProposal.title} · updated ${formatDateLabel(entry.latestProposal.updatedAt)}`
                             : "No proposal submitted yet."}
@@ -311,19 +311,19 @@ export function SupervisorStudentsPanel({
                         <div className="flex flex-col gap-2">
                           <Link
                             href={`/dashboard/supervisor/students/${entry.student.id}`}
-                            className="text-sky-300 transition hover:text-sky-200"
+                            className="text-black transition hover:text-black"
                           >
                             Open profile
                           </Link>
                           <Link
                             href={`/dashboard/supervisor/students/${entry.student.id}#research-proposals`}
-                            className="text-slate-300 transition hover:text-white"
+                            className="text-black transition hover:text-white"
                           >
                             Research proposal history
                           </Link>
                           <Link
                             href={`/dashboard/supervisor/students/${entry.student.id}#progress-reports`}
-                            className="text-slate-300 transition hover:text-white"
+                            className="text-black transition hover:text-white"
                           >
                             Progress report history
                           </Link>
@@ -346,21 +346,21 @@ export function SupervisorStudentsPanel({
               return (
                 <article
                   key={entry.assignmentId}
-                  className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-4 shadow-[0_18px_40px_rgba(2,6,23,0.34)]"
+                  className="rounded-[1.75rem] border border-gray-200 bg-white/70 p-4 shadow-lg"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <Link
                         href={`/dashboard/supervisor/students/${entry.student.id}`}
-                        className="text-lg font-semibold text-white transition hover:text-sky-300"
+                        className="text-lg font-semibold text-white transition hover:text-black"
                       >
                         {entry.student.displayName}
                       </Link>
-                      <p className="mt-1 break-all text-sm text-slate-400">
+                      <p className="mt-1 break-all text-sm text-black">
                         {entry.student.email}
                       </p>
                     </div>
-                    <span className="rounded-full border border-slate-700 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200">
+                    <span className="rounded-full border border-gray-300 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-black">
                       {entry.student.programType}
                     </span>
                   </div>
@@ -383,17 +383,17 @@ export function SupervisorStudentsPanel({
                     </span>
                   </div>
 
-                  <div className="mt-4 space-y-2 text-sm text-slate-300">
+                  <div className="mt-4 space-y-2 text-sm text-black">
                     <p>
-                      <span className="text-slate-500">Assigned:</span>{" "}
+                      <span className="text-black0">Assigned:</span>{" "}
                       {formatDateLabel(entry.assignedAt)}
                     </p>
                     <p>
-                      <span className="text-slate-500">Registration expires:</span>{" "}
+                      <span className="text-black0">Registration expires:</span>{" "}
                       {formatDateLabel(entry.currentRegistration?.expirationDate)}
                     </p>
                     <p>
-                      <span className="text-slate-500">Proposal:</span>{" "}
+                      <span className="text-black0">Proposal:</span>{" "}
                       {entry.latestProposal?.title ?? "No proposal submitted yet."}
                     </p>
                   </div>
@@ -401,19 +401,19 @@ export function SupervisorStudentsPanel({
                   <div className="mt-5 grid gap-2">
                     <Link
                       href={`/dashboard/supervisor/students/${entry.student.id}`}
-                      className="rounded-2xl bg-sky-400 px-4 py-3 text-center text-sm font-semibold text-slate-950"
+                      className="rounded-2xl bg-black px-4 py-3 text-center text-sm font-semibold text-black"
                     >
                       Open profile
                     </Link>
                     <Link
                       href={`/dashboard/supervisor/students/${entry.student.id}#research-proposals`}
-                      className="rounded-2xl border border-slate-700 px-4 py-3 text-center text-sm font-medium text-slate-200"
+                      className="rounded-2xl border border-gray-300 px-4 py-3 text-center text-sm font-medium text-black"
                     >
                       Proposal history
                     </Link>
                     <Link
                       href={`/dashboard/supervisor/students/${entry.student.id}#progress-reports`}
-                      className="rounded-2xl border border-slate-700 px-4 py-3 text-center text-sm font-medium text-slate-200"
+                      className="rounded-2xl border border-gray-300 px-4 py-3 text-center text-sm font-medium text-black"
                     >
                       Progress reports
                     </Link>

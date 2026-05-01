@@ -64,33 +64,33 @@ export function ThesisFinalizationPanel({
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
+      <section className="rounded-[2rem] border border-gray-200 bg-white/70 p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-black">
           Finalization
         </p>
         <h1 className="mt-3 text-3xl font-semibold text-white">
           Corrections and final archive
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-black">
           Approve submitted correction documents and archive theses that have
           passed or completed corrections.
         </p>
       </section>
 
       {error ? (
-        <div className="rounded-[1.5rem] border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
           {error}
         </div>
       ) : null}
       {message ? (
-        <div className="rounded-[1.5rem] border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
           {message}
         </div>
       ) : null}
 
       <section className="space-y-4">
         {theses.length === 0 ? (
-          <div className="rounded-[2rem] border border-dashed border-slate-700 bg-slate-950/70 p-8 text-sm text-slate-400">
+          <div className="rounded-[2rem] border border-dashed border-gray-300 bg-white/70 p-8 text-sm text-black">
             No theses are awaiting correction approval or archive.
           </div>
         ) : (
@@ -105,17 +105,17 @@ export function ThesisFinalizationPanel({
             return (
               <article
                 key={thesis.id}
-                className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-5"
+                className="rounded-[2rem] border border-gray-200 bg-white/70 p-5"
               >
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                    <p className="text-xs uppercase tracking-[0.18em] text-black0">
                       {thesis.status.replaceAll("_", " ")}
                     </p>
                     <h2 className="mt-1 text-xl font-semibold text-white">
                       {thesis.title}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <p className="mt-1 text-sm text-black">
                       {thesis.student.user.displayName} - {thesis.student.user.email}
                     </p>
                   </div>
@@ -129,7 +129,7 @@ export function ThesisFinalizationPanel({
                         `archive-${thesis.id}`,
                       )
                     }
-                    className="rounded-2xl border border-emerald-400/40 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:border-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-semibold text-black transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {busyId === `archive-${thesis.id}`
                       ? "Archiving..."
@@ -139,21 +139,21 @@ export function ThesisFinalizationPanel({
 
                 <div className="mt-5 space-y-3">
                   {thesis.corrections.length === 0 ? (
-                    <p className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-sm text-slate-400">
+                    <p className="rounded-2xl border border-gray-200 bg-gray-50/70 px-4 py-3 text-sm text-black">
                       No correction documents submitted.
                     </p>
                   ) : (
                     thesis.corrections.map((correction) => (
                       <div
                         key={correction.id}
-                        className="rounded-[1.5rem] border border-slate-800 bg-slate-900/70 p-4"
+                        className="rounded-[1.5rem] border border-gray-200 bg-gray-50/70 p-4"
                       >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <p className="font-semibold text-white">
                               {correction.correctionType} correction
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-black0">
                               {new Date(correction.createdAt).toLocaleString()}
                             </p>
                           </div>
@@ -170,7 +170,7 @@ export function ThesisFinalizationPanel({
                                 `approve-${correction.id}`,
                               )
                             }
-                            className="rounded-2xl border border-sky-400/40 px-4 py-2 text-sm font-semibold text-sky-100 transition hover:border-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-semibold text-black transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {correction.isApproved
                               ? "Approved"
@@ -180,14 +180,14 @@ export function ThesisFinalizationPanel({
                           </button>
                         </div>
                         {correction.description ? (
-                          <p className="mt-3 text-sm leading-6 text-slate-300">
+                          <p className="mt-3 text-sm leading-6 text-black">
                             {correction.description}
                           </p>
                         ) : null}
                         {correction.documents.map((document) => (
                           <p
                             key={document.id}
-                            className="mt-3 break-all text-xs text-slate-400"
+                            className="mt-3 break-all text-xs text-black"
                           >
                             {document.fileName}: {document.storagePath}
                           </p>

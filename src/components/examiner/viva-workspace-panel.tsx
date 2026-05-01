@@ -65,33 +65,33 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
+      <section className="rounded-[2rem] border border-gray-200 bg-white/70 p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-black">
           Examiner Workspace
         </p>
         <h1 className="mt-3 text-3xl font-semibold text-white">
           Assigned vivas
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-black">
           Review scheduled defenses and record official viva outcomes for
           theses assigned to you.
         </p>
       </section>
 
       {error ? (
-        <div className="rounded-[1.5rem] border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
           {error}
         </div>
       ) : null}
       {message ? (
-        <div className="rounded-[1.5rem] border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
           {message}
         </div>
       ) : null}
 
       <section className="space-y-4">
         {vivas.length === 0 ? (
-          <div className="rounded-[2rem] border border-dashed border-slate-700 bg-slate-950/70 p-8 text-sm text-slate-400">
+          <div className="rounded-[2rem] border border-dashed border-gray-300 bg-white/70 p-8 text-sm text-black">
             No scheduled vivas are assigned to you yet.
           </div>
         ) : (
@@ -101,26 +101,26 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
             return (
               <article
                 key={viva.id}
-                className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-5"
+                className="rounded-[2rem] border border-gray-200 bg-white/70 p-5"
               >
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                    <p className="text-xs uppercase tracking-[0.18em] text-black0">
                       {new Date(viva.scheduledDate).toLocaleString()} - {viva.venue}
                     </p>
                     <h2 className="mt-1 text-xl font-semibold text-white">
                       {viva.thesis.title}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <p className="mt-1 text-sm text-black">
                       {viva.thesis.student.user.displayName} -{" "}
                       {viva.thesis.student.user.email}
                     </p>
                   </div>
-                  <span className="rounded-full border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-100">
+                  <span className="rounded-full border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-semibold text-black">
                     {viva.outcome ?? viva.thesis.status.replaceAll("_", " ")}
                   </span>
                 </div>
-                <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+                <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-black">
                   {viva.thesis.abstract}
                 </p>
                 <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -133,7 +133,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                       }))
                     }
                     disabled={!canRecord || Boolean(viva.outcome)}
-                    className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 outline-none focus:border-sky-400 disabled:opacity-50"
+                    className="rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-black outline-none focus:border-gray-300 disabled:opacity-50"
                   >
                     <option value="">Select outcome...</option>
                     <option value="PASS">Pass</option>
@@ -145,7 +145,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                     type="button"
                     disabled={!canRecord || Boolean(viva.outcome) || busyId === viva.id}
                     onClick={() => void recordOutcome(viva.id)}
-                    className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl bg-black px-5 py-3 text-sm font-semibold text-black transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {viva.outcome
                       ? "Outcome recorded"

@@ -1,27 +1,20 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Poppins } from 'next/font/google';
 import { Header } from "@/components/layout/header";
 import logoImage from "../../images/logo.png";
 
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-});
-
 export default function HomePage() {
   return (
-    <div className={poppins.className}>
+    <>
       <Header />
       <main className="relative flex min-h-screen flex-col items-center justify-center bg-white px-6 py-24 text-black overflow-hidden">
-        <div className="relative z-10 flex flex-col items-center text-center space-y-16">
+        <div className="relative z-10 flex flex-col items-center text-center space-y-16 -mt-32">
           <div className="flex justify-center">
             <Image 
               src={logoImage} 
               alt="Logo" 
-              width={160} 
-              height={160} 
+              width={220} 
+              height={220} 
               className="object-contain drop-shadow-xl"
               priority
             />
@@ -34,12 +27,12 @@ export default function HomePage() {
             href="/apply"
             className="group inline-block text-[21px] font-bold bg-black rounded-[0.75em] cursor-pointer"
           >
-            <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-[#e8e8e8] text-black -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+            <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-[white] text-black -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
               Apply Now
             </span>
           </Link>
         </div>
       </main>
-    </div>
+    </>
   );
 }

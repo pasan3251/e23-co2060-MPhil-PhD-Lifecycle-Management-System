@@ -39,29 +39,29 @@ export function ApplicationListPanel() {
     return (
       <div className="flex animate-pulse flex-col space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-24 w-full rounded-xl bg-slate-800/50"></div>
+          <div key={i} className="h-24 w-full rounded-xl bg-gray-100/50"></div>
         ))}
       </div>
     );
   }
 
   if (error) {
-    return <div className="rounded-xl border border-rose-900/50 bg-rose-950/50 p-6 text-rose-200">{error}</div>;
+    return <div className="rounded-xl border border-gray-300 bg-gray-100 p-6 text-black">{error}</div>;
   }
 
   if (applications.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-12 text-center">
+      <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-12 text-center">
         <h3 className="text-xl font-semibold text-white">No pending applications</h3>
-        <p className="mt-2 text-slate-400">There are currently no new applications waiting for review.</p>
+        <p className="mt-2 text-black">There are currently no new applications waiting for review.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 shadow-xl">
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50/50 shadow-xl">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-slate-800 bg-slate-950/50 text-xs uppercase text-slate-400">
+        <thead className="border-b border-gray-200 bg-white/50 text-xs uppercase text-black">
           <tr>
             <th className="px-6 py-4 font-medium">Applicant</th>
             <th className="px-6 py-4 font-medium">Program</th>
@@ -71,23 +71,23 @@ export function ApplicationListPanel() {
         </thead>
         <tbody className="divide-y divide-slate-800/50">
           {applications.map((app) => (
-            <tr key={app.id} className="transition-colors hover:bg-slate-800/25">
+            <tr key={app.id} className="transition-colors hover:bg-gray-100/25">
               <td className="px-6 py-4">
                 <div className="font-medium text-white">{app.applicantName}</div>
-                <div className="text-slate-400">{app.applicantEmail}</div>
+                <div className="text-black">{app.applicantEmail}</div>
               </td>
               <td className="px-6 py-4">
-                <span className="inline-flex rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-400">
+                <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-black">
                   {app.programType}
                 </span>
               </td>
-              <td className="px-6 py-4 text-slate-300">
+              <td className="px-6 py-4 text-black">
                 {format(new Date(app.createdAt), "MMM d, yyyy")}
               </td>
               <td className="px-6 py-4 text-right">
                 <Link
                   href={`/dashboard/admin/applications/${app.id}`}
-                  className="inline-flex items-center justify-center rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-400"
+                  className="inline-flex items-center justify-center rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-black"
                 >
                   Review
                 </Link>

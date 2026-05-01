@@ -46,14 +46,14 @@ export function DashboardSummaryClient({
     return (
       <div className="space-y-4">
         <DashboardSkeletonGrid />
-        <div className="rounded-[1.75rem] border border-rose-400/30 bg-rose-500/10 px-5 py-4">
-          <p className="text-sm font-medium text-rose-100">
+        <div className="rounded-[1.75rem] border border-gray-300 bg-gray-100 px-5 py-4">
+          <p className="text-sm font-medium text-black">
             We could not refresh the latest dashboard metrics.
           </p>
           <button
             type="button"
             onClick={() => void mutate()}
-            className="mt-3 rounded-2xl border border-rose-300/40 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:border-rose-200"
+            className="mt-3 rounded-2xl border border-gray-300 px-4 py-2 text-sm font-semibold text-black transition hover:border-gray-300"
           >
             Retry
           </button>
