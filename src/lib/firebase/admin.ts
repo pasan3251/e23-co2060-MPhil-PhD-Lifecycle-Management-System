@@ -7,7 +7,6 @@ import {
   type SessionCookieOptions,
   type UserRecord,
 } from "firebase-admin/auth";
-import { getStorage } from "firebase-admin/storage";
 
 import {
   SESSION_ABSOLUTE_MAX_AGE_MS,
@@ -59,7 +58,6 @@ export function getFirebaseAdminApp() {
         clientEmail: config.clientEmail,
         privateKey: config.privateKey,
       }),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     },
     FIREBASE_ADMIN_APP_NAME,
   );
@@ -69,13 +67,6 @@ export function getFirebaseAdminAuth() {
   return getAuth(getFirebaseAdminApp());
 }
 
-export function getFirebaseAdminStorage() {
-  return getStorage(getFirebaseAdminApp());
-}
-
-export function getFirebaseAdminBucket() {
-  return getFirebaseAdminStorage().bucket();
-}
 
 export type VerifiedFirebaseToken = DecodedIdToken & {
   role?: AppUserRole;

@@ -295,7 +295,7 @@ function buildTagFilter(tag?: string | null): Prisma.DocumentWhereInput {
         researchProposal: {
           is: {
             title: {
-              contains: tag,
+              contains: normalizedTag,
               mode: "insensitive",
             },
           },
@@ -305,7 +305,7 @@ function buildTagFilter(tag?: string | null): Prisma.DocumentWhereInput {
         thesis: {
           is: {
             title: {
-              contains: tag,
+              contains: normalizedTag,
               mode: "insensitive",
             },
           },
@@ -315,7 +315,7 @@ function buildTagFilter(tag?: string | null): Prisma.DocumentWhereInput {
         progressReport: {
           is: {
             periodLabel: {
-              contains: tag,
+              contains: normalizedTag,
               mode: "insensitive",
             },
           },

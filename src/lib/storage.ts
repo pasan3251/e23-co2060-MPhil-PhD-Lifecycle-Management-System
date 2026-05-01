@@ -1,4 +1,4 @@
-import { getFirebaseAdminBucket } from "@/lib/firebase/admin";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 export const STORAGE_URL_EXPIRATION_MS = 15 * 60 * 1000;
@@ -25,6 +25,45 @@ export class StorageAccessError extends Error {
     super(message);
     this.name = "StorageAccessError";
   }
+}
+
+let cachedSupabaseClient: SupabaseClient | undefined;
+
+export function resetSupabaseClientForTests() {
+  cachedSupabaseClient = undefined;
+}
+
+function getSupabaseClient(): SupabaseClient {
+  if (cachedSupabaseClient) {
+    return cachedSupabaseClient;
+  }
+
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new StorageAccessError(
+      "Missing Supabase configuration. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+      400,
+    );
+  }
+
+  cachedSupabaseClient = createClient(supabaseUrl, supabaseKey);
+  return cachedSupabaseClient;
+}
+
+function getSupabaseBucketName(): string {
+  const bucketName =
+    process.env.SUPABASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET;
+
+  if (!bucketName) {
+    throw new StorageAccessError(
+      "Supabase Storage bucket is not configured. Set SUPABASE_STORAGE_BUCKET.",
+      400,
+    );
+  }
+
+  return bucketName;
 }
 
 function getProtectedStorageRoot(
@@ -211,34 +250,69 @@ export async function generateUploadSignedUrl(
   contentType: string,
 ): Promise<string> {
   const normalizedPath = normalizeStoragePath(path);
-  const bucket = getFirebaseAdminBucket();
-  const [signedUrl] = await bucket.file(normalizedPath).getSignedUrl({
-    version: "v4",
-    action: "write",
-    expires: Date.now() + STORAGE_URL_EXPIRATION_MS,
-    contentType,
-  });
+  const supabase = getSupabaseClient();
+  const bucketName = getSupabaseBucketName();
 
-  return signedUrl;
+  const { data, error } = await supabase.storage
+    .from(bucketName)
+    .createSignedUploadUrl(normalizedPath);
+
+  if (error || !data?.signedUrl) {
+    throw new StorageAccessError(`Failed to generate upload URL: ${error?.message || 'Unknown error'}`, 400);
+  }
+
+  return data.signedUrl;
+}
+
+export async function uploadBufferToStorage(
+  path: string,
+  buffer: Buffer,
+  contentType: string,
+): Promise<void> {
+  const normalizedPath = normalizeStoragePath(path);
+  const supabase = getSupabaseClient();
+  const bucketName = getSupabaseBucketName();
+
+  const { error } = await supabase.storage
+    .from(bucketName)
+    .upload(normalizedPath, buffer, {
+      contentType,
+      upsert: true,
+    });
+
+  if (error) {
+    throw new StorageAccessError(`Failed to upload buffer: ${error.message}`, 400);
+  }
 }
 
 export async function generateDownloadSignedUrl(path: string): Promise<string> {
   const normalizedPath = normalizeStoragePath(path);
-  const bucket = getFirebaseAdminBucket();
-  const [signedUrl] = await bucket.file(normalizedPath).getSignedUrl({
-    version: "v4",
-    action: "read",
-    expires: Date.now() + STORAGE_URL_EXPIRATION_MS,
-  });
+  const supabase = getSupabaseClient();
+  const bucketName = getSupabaseBucketName();
 
-  return signedUrl;
+  const expiresInSeconds = Math.floor(STORAGE_URL_EXPIRATION_MS / 1000);
+
+  const { data, error } = await supabase.storage
+    .from(bucketName)
+    .createSignedUrl(normalizedPath, expiresInSeconds);
+
+  if (error || !data?.signedUrl) {
+    throw new StorageAccessError(`Failed to generate download URL: ${error?.message || 'Unknown error'}`, 400);
+  }
+
+  return data.signedUrl;
 }
 
 export async function deleteFile(path: string): Promise<void> {
   const normalizedPath = normalizeStoragePath(path);
-  const bucket = getFirebaseAdminBucket();
+  const supabase = getSupabaseClient();
+  const bucketName = getSupabaseBucketName();
 
-  await bucket.file(normalizedPath).delete({
-    ignoreNotFound: true,
-  });
+  const { error } = await supabase.storage
+    .from(bucketName)
+    .remove([normalizedPath]);
+
+  if (error) {
+    console.error(`Error deleting file ${normalizedPath}:`, error);
+  }
 }

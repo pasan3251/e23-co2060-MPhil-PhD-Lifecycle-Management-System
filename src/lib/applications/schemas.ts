@@ -32,8 +32,8 @@ export const applicationSubmissionSchema = z.object({
     ProgramType.MSC,
     ProgramType.MENG,
   ]),
-  researchArea: sanitizedString.min(3, "Enter the research area."),
-  statementOfPurpose: sanitizedString.min(30, "Provide a short statement of purpose."),
+  researchArea: sanitizedString.min(2, "Enter the research area."),
+  statementOfPurpose: sanitizedString.min(1, "Provide a short statement of purpose."),
   supportingDocuments: z
     .array(uploadedApplicationDocumentSchema)
     .min(1, "Upload at least one supporting document."),

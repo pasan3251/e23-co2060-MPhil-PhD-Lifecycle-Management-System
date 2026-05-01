@@ -9,8 +9,14 @@ type RouteParams = {
 };
 
 export const GET = withAuth<RouteParams>(async (_request: NextRequest, context) => {
+  const reviewPanelId = context.params?.id;
+
+  if (!reviewPanelId) {
+    return NextResponse.json({ error: "Review panel id is required." }, { status: 400 });
+  }
+
   try {
-    const panel = await getReviewPanelById(context.params.id, context.auth);
+    const panel = await getReviewPanelById(reviewPanelId, context.auth);
 
     return NextResponse.json({ panel });
   } catch (error) {

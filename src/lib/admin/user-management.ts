@@ -1,4 +1,4 @@
-import { Prisma, UserRole, ProgramType, type User } from "@prisma/client";
+import { UserRole, ProgramType, type User } from "@prisma/client";
 
 import {
   createFirebaseAuthUser,
@@ -39,6 +39,8 @@ export type AdminUserListItem = {
   department: string | null;
   specialization: string | null;
   programType?: string | null;
+  studentId?: string | null;
+  supervisorId?: string | null;
 };
 
 export class AdminUserManagementError extends Error {
@@ -84,7 +86,7 @@ function buildLoginUrl() {
 }
 
 async function createRoleProfile(
-  tx: Prisma.TransactionClient,
+  tx: Pick<typeof prisma, "student" | "supervisor" | "examiner" | "administrator">,
   userId: string,
   role: AdminManagedRole,
   department: string | null,
@@ -147,23 +149,27 @@ export async function listAdminManagedUsers(role?: string): Promise<AdminUserLis
     include: {
       supervisor: {
         select: {
+          id: true,
           department: true,
           specialization: true,
         },
       },
       examiner: {
         select: {
+          id: true,
           department: true,
           specialization: true,
         },
       },
       administrator: {
         select: {
+          id: true,
           department: true,
         },
       },
       student: {
         select: {
+          id: true,
           programType: true,
         },
       },
@@ -189,6 +195,8 @@ export async function listAdminManagedUsers(role?: string): Promise<AdminUserLis
     specialization:
       user.supervisor?.specialization ?? user.examiner?.specialization ?? null,
     programType: user.student?.programType ?? null,
+    studentId: user.student?.id ?? null,
+    supervisorId: user.supervisor?.id ?? null,
   }));
 }
 

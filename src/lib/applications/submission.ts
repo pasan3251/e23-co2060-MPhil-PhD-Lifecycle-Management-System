@@ -22,6 +22,7 @@ import {
   buildApplicationAttachmentStoragePath,
   generateUploadSignedUrl,
   StorageAccessError,
+  uploadBufferToStorage,
 } from "@/lib/storage";
 
 import {
@@ -34,9 +35,9 @@ import {
 export { applicationSubmissionSchema, applicationUploadRequestSchema };
 
 export class ApplicationSubmissionError extends Error {
-  status: 400 | 404 | 409 | 413 | 500;
+  status: 400 | 403 | 404 | 409 | 413 | 500;
 
-  constructor(message: string, status: 400 | 404 | 409 | 413 | 500 = 400) {
+  constructor(message: string, status: 400 | 403 | 404 | 409 | 413 | 500 = 400) {
     super(message);
     this.name = "ApplicationSubmissionError";
     this.status = status;
@@ -121,6 +122,45 @@ export async function createApplicationUploadUrl(
     }
 
     throw error;
+  }
+}
+
+export async function uploadApplicationDocument(input: {
+  draftId: string;
+  file: FormDataEntryValue | null;
+}) {
+  const file = input.file;
+
+  if (!(file instanceof File)) {
+    throw new ApplicationSubmissionError("A PDF document is required.", 400);
+  }
+
+  const storagePath = assertValidApplicationUploadFile({
+    draftId: input.draftId,
+    fileName: file.name,
+    contentType: file.type,
+    fileSizeBytes: file.size,
+  });
+
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await uploadBufferToStorage(storagePath, buffer, file.type);
+
+    return {
+      storagePath,
+      fileName: file.name,
+      mimeType: "application/pdf" as const,
+      sizeBytes: file.size,
+    };
+  } catch (error) {
+    if (error instanceof StorageAccessError) {
+      throw new ApplicationSubmissionError(error.message, error.status);
+    }
+
+    throw new ApplicationSubmissionError(
+      error instanceof Error ? error.message : "Unable to upload the document.",
+      500,
+    );
   }
 }
 

@@ -45,7 +45,8 @@ export function SessionActivityTracker() {
         // Ignore network cleanup failures during timeout handling.
       }
 
-      if (window.location.pathname !== "/login") {
+      // Only force a redirect if the user is on a protected dashboard route
+      if (window.location.pathname.startsWith("/dashboard")) {
         window.location.assign("/login?reason=timeout");
       }
     };

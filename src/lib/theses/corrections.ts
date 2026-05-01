@@ -74,6 +74,10 @@ type ThesisCorrectionStudentContext = {
   } | null;
 };
 
+type ThesisCorrectionSubmissionContext = ThesisCorrectionStudentContext & {
+  thesis: NonNullable<ThesisCorrectionStudentContext["thesis"]>;
+};
+
 async function findStudentCorrectionContext(
   thesisId: string,
   auth: AuthenticatedUserContext,
@@ -154,7 +158,7 @@ async function findStudentCorrectionContext(
 async function requireCorrectionSubmissionContext(
   thesisId: string,
   auth: AuthenticatedUserContext,
-) {
+): Promise<ThesisCorrectionSubmissionContext> {
   const student = await findStudentCorrectionContext(thesisId, auth);
 
   if (!student) {
@@ -179,7 +183,7 @@ async function requireCorrectionSubmissionContext(
     );
   }
 
-  return student;
+  return student as ThesisCorrectionSubmissionContext;
 }
 
 function assertCorrectionPdfUpload(input: {

@@ -106,6 +106,10 @@ type StudentProposalContext = {
   } | null;
 };
 
+type StudentProposalSubmissionContext = StudentProposalContext & {
+  application: NonNullable<StudentProposalContext["application"]>;
+};
+
 async function findStudentProposalContext(
   auth: AuthenticatedUserContext,
 ): Promise<StudentProposalContext | null> {
@@ -244,7 +248,7 @@ function resolveInitialProposalStatus(student: StudentProposalContext) {
 async function requireStudentProposalContext(
   auth: AuthenticatedUserContext,
   requireActiveRegistration = false,
-) {
+): Promise<StudentProposalSubmissionContext> {
   const student = await findStudentProposalContext(auth);
 
   if (!student) {
@@ -265,7 +269,7 @@ async function requireStudentProposalContext(
     );
   }
 
-  return student;
+  return student as StudentProposalSubmissionContext;
 }
 
 export function assertValidProposalUploadFile(input: {

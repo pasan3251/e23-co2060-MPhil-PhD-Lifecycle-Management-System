@@ -137,7 +137,13 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           id: "review-applications",
           label: "Review Applications",
           description: "Monitor application intake and active review workload.",
-          href: "/dashboard/admin",
+          href: "/dashboard/admin/applications",
+        },
+        {
+          id: "manage-assignments",
+          label: "Manage Assignments",
+          description: "Assign supervisors and examiners to postgraduate students.",
+          href: "/dashboard/admin/assignments/supervisors",
         },
         {
           id: "audit-notifications",

@@ -9,12 +9,17 @@ type RouteParams = {
 };
 
 export const POST = withAuth<RouteParams>(async (request: NextRequest, context) => {
+  const progressReportId = context.params?.id;
   const body = await request.json();
+
+  if (!progressReportId) {
+    return NextResponse.json({ error: "Progress report id is required." }, { status: 400 });
+  }
 
   try {
     const result = await submitPanelEvaluation(
       {
-        progressReportId: context.params.id,
+        progressReportId,
         numericalScore: body.numericalScore,
         outcome: body.outcome as PanelEvaluationOutcome,
         notes: body.notes,

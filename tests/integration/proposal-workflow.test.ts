@@ -7,8 +7,23 @@ vi.mock("firebase-admin/app", () => ({
   initializeApp: vi.fn(),
 }));
 
-vi.mock("firebase-admin/storage", () => ({
-  getStorage: vi.fn(),
+const mockCreateSignedUploadUrl = vi.fn(async (filePath: string) => {
+  return {
+    data: {
+      signedUrl: `https://storage.example.test/write?path=${encodeURIComponent(filePath)}`,
+    },
+    error: null,
+  };
+});
+
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: vi.fn(() => ({
+    storage: {
+      from: vi.fn(() => ({
+        createSignedUploadUrl: mockCreateSignedUploadUrl,
+      })),
+    },
+  })),
 }));
 
 vi.mock("@/lib/email", () => ({
@@ -33,30 +48,22 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
-import { getStorage } from "firebase-admin/storage";
 
 import {
   createProposalUploadUrl,
   submitResearchProposal,
 } from "@/lib/proposals/submission";
 import { prisma } from "@/lib/prisma/client";
+import { resetSupabaseClientForTests } from "@/lib/storage";
 
 describe("proposal workflow integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.FIREBASE_STORAGE_BUCKET = "pgsms-test-bucket";
+    resetSupabaseClientForTests();
 
-    vi.mocked(getStorage).mockReturnValue({
-      bucket: vi.fn(() => ({
-        file: vi.fn((filePath: string) => ({
-          getSignedUrl: vi.fn(async ({ action }: { action: "write" | "read" }) => {
-            return [
-              `https://storage.example.test/${action}?path=${encodeURIComponent(filePath)}`,
-            ];
-          }),
-        })),
-      })),
-    } as never);
+    vi.stubEnv("SUPABASE_URL", "https://xyz.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "mock-key");
+    vi.stubEnv("SUPABASE_STORAGE_BUCKET", "demo-bucket");
   });
 
   it("keeps previous proposal versions accessible in the database after a re-upload", async () => {

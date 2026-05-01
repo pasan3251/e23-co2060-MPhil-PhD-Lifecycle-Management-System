@@ -84,7 +84,7 @@ export type GraduationReportRow = {
   studentName: string;
   email: string;
   programType: ProgramType;
-  academicStatus: AcademicStatus.GRADUATED;
+  academicStatus: AcademicStatus;
   enrollmentDate: Date;
   archivedThesisTitle: string | null;
   recordUpdatedAt: Date;
@@ -290,7 +290,7 @@ function mapGraduationRow(student: Prisma.StudentGetPayload<{
     updatedAt: true;
     user: { select: { displayName: true; email: true } };
     theses: {
-      where: { status: ThesisStatus.FINAL_ARCHIVE };
+      where: { status: "FINAL_ARCHIVE" };
       orderBy: { updatedAt: "desc" };
       take: 1;
       select: { title: true; updatedAt: true };

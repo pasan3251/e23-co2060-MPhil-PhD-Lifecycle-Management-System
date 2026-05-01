@@ -10,8 +10,23 @@ vi.mock("firebase-admin/auth", () => ({
   getAuth: vi.fn(),
 }));
 
-vi.mock("firebase-admin/storage", () => ({
-  getStorage: vi.fn(),
+const mockCreateSignedUrl = vi.fn(async (filePath: string) => {
+  return {
+    data: {
+      signedUrl: `https://storage.example.test/read?path=${encodeURIComponent(filePath)}`,
+    },
+    error: null,
+  };
+});
+
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: vi.fn(() => ({
+    storage: {
+      from: vi.fn(() => ({
+        createSignedUrl: mockCreateSignedUrl,
+      })),
+    },
+  })),
 }));
 
 vi.mock("@/lib/prisma/client", () => ({
@@ -26,14 +41,19 @@ vi.mock("@/lib/prisma/client", () => ({
 }));
 
 import { getAuth } from "firebase-admin/auth";
-import { getStorage } from "firebase-admin/storage";
 
 import { GET as downloadProposalVersion } from "@/app/api/proposals/[id]/versions/[v]/download/route";
 import { prisma } from "@/lib/prisma/client";
+import { resetSupabaseClientForTests } from "@/lib/storage";
 
 describe("proposal version integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetSupabaseClientForTests();
+
+    vi.stubEnv("SUPABASE_URL", "https://xyz.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "mock-key");
+    vi.stubEnv("SUPABASE_STORAGE_BUCKET", "demo-bucket");
 
     vi.mocked(prisma.user.findUnique).mockImplementation(async (args: never) => {
       const where = (args as { where: { firebaseUid?: string } }).where;
@@ -81,17 +101,6 @@ describe("proposal version integration", () => {
       }),
     } as never);
 
-    vi.mocked(getStorage).mockReturnValue({
-      bucket: vi.fn(() => ({
-        file: vi.fn((filePath: string) => ({
-          getSignedUrl: vi.fn(async ({ action }: { action: "read" }) => {
-            return [
-              `https://storage.example.test/${action}?path=${encodeURIComponent(filePath)}`,
-            ];
-          }),
-        })),
-      })),
-    } as never);
   });
 
   it("allows an assigned supervisor to download a previous proposal version", async () => {

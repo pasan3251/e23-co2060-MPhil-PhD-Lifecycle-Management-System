@@ -7,21 +7,21 @@ import {
   type AuthenticatedUserContext,
 } from "@/types/auth";
 
-export type WithAuthContext<TParams = Record<string, string | string[]>> = {
+export type WithAuthContext<TParams = Record<string, string>> = {
   params?: TParams;
   auth: AuthenticatedUserContext;
 };
 
-type BaseRouteContext<TParams = Record<string, string | string[]>> = {
+type BaseRouteContext<TParams = Record<string, string>> = {
   params?: TParams;
 };
 
-export type AuthenticatedRouteHandler<TParams = Record<string, string | string[]>> = (
+export type AuthenticatedRouteHandler<TParams = Record<string, string>> = (
   request: NextRequest,
   context: WithAuthContext<TParams>,
 ) => Response | Promise<Response>;
 
-export function withAuth<TParams = Record<string, string | string[]>>(
+export function withAuth<TParams = Record<string, string>>(
   handler: AuthenticatedRouteHandler<TParams>,
   allowedRoles: AppUserRole[],
 ) {

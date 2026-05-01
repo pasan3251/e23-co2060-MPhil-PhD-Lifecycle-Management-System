@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { UserRole } from "@prisma/client";
 
+import { withAuth } from "@/lib/firebase/with-auth";
+import { prisma } from "@/lib/prisma/client";
 import {
   ApplicationSubmissionError,
   createApplicationSubmission,
@@ -34,3 +37,34 @@ export async function POST(request: Request) {
     });
   }
 }
+
+export const GET = withAuth(
+  async (request) => {
+    try {
+      const { searchParams } = new URL(request.url);
+      const statusParam = searchParams.get("status");
+
+      const whereClause = {
+        isArchived: false,
+        ...(statusParam ? { status: statusParam as any } : {}),
+      };
+
+      const applications = await prisma.application.findMany({
+        where: whereClause,
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      return NextResponse.json({ applications });
+    } catch (error) {
+      return createServerErrorResponse({
+        error,
+        message: "Unable to retrieve applications.",
+        route: "/api/applications",
+        method: "GET",
+      });
+    }
+  },
+  [UserRole.ADMINISTRATOR],
+);
