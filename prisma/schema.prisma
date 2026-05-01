@@ -164,13 +164,15 @@ model Examiner {
 }
 
 model Administrator {
-  id          String    @id @default(cuid())
-  userId      String    @unique
-  department  String?
-  user        User      @relation(fields: [userId], references: [id], onDelete: Restrict)
-  approvals   CorrectionDocument[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                    String                 @id @default(cuid())
+  userId                String                 @unique
+  department            String?
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  approvals             CorrectionDocument[]
+  supervisorAssignments SupervisorAssignment[] @relation("SupervisorAssignmentsAssignedBy")
+  thesisExaminerAssignments ThesisExaminerAssignment[] @relation("ThesisExaminerAssignmentsAssignedBy")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@map("administrators")
 }
@@ -245,20 +247,23 @@ model EvaluationForm {
 }
 
 model SupervisorAssignment {
-  id             String     @id @default(cuid())
-  studentId      String
-  supervisorId   String
+  id               String        @id @default(cuid())
+  studentId        String
+  supervisorId     String
   supervisorUserId String
-  isPrimary      Boolean    @default(false)
-  assignedAt     DateTime   @default(now())
-  student        Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  supervisor     Supervisor @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  isPrimary        Boolean       @default(false)
+  assignedAt       DateTime      @default(now())
+  assignedBy       String
+  student          Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  supervisor       Supervisor    @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
+  administrator    Administrator @relation("SupervisorAssignmentsAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   @@unique([studentId, supervisorId])
   @@unique([studentId, supervisorUserId])
   @@index([supervisorId])
+  @@index([assignedBy])
   @@map("supervisor_assignments")
 }
 
@@ -342,21 +347,24 @@ model Thesis {
 }
 
 model ThesisExaminerAssignment {
-  id             String    @id @default(cuid())
+  id             String        @id @default(cuid())
   thesisId       String
   studentId      String
   examinerId     String
   examinerUserId String
-  assignedAt     DateTime  @default(now())
-  thesis         Thesis    @relation(fields: [thesisId], references: [id], onDelete: Cascade)
-  student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  examiner       Examiner  @relation(fields: [examinerId], references: [id], onDelete: Cascade)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  assignedAt     DateTime      @default(now())
+  assignedBy     String
+  thesis         Thesis        @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  student        Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examiner       Examiner      @relation(fields: [examinerId], references: [id], onDelete: Cascade)
+  administrator  Administrator @relation("ThesisExaminerAssignmentsAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@unique([thesisId, examinerId])
   @@unique([studentId, examinerUserId])
   @@index([studentId, examinerId])
+  @@index([assignedBy])
   @@map("thesis_examiner_assignments")
 }
 

@@ -1,0 +1,280 @@
+import { z } from "zod";
+
+import { notifySupervisorAssigned } from "@/lib/email";
+import { prisma } from "@/lib/prisma/client";
+import type { AuthenticatedUserContext } from "@/types/auth";
+
+export const supervisorAssignmentSchema = z.object({
+  studentId: z.string().min(1, "Student id is required."),
+  supervisorId: z.string().min(1, "Supervisor id is required."),
+  isPrimary: z.boolean(),
+});
+
+export type SupervisorAssignmentInput = z.infer<typeof supervisorAssignmentSchema>;
+
+export class SupervisorAssignmentError extends Error {
+  status: 400 | 403 | 404 | 409 | 500;
+
+  constructor(message: string, status: 400 | 403 | 404 | 409 | 500 = 400) {
+    super(message);
+    this.name = "SupervisorAssignmentError";
+    this.status = status;
+  }
+}
+
+type AdministratorContext = {
+  id: string;
+  user: {
+    displayName: string;
+  };
+};
+
+type StudentAssignmentView = {
+  id: string;
+  user: {
+    displayName: string;
+  };
+  supervisorAssignments: Array<{
+    supervisorId: string;
+    supervisorUserId: string;
+    isPrimary: boolean;
+  }>;
+  examinerAssignments: Array<{
+    examinerUserId: string;
+  }>;
+};
+
+type SupervisorContext = {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    displayName: string;
+    email: string;
+    isActive: boolean;
+  };
+};
+
+async function requireAdministratorContext(
+  auth: AuthenticatedUserContext,
+): Promise<AdministratorContext> {
+  const administrator = await prisma.administrator.findUnique({
+    where: {
+      userId: auth.userId,
+    },
+    select: {
+      id: true,
+      user: {
+        select: {
+          displayName: true,
+        },
+      },
+    },
+  });
+
+  if (!administrator) {
+    throw new SupervisorAssignmentError("Administrator profile not found.", 404);
+  }
+
+  return administrator;
+}
+
+async function requireStudent(studentId: string): Promise<StudentAssignmentView> {
+  const student = await prisma.student.findUnique({
+    where: {
+      id: studentId,
+    },
+    select: {
+      id: true,
+      user: {
+        select: {
+          displayName: true,
+        },
+      },
+      supervisorAssignments: {
+        select: {
+          supervisorId: true,
+          supervisorUserId: true,
+          isPrimary: true,
+        },
+      },
+      examinerAssignments: {
+        select: {
+          examinerUserId: true,
+        },
+      },
+    },
+  });
+
+  if (!student) {
+    throw new SupervisorAssignmentError("Student not found.", 404);
+  }
+
+  return student;
+}
+
+async function requireSupervisor(supervisorId: string): Promise<SupervisorContext> {
+  const supervisor = await prisma.supervisor.findUnique({
+    where: {
+      id: supervisorId,
+    },
+    select: {
+      id: true,
+      userId: true,
+      user: {
+        select: {
+          id: true,
+          displayName: true,
+          email: true,
+          isActive: true,
+        },
+      },
+    },
+  });
+
+  if (!supervisor) {
+    throw new SupervisorAssignmentError("Supervisor not found.", 404);
+  }
+
+  if (!supervisor.user.isActive) {
+    throw new SupervisorAssignmentError("Supervisor account is inactive.", 409);
+  }
+
+  return supervisor;
+}
+
+function assertSupervisorNotAlreadyAssigned(
+  student: StudentAssignmentView,
+  supervisor: SupervisorContext,
+) {
+  const duplicateAssignment = student.supervisorAssignments.some(
+    (assignment) =>
+      assignment.supervisorId === supervisor.id ||
+      assignment.supervisorUserId === supervisor.userId,
+  );
+
+  if (duplicateAssignment) {
+    throw new SupervisorAssignmentError(
+      "This supervisor is already assigned to the selected student.",
+      409,
+    );
+  }
+}
+
+function assertSupervisorNotAssignedAsExaminer(
+  student: StudentAssignmentView,
+  supervisor: SupervisorContext,
+) {
+  const hasExaminerConflict = student.examinerAssignments.some(
+    (assignment) => assignment.examinerUserId === supervisor.userId,
+  );
+
+  if (hasExaminerConflict) {
+    throw new SupervisorAssignmentError(
+      "A supervisor cannot be assigned when the same user is already an examiner for this student.",
+      400,
+    );
+  }
+}
+
+function assertAssignmentLimits(
+  student: StudentAssignmentView,
+  input: SupervisorAssignmentInput,
+) {
+  const totalAssignments = student.supervisorAssignments.length;
+  const primaryAssignments = student.supervisorAssignments.filter(
+    (assignment) => assignment.isPrimary,
+  ).length;
+  const coSupervisorAssignments = totalAssignments - primaryAssignments;
+
+  if (totalAssignments >= 3) {
+    throw new SupervisorAssignmentError(
+      "A student can have at most 3 supervisors in total.",
+      400,
+    );
+  }
+
+  if (input.isPrimary) {
+    if (primaryAssignments >= 1) {
+      throw new SupervisorAssignmentError(
+        "A student can only have one primary supervisor.",
+        400,
+      );
+    }
+
+    return;
+  }
+
+  if (primaryAssignments === 0) {
+    throw new SupervisorAssignmentError(
+      "Assign a primary supervisor before adding co-supervisors.",
+      400,
+    );
+  }
+
+  if (coSupervisorAssignments >= 2) {
+    throw new SupervisorAssignmentError(
+      "A student can have at most 2 co-supervisors.",
+      400,
+    );
+  }
+}
+
+function buildAssignmentRoleLabel(isPrimary: boolean) {
+  return isPrimary ? "Primary Supervisor" : "Co-supervisor";
+}
+
+export async function assignSupervisorToStudent(
+  input: SupervisorAssignmentInput,
+  auth: AuthenticatedUserContext,
+) {
+  const parsed = supervisorAssignmentSchema.safeParse(input);
+
+  if (!parsed.success) {
+    throw new SupervisorAssignmentError(
+      parsed.error.issues[0]?.message ?? "Invalid supervisor assignment payload.",
+      400,
+    );
+  }
+
+  const [administrator, student, supervisor] = await Promise.all([
+    requireAdministratorContext(auth),
+    requireStudent(parsed.data.studentId),
+    requireSupervisor(parsed.data.supervisorId),
+  ]);
+
+  assertSupervisorNotAlreadyAssigned(student, supervisor);
+  assertSupervisorNotAssignedAsExaminer(student, supervisor);
+  assertAssignmentLimits(student, parsed.data);
+
+  const assignment = await prisma.supervisorAssignment.create({
+    data: {
+      studentId: student.id,
+      supervisorId: supervisor.id,
+      supervisorUserId: supervisor.userId,
+      isPrimary: parsed.data.isPrimary,
+      assignedAt: new Date(),
+      assignedBy: administrator.id,
+    },
+    select: {
+      id: true,
+      studentId: true,
+      supervisorId: true,
+      supervisorUserId: true,
+      isPrimary: true,
+      assignedAt: true,
+      assignedBy: true,
+    },
+  });
+
+  await notifySupervisorAssigned({
+    recipientUserId: supervisor.user.id,
+    to: supervisor.user.email,
+    supervisorName: supervisor.user.displayName,
+    studentName: student.user.displayName,
+    assignmentRoleLabel: buildAssignmentRoleLabel(assignment.isPrimary),
+    assignedByName: administrator.user.displayName,
+  });
+
+  return assignment;
+}

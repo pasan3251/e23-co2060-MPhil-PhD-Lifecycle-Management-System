@@ -3,6 +3,7 @@
 
 # next.js
 /.next
+/.next/cache
 /out
 .vercel
 
@@ -64,6 +65,15 @@ vercel.json.local
 # local database / prisma
 prisma/*.db
 prisma/*.db-journal
+prisma/*.db-lock
+prisma/*.db-shm
+prisma/*.db-wal
+prisma/migrations/*.log
+examiner-access.log
+*.examiner-access.log
+prisma/*.examiner-snapshot.db
+/.playwright-cache
+/ms-playwright
 
 # editor
 .vscode/

@@ -40,6 +40,14 @@ export function DashboardRoleLayout({
                 Submit Progress Report
               </Link>
             ) : null}
+            {role === "supervisor" ? (
+              <Link
+                href="/dashboard/supervisor/students"
+                className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+              >
+                My Students
+              </Link>
+            ) : null}
             {role === "admin" ? (
               <Link
                 href="/dashboard/admin/users"

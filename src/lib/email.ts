@@ -293,6 +293,57 @@ export function buildProposalEvaluationSubmittedTemplate(input: {
 
   return { subject, html, text };
 }
+
+export function buildSupervisorAssignmentTemplate(input: {
+  supervisorName: string;
+  studentName: string;
+  assignmentRoleLabel: string;
+  assignedByName: string;
+}): EmailTemplate {
+  const subject = `New supervisor assignment: ${input.assignmentRoleLabel}`;
+  const text = [
+    `Dear ${input.supervisorName},`,
+    "",
+    `You have been assigned as ${input.assignmentRoleLabel.toLowerCase()} for ${input.studentName}.`,
+    `Assigned by: ${input.assignedByName}`,
+    "Please sign in to the Postgraduate Lifecycle Management System to review the student record.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.supervisorName},</p>
+    <p>You have been assigned as <strong>${input.assignmentRoleLabel.toLowerCase()}</strong> for <strong>${input.studentName}</strong>.</p>
+    <p><strong>Assigned by:</strong> ${input.assignedByName}</p>
+    <p>Please sign in to the Postgraduate Lifecycle Management System to review the student record.</p>
+  `;
+
+  return { subject, html, text };
+}
+
+export function buildExaminerAssignmentTemplate(input: {
+  examinerName: string;
+  studentName: string;
+  thesisTitle: string;
+  assignedByName: string;
+  secureDownloadUrl: string;
+}): EmailTemplate {
+  const subject = `New thesis examiner assignment: ${input.thesisTitle}`;
+  const text = [
+    `Dear ${input.examinerName},`,
+    "",
+    `You have been assigned as an examiner for ${input.studentName}'s thesis titled "${input.thesisTitle}".`,
+    `Assigned by: ${input.assignedByName}`,
+    `Secure thesis download link: ${input.secureDownloadUrl}`,
+    "Please review the thesis using the secure link above.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.examinerName},</p>
+    <p>You have been assigned as an examiner for <strong>${input.studentName}</strong>'s thesis titled <strong>${input.thesisTitle}</strong>.</p>
+    <p><strong>Assigned by:</strong> ${input.assignedByName}</p>
+    <p><a href="${input.secureDownloadUrl}">Open the secure thesis download link</a></p>
+    <p>Please review the thesis using the secure link above.</p>
+  `;
+
+  return { subject, html, text };
+}
 export async function notifyRegistrationExpiry(input: {
   recipientUserId: string;
   to: string;
@@ -397,6 +448,43 @@ export async function notifyProposalEvaluationSubmittedToAdministrator(input: {
     to: input.to,
     recipientUserId: input.recipientUserId,
     event: NotificationEvent.PROPOSAL_STATUS_CHANGED,
+    ...template,
+  });
+}
+
+export async function notifySupervisorAssigned(input: {
+  recipientUserId: string;
+  to: string;
+  supervisorName: string;
+  studentName: string;
+  assignmentRoleLabel: string;
+  assignedByName: string;
+}) {
+  const template = buildSupervisorAssignmentTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.APPLICATION_STATUS_CHANGED,
+    ...template,
+  });
+}
+
+export async function notifyExaminerAssignedToThesis(input: {
+  recipientUserId: string;
+  to: string;
+  examinerName: string;
+  studentName: string;
+  thesisTitle: string;
+  assignedByName: string;
+  secureDownloadUrl: string;
+}) {
+  const template = buildExaminerAssignmentTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.APPLICATION_STATUS_CHANGED,
     ...template,
   });
 }
