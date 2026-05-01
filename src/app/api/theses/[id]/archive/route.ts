@@ -3,33 +3,33 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { withAuth } from "@/lib/firebase/with-auth";
 import {
-  getCurrentThesisDownloadUrl,
-  ThesisVersionError,
-} from "@/lib/theses/versions";
+  archiveThesisAfterCorrections,
+  ThesisCorrectionError,
+} from "@/lib/theses/corrections";
 
 type RouteParams = {
   id: string;
 };
 
-export const GET = withAuth<RouteParams>(
+export const PATCH = withAuth<RouteParams>(
   async (_request: NextRequest, context) => {
     try {
-      const payload = await getCurrentThesisDownloadUrl(
+      const payload = await archiveThesisAfterCorrections(
         context.params?.id ?? "",
         context.auth,
       );
 
       return NextResponse.json(payload);
     } catch (error) {
-      if (error instanceof ThesisVersionError) {
+      if (error instanceof ThesisCorrectionError) {
         return NextResponse.json({ error: error.message }, { status: error.status });
       }
 
       return NextResponse.json(
-        { error: "Unable to create the thesis download URL." },
+        { error: "Unable to archive the thesis." },
         { status: 500 },
       );
     }
   },
-  [UserRole.EXAMINER],
+  [UserRole.ADMINISTRATOR],
 );

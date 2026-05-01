@@ -93,6 +93,16 @@ export function buildThesisStoragePath(studentId: string, fileName: string) {
   );
 }
 
+export function buildVersionedThesisStoragePath(
+  studentId: string,
+  version: number,
+  fileName: string,
+) {
+  return normalizeStoragePath(
+    `theses/${studentId}/${version}/${sanitizeFileName(fileName)}`,
+  );
+}
+
 export function buildProgressReportStoragePath(
   studentId: string,
   reportId: string,

@@ -153,6 +153,7 @@ function toStudentProfileResponse(student: StudentProfileRecord) {
     userId: student.userId,
     programType: student.programType,
     academicStatus: student.academicStatus,
+    isReadOnly: student.academicStatus === AcademicStatus.GRADUATED,
     enrollmentDate: student.enrollmentDate,
     updatedBy: student.updatedBy,
     updatedAt: student.updatedAt,
@@ -192,6 +193,13 @@ export async function updateStudentProfileById(
   }
 
   assertStudentProfileAccess(auth, student);
+
+  if (student.academicStatus === AcademicStatus.GRADUATED) {
+    throw new StudentProfileError(
+      "Graduated student profiles are read-only.",
+      409,
+    );
+  }
 
   if (auth.role !== UserRole.ADMINISTRATOR) {
     throw new StudentProfileError(

@@ -369,6 +369,52 @@ export function buildExaminerAssignmentTemplate(input: {
 
   return { subject, html, text };
 }
+
+export function buildThesisSubmittedTemplate(input: {
+  administratorName: string;
+  studentName: string;
+  thesisTitle: string;
+  programTypeLabel: string;
+}): EmailTemplate {
+  const subject = `New thesis submission: ${input.thesisTitle}`;
+  const text = [
+    `Dear ${input.administratorName},`,
+    "",
+    `${input.studentName} has submitted a thesis manuscript for the ${input.programTypeLabel} programme.`,
+    `Thesis title: ${input.thesisTitle}`,
+    "Please review the submission workflow and proceed with the examination process.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.administratorName},</p>
+    <p><strong>${input.studentName}</strong> has submitted a thesis manuscript for the <strong>${input.programTypeLabel}</strong> programme.</p>
+    <p><strong>Thesis title:</strong> ${input.thesisTitle}</p>
+    <p>Please review the submission workflow and proceed with the examination process.</p>
+  `;
+
+  return { subject, html, text };
+}
+
+export function buildCorrectionSubmittedTemplate(input: {
+  administratorName: string;
+  studentName: string;
+  thesisTitle: string;
+  correctionTypeLabel: string;
+}): EmailTemplate {
+  const subject = `Correction document submitted: ${input.thesisTitle}`;
+  const text = [
+    `Dear ${input.administratorName},`,
+    "",
+    `${input.studentName} has submitted a ${input.correctionTypeLabel.toLowerCase()} correction document for "${input.thesisTitle}".`,
+    "Please review the uploaded correction package in the thesis workflow.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.administratorName},</p>
+    <p><strong>${input.studentName}</strong> has submitted a <strong>${input.correctionTypeLabel.toLowerCase()}</strong> correction document for <strong>${input.thesisTitle}</strong>.</p>
+    <p>Please review the uploaded correction package in the thesis workflow.</p>
+  `;
+
+  return { subject, html, text };
+}
 export async function notifyRegistrationExpiry(input: {
   recipientUserId: string;
   to: string;
@@ -529,6 +575,88 @@ export async function notifyExaminerAssignedToThesis(input: {
     to: input.to,
     recipientUserId: input.recipientUserId,
     event: NotificationEvent.APPLICATION_STATUS_CHANGED,
+    ...template,
+  });
+}
+
+export async function notifyThesisSubmittedToAdministrator(input: {
+  recipientUserId: string;
+  to: string;
+  administratorName: string;
+  studentName: string;
+  thesisTitle: string;
+  programTypeLabel: string;
+}) {
+  const template = buildThesisSubmittedTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.APPLICATION_STATUS_CHANGED,
+    ...template,
+  });
+}
+
+export async function notifyCorrectionSubmittedToAdministrator(input: {
+  recipientUserId: string;
+  to: string;
+  administratorName: string;
+  studentName: string;
+  thesisTitle: string;
+  correctionTypeLabel: string;
+}) {
+  const template = buildCorrectionSubmittedTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.CORRECTIONS_REQUIRED,
+    ...template,
+  });
+}
+
+export function buildVivaScheduledTemplate(input: {
+  recipientName: string;
+  thesisTitle: string;
+  venue: string;
+  scheduledDate: Date;
+}): EmailTemplate {
+  const formattedDate = input.scheduledDate.toLocaleString();
+  const subject = `Viva scheduled for thesis: ${input.thesisTitle}`;
+  const text = [
+    `Dear ${input.recipientName},`,
+    "",
+    `A viva has been scheduled for the thesis titled "${input.thesisTitle}".`,
+    `Date & Time: ${formattedDate}`,
+    `Venue: ${input.venue}`,
+    "",
+    "Please check your dashboard for further details.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.recipientName},</p>
+    <p>A viva has been scheduled for the thesis titled <strong>${input.thesisTitle}</strong>.</p>
+    <p><strong>Date & Time:</strong> ${formattedDate}</p>
+    <p><strong>Venue:</strong> ${input.venue}</p>
+    <p>Please check your dashboard for further details.</p>
+  `;
+
+  return { subject, html, text };
+}
+
+export async function notifyVivaScheduled(input: {
+  recipientUserId: string;
+  to: string;
+  recipientName: string;
+  thesisTitle: string;
+  venue: string;
+  scheduledDate: Date;
+}) {
+  const template = buildVivaScheduledTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.VIVA_SCHEDULED,
     ...template,
   });
 }

@@ -3,19 +3,23 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { withAuth } from "@/lib/firebase/with-auth";
 import {
-  getCurrentThesisDownloadUrl,
+  getThesisVersionDownloadUrl,
   ThesisVersionError,
 } from "@/lib/theses/versions";
 
 type RouteParams = {
   id: string;
+  v: string;
 };
 
 export const GET = withAuth<RouteParams>(
   async (_request: NextRequest, context) => {
+    const version = Number(context.params?.v ?? "");
+
     try {
-      const payload = await getCurrentThesisDownloadUrl(
+      const payload = await getThesisVersionDownloadUrl(
         context.params?.id ?? "",
+        version,
         context.auth,
       );
 
@@ -26,10 +30,10 @@ export const GET = withAuth<RouteParams>(
       }
 
       return NextResponse.json(
-        { error: "Unable to create the thesis download URL." },
+        { error: "Unable to create the thesis version download URL." },
         { status: 500 },
       );
     }
   },
-  [UserRole.EXAMINER],
+  [UserRole.STUDENT, UserRole.ADMINISTRATOR, UserRole.EXAMINER, UserRole.SUPERVISOR],
 );
