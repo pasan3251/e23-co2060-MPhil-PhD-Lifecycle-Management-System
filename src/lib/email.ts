@@ -294,6 +294,31 @@ export function buildProposalEvaluationSubmittedTemplate(input: {
   return { subject, html, text };
 }
 
+export function buildProgressReportSignedOffTemplate(input: {
+  panelMemberName: string;
+  studentName: string;
+  periodLabel: string;
+  supervisorName: string;
+  reviewPanelName: string;
+}): EmailTemplate {
+  const subject = `Progress report ready for panel review: ${input.periodLabel}`;
+  const text = [
+    `Dear ${input.panelMemberName},`,
+    "",
+    `${input.supervisorName} has signed off ${input.studentName}'s progress report for ${input.periodLabel}.`,
+    `Assigned review panel: ${input.reviewPanelName}`,
+    "The report is now ready for review in the system.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.panelMemberName},</p>
+    <p><strong>${input.supervisorName}</strong> has signed off <strong>${input.studentName}</strong>'s progress report for <strong>${input.periodLabel}</strong>.</p>
+    <p><strong>Assigned review panel:</strong> ${input.reviewPanelName}</p>
+    <p>The report is now ready for review in the system.</p>
+  `;
+
+  return { subject, html, text };
+}
+
 export function buildSupervisorAssignmentTemplate(input: {
   supervisorName: string;
   studentName: string;
@@ -392,6 +417,25 @@ export async function notifyProgressReportSubmitted(input: {
     to: input.to,
     recipientUserId: input.recipientUserId,
     event: NotificationEvent.PROGRESS_REPORT_SUBMITTED,
+    ...template,
+  });
+}
+
+export async function notifyProgressReportSignedOff(input: {
+  recipientUserId: string;
+  to: string;
+  panelMemberName: string;
+  studentName: string;
+  periodLabel: string;
+  supervisorName: string;
+  reviewPanelName: string;
+}) {
+  const template = buildProgressReportSignedOffTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.PROGRESS_REPORT_SIGNED_OFF,
     ...template,
   });
 }

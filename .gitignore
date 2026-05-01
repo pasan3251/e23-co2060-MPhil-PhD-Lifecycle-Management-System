@@ -74,6 +74,22 @@ examiner-access.log
 prisma/*.examiner-snapshot.db
 /.playwright-cache
 /ms-playwright
+/chart-cache
+/.chart-cache
+dashboard-report*.pdf
+*.dashboard-report.pdf
+signature-buffer/
+*.signature-buffer
+progress-signoff*.log
+*.progress-signoff.log
+panel-deliberation*.log
+*.panel-deliberation.log
+panel-session/
+*.panel-session.tmp
+reporting-buffer/
+*.reporting-buffer
+overdue-progress*.csv
+*.overdue-progress.csv
 
 # editor
 .vscode/

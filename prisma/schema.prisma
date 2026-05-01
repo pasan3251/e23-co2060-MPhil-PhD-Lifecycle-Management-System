@@ -75,6 +75,7 @@ enum NotificationEvent {
   APPLICATION_STATUS_CHANGED
   PROPOSAL_STATUS_CHANGED
   PROGRESS_REPORT_SUBMITTED
+  PROGRESS_REPORT_SIGNED_OFF
   REGISTRATION_EXPIRY_APPROACHING
   VIVA_SCHEDULED
   CORRECTIONS_REQUIRED
@@ -89,6 +90,11 @@ enum NotificationDeliveryStatus {
 enum CorrectionType {
   MINOR
   MAJOR
+}
+
+enum PanelEvaluationOutcome {
+  PASS
+  FAIL
 }
 
 model User {
@@ -126,6 +132,7 @@ model Student {
   theses                Thesis[]
   supervisorAssignments SupervisorAssignment[]
   examinerAssignments   ThesisExaminerAssignment[]
+  reviewPanelAssignment ReviewPanelStudentAssignment?
   documents             Document[]
   notifications         Notification[]
   createdAt             DateTime               @default(now())
@@ -144,6 +151,7 @@ model Supervisor {
   assignments     SupervisorAssignment[]
   evaluations     EvaluationForm[]
   panelMemberships PanelMembership[]
+  panelEvaluations PanelEvaluation[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
@@ -274,6 +282,7 @@ model ProgressReport {
   narrative             String
   isSupervisorSignedOff Boolean           @default(false)
   supervisorSignedOffAt DateTime?
+  supervisorSignedOffById String?
   isOverdue             Boolean           @default(false)
   isArchived            Boolean           @default(false)
   student               Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -291,7 +300,9 @@ model ReviewPanel {
   id               String            @id @default(cuid())
   name             String
   description      String?
+  cohortProgramType ProgramType?
   memberships      PanelMembership[]
+  studentAssignments ReviewPanelStudentAssignment[]
   evaluations      PanelEvaluation[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -316,15 +327,34 @@ model PanelEvaluation {
   id               String         @id @default(cuid())
   reviewPanelId    String
   progressReportId String
+  supervisorId     String
   score            Int?
-  feedback         String?
+  outcome          PanelEvaluationOutcome?
+  notes            String?
+  submittedAt      DateTime?
   reviewPanel      ReviewPanel    @relation(fields: [reviewPanelId], references: [id], onDelete: Cascade)
   progressReport   ProgressReport @relation(fields: [progressReportId], references: [id], onDelete: Cascade)
+  supervisor       Supervisor     @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  @@unique([reviewPanelId, progressReportId])
+  @@unique([reviewPanelId, progressReportId, supervisorId])
+  @@index([progressReportId, supervisorId])
   @@map("panel_evaluations")
+}
+
+model ReviewPanelStudentAssignment {
+  id            String      @id @default(cuid())
+  reviewPanelId String
+  studentId     String      @unique
+  reviewPanel   ReviewPanel @relation(fields: [reviewPanelId], references: [id], onDelete: Cascade)
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([reviewPanelId, studentId])
+  @@index([reviewPanelId])
+  @@map("review_panel_student_assignments")
 }
 
 model Thesis {

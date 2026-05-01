@@ -33,12 +33,20 @@ export function DashboardRoleLayout({
               Overview
             </Link>
             {role === "student" ? (
-              <Link
-                href="/dashboard/student/progress-reports/submit"
-                className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
-              >
-                Submit Progress Report
-              </Link>
+              <>
+                <Link
+                  href="/dashboard/student/progress-reports/submit"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Submit Progress Report
+                </Link>
+                <Link
+                  href="/dashboard/student/progress"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Progress Dashboard
+                </Link>
+              </>
             ) : null}
             {role === "supervisor" ? (
               <Link
