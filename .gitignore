@@ -113,3 +113,17 @@ viva-test-data.json
 
 # editor
 .vscode/
+
+# Document repository — search indexes, manifests, and temp metadata
+*.search-index.json
+*.search-index.bin
+/search-indexes/
+*.repo-manifest.json
+*.repo-manifest.csv
+/repo-exports/
+/document-exports/
+*.doc-cache.json
+*.doc-meta.tmp
+/doc-cache/
+list-prisma.js
+list-users-temp.js
