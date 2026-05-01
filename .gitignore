@@ -105,6 +105,12 @@ correction-review*.log
 *.correction-review.log
 prisma/migrations/*.local
 prisma/migrations/*.tmp
+document-search-index/
+*.document-search.idx
+document-metadata-cache/
+*.document-meta.tmp
+repository-manifest*.csv
+repository-manifest*.json
 
 # Viva scheduling local testing
 *.cal-sync.log
@@ -113,3 +119,54 @@ viva-test-data.json
 
 # editor
 .vscode/
+
+# Document repository — search indexes, manifests, and temp metadata
+*.search-index.json
+*.search-index.bin
+/search-indexes/
+*.repo-manifest.json
+*.repo-manifest.csv
+/repo-exports/
+/document-exports/
+*.doc-cache.json
+*.doc-meta.tmp
+/doc-cache/
+list-prisma.js
+list-users-temp.js
+
+# Notification engine — SMTP logs, email template caches, test data
+*.smtp.log
+*.smtp-debug.log
+/smtp-logs/
+*.email-cache.json
+*.email-template.cache
+/email-cache/
+notification-test-data.json
+*.notification-test.json
+/notification-exports/
+
+# Admin notification log viewer — local exports and audit test artifacts
+*.notification-log.json
+*.notification-log.csv
+/notification-log-exports/
+audit-test-results.json
+*.audit-test.json
+/audit-exports/
+analytics-cache/
+*.analytics-cache.json
+report-export-*.csv
+report-export-*.json
+system-report-buffer/
+audit-log/
+*.audit.log
+archived-snapshot*.db
+*.archived-snapshot.db
+prisma/archive-test*.log
+/.sentryclirc.local
+.sentry-debug/
+*.sentry-report
+session-activity*.log
+*.session-activity.log
+/session-debug/
+/ui-buffer/
+*.ui-buffer.tmp

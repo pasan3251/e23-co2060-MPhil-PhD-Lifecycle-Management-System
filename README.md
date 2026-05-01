@@ -4,17 +4,17 @@ A Next.js-based lifecycle management platform for handling postgraduate research
 
 ## Overview
 
-This branch contains the implemented foundation, student lifecycle, and proposal workflow work for:
+This branch contains the implemented postgraduate lifecycle backlog from the project roadmap, covering:
 
 - project scaffolding with Next.js App Router
-- Prisma domain modeling for the postgraduate lifecycle
+- Prisma domain modeling and migration history
 - Firebase authentication and role-based access control
 - Firebase Storage utilities for protected document handling
 - SMTP email integration and notification logging
 - administrator user management
 - role-specific dashboard home pages
 - student application, admission, registration, and profile management
-- proposal evaluation and version-history access control
+- proposal, progress-report, panel, thesis, viva, correction, archive, reporting, and hardening workflows
 
 ## Tech Stack
 
@@ -53,35 +53,25 @@ tests/
 ```
 
 ## Implementation Status
-## Implementation Status
 
-Implemented correctly:
+Implemented locally against the documented backlog file:
 
-- `PB-001` Project foundation and directory scaffolding
-- `PB-002` Prisma ORM schema and domain model setup
-- `PB-003` Firebase Auth integration and custom claims
-- `PB-004` RBAC middleware for protected route handlers
-- `PB-005` Firebase Storage utilities and rules
-- `PB-006` SMTP email integration and notification logging
-- `PB-010` Firebase login page and session management
-- `PB-011` Administrator user management
-- `PB-012` Role-specific dashboard home pages
-- `PB-020` Application submission and status workflow
-- `PB-021` Admission-driven student account/profile/registration creation
-- `PB-022` Registration renewal, lapse checks, and reminder maintenance
-- `PB-023` Student profile access control and admin edit restrictions
-- `PB-031` Supervisor proposal evaluation flow
-- `PB-032` Proposal version history, access control, and signed downloads
+- `PB-001` to `PB-006`
+- `PB-010` to `PB-012`
+- `PB-020` to `PB-023`
+- `PB-030` to `PB-032`
+- `PB-040` to `PB-046`
+- `PB-050` to `PB-053`
+- `PB-060`
+- `PB-070` to `PB-071`
+- `PB-080` to `PB-081`
+- `PB-090` to `PB-092`
 
-Partially implemented:
+Infrastructure completion included in this branch:
 
-- `PB-030` Proposal submission and versioning are implemented, but the workflow does not yet fully auto-route a newly submitted proposal to `UNDER_REVIEW` when supervisors are assigned, so this item is not counted as fully complete.
-
-Not yet fully implemented:
-
-- `PB-040` onward
-- `PB-043` onward
-- thesis, viva, repository, audit, reporting, and broader hardening/mobile backlog items
+- initial Prisma migration history created for the current schema
+- Sentry package and Next.js monitoring configuration wired for server, edge, and browser contexts
+- environment-variable documentation updated for session tracking and monitoring
 
 ## Environment Variables
 
@@ -92,10 +82,18 @@ Important variables include:
 - `DATABASE_URL`
 - Firebase client credentials
 - Firebase admin credentials
-- `FIREBASE_STORAGE_BUCKET`
+- `FIREBASE_STORAGE_BUCKET`:
+  `your-project-id.firebasestorage.app` for newer Firebase default buckets or
+  `your-project-id.appspot.com` for older ones. Do not include `gs://`.
 - SMTP credentials
 - `SESSION_COOKIE_NAME`
+- `SESSION_ACTIVITY_COOKIE_NAME`
 - `APP_BASE_URL`
+- `SENTRY_DSN`
+- `NEXT_PUBLIC_SENTRY_DSN`
+- `SENTRY_ORG`
+- `SENTRY_PROJECT`
+- `SENTRY_AUTH_TOKEN`
 
 ## Getting Started
 
@@ -114,7 +112,7 @@ npx prisma generate
 Run database migrations:
 
 ```bash
-npx prisma migrate dev --name init_schema
+npx prisma migrate dev
 ```
 
 Start the development server:
@@ -139,10 +137,11 @@ Open the app at `http://localhost:3000`.
 
 ## Notes
 
-- Firebase, PostgreSQL, and SMTP must be configured before auth, storage, and email flows can work end-to-end.
+- Firebase, PostgreSQL, SMTP, and Sentry must be configured before all production integrations work end-to-end.
 - Some tests and runtime flows depend on local database and Firebase setup.
+- Sentry is configured to avoid logging default PII and to redact cookies and authorization headers before capture.
 - Playwright end-to-end tests should be run separately from Vitest.
-- The README status reflects the code and automated test coverage in this branch rather than the original earlier milestone snapshot.
+- The README status reflects the code and automated test coverage in this branch relative to the product backlog source.
 
 ## Branch
 

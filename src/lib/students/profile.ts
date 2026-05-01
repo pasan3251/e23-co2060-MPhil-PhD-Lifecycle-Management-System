@@ -52,6 +52,7 @@ type StudentProfileRecord = {
   userId: string;
   programType: ProgramType;
   academicStatus: AcademicStatus;
+  isArchived: boolean;
   enrollmentDate: Date;
   updatedBy: string | null;
   updatedAt: Date;
@@ -76,6 +77,7 @@ type StudentProfileRecord = {
 
 type StudentProfileAccessRecord = {
   userId: string;
+  isArchived?: boolean;
   supervisorAssignments: Array<{
     supervisorUserId: string;
   }>;
@@ -91,6 +93,7 @@ async function findStudentProfileRecord(studentId: string) {
       userId: true,
       programType: true,
       academicStatus: true,
+      isArchived: true,
       enrollmentDate: true,
       updatedBy: true,
       updatedAt: true,
@@ -131,6 +134,10 @@ export function assertStudentProfileAccess(
     return;
   }
 
+  if (student.isArchived) {
+    throw new StudentProfileError("Student profile not found.", 404);
+  }
+
   if (auth.role === UserRole.STUDENT && student.userId === auth.userId) {
     return;
   }
@@ -153,6 +160,7 @@ function toStudentProfileResponse(student: StudentProfileRecord) {
     userId: student.userId,
     programType: student.programType,
     academicStatus: student.academicStatus,
+    isArchived: student.isArchived,
     isReadOnly: student.academicStatus === AcademicStatus.GRADUATED,
     enrollmentDate: student.enrollmentDate,
     updatedBy: student.updatedBy,
@@ -201,6 +209,10 @@ export async function updateStudentProfileById(
     );
   }
 
+  if (student.isArchived) {
+    throw new StudentProfileError("Archived student profiles are read-only.", 409);
+  }
+
   if (auth.role !== UserRole.ADMINISTRATOR) {
     throw new StudentProfileError(
       "Only administrators can modify enrollment date, program type, or academic status.",
@@ -223,6 +235,7 @@ export async function updateStudentProfileById(
       userId: true,
       programType: true,
       academicStatus: true,
+      isArchived: true,
       enrollmentDate: true,
       updatedBy: true,
       updatedAt: true,

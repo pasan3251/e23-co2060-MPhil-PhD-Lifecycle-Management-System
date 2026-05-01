@@ -2,6 +2,7 @@ import { AcademicStatus, ProgramType } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma/client";
+import { ADMIN_REPORT_PAGE_SIZE } from "@/lib/admin/system-reports";
 
 const overdueProgressFilterSchema = z
   .object({
@@ -10,6 +11,8 @@ const overdueProgressFilterSchema = z
     programType: z.nativeEnum(ProgramType).optional(),
     supervisorId: z.string().min(1).optional(),
     format: z.enum(["json", "csv"]).optional(),
+    page: z.number().int().positive().optional(),
+    limit: z.number().int().positive().optional(),
   })
   .refine(
     (value) => {
@@ -255,10 +258,23 @@ export async function listOverdueProgressReports(
   referenceDate = new Date(),
 ) {
   const rows = await getOverdueProgressReportRows(filters, referenceDate);
+  const page = filters.page && filters.page > 0 ? filters.page : 1;
+  const limit =
+    filters.limit && filters.limit > 0
+      ? Math.min(filters.limit, ADMIN_REPORT_PAGE_SIZE)
+      : ADMIN_REPORT_PAGE_SIZE;
+  const startIndex = (page - 1) * limit;
+  const pagedRows = rows.slice(startIndex, startIndex + limit);
 
   return {
     totalOverdueReports: rows.length,
-    students: groupOverdueProgressReports(rows),
+    students: groupOverdueProgressReports(pagedRows),
+    pagination: {
+      page,
+      limit,
+      total: rows.length,
+      pageCount: Math.ceil(rows.length / limit),
+    },
   };
 }
 

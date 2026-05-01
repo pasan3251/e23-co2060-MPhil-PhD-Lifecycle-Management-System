@@ -278,3 +278,89 @@ export async function assignSupervisorToStudent(
 
   return assignment;
 }
+
+export async function removeSupervisorFromStudent(
+  assignmentId: string,
+  auth: AuthenticatedUserContext,
+) {
+  await requireAdministratorContext(auth);
+
+  const assignment = await prisma.supervisorAssignment.findUnique({
+    where: { id: assignmentId },
+    include: {
+      student: {
+        include: {
+          user: true,
+        },
+      },
+      supervisor: {
+        include: {
+          user: true,
+        },
+      },
+    },
+  });
+
+  if (!assignment) {
+    throw new SupervisorAssignmentError("Assignment not found.", 404);
+  }
+
+  // Business rule: Cannot remove if it's the last primary supervisor and there are co-supervisors?
+  // Or just allow it and let the system warn.
+  // For now, let's just delete it.
+
+  await prisma.supervisorAssignment.delete({
+    where: { id: assignmentId },
+  });
+
+  return {
+    success: true,
+    removedSupervisorName: assignment.supervisor.user.displayName,
+    studentName: assignment.student.user.displayName,
+  };
+}
+
+export async function getAllStudentAssignments(auth: AuthenticatedUserContext) {
+  await requireAdministratorContext(auth);
+
+  const students = await prisma.student.findMany({
+    where: { isArchived: false },
+    select: {
+      id: true,
+      programType: true,
+      academicStatus: true,
+      user: {
+        select: {
+          displayName: true,
+          email: true,
+        },
+      },
+      supervisorAssignments: {
+        select: {
+          id: true,
+          isPrimary: true,
+          assignedAt: true,
+          supervisor: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  displayName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      user: {
+        displayName: "asc",
+      },
+    },
+  });
+
+  return students;
+}
+

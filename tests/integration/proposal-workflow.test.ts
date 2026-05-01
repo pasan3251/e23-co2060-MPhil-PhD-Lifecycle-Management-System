@@ -7,8 +7,23 @@ vi.mock("firebase-admin/app", () => ({
   initializeApp: vi.fn(),
 }));
 
-vi.mock("firebase-admin/storage", () => ({
-  getStorage: vi.fn(),
+const mockCreateSignedUploadUrl = vi.fn(async (filePath: string) => {
+  return {
+    data: {
+      signedUrl: `https://storage.example.test/write?path=${encodeURIComponent(filePath)}`,
+    },
+    error: null,
+  };
+});
+
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: vi.fn(() => ({
+    storage: {
+      from: vi.fn(() => ({
+        createSignedUploadUrl: mockCreateSignedUploadUrl,
+      })),
+    },
+  })),
 }));
 
 vi.mock("@/lib/email", () => ({
@@ -33,30 +48,22 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
-import { getStorage } from "firebase-admin/storage";
 
 import {
   createProposalUploadUrl,
   submitResearchProposal,
 } from "@/lib/proposals/submission";
 import { prisma } from "@/lib/prisma/client";
+import { resetSupabaseClientForTests } from "@/lib/storage";
 
 describe("proposal workflow integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.FIREBASE_STORAGE_BUCKET = "pgsms-test-bucket";
+    resetSupabaseClientForTests();
 
-    vi.mocked(getStorage).mockReturnValue({
-      bucket: vi.fn(() => ({
-        file: vi.fn((filePath: string) => ({
-          getSignedUrl: vi.fn(async ({ action }: { action: "write" | "read" }) => {
-            return [
-              `https://storage.example.test/${action}?path=${encodeURIComponent(filePath)}`,
-            ];
-          }),
-        })),
-      })),
-    } as never);
+    vi.stubEnv("SUPABASE_URL", "https://xyz.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "mock-key");
+    vi.stubEnv("SUPABASE_STORAGE_BUCKET", "demo-bucket");
   });
 
   it("keeps previous proposal versions accessible in the database after a re-upload", async () => {
@@ -68,6 +75,7 @@ describe("proposal workflow integration", () => {
         displayName: "Student One",
       },
       registrations: [{ id: "registration-1" }],
+      supervisorAssignments: [],
       application: {
         id: "application-1",
         status: ApplicationStatus.ADMITTED,
@@ -211,6 +219,7 @@ describe("proposal workflow integration", () => {
         displayName: "Student One",
       },
       registrations: [{ id: "registration-1" }],
+      supervisorAssignments: [],
       application: {
         id: "application-1",
         status: ApplicationStatus.ADMITTED,
@@ -309,5 +318,87 @@ describe("proposal workflow integration", () => {
     expect(proposal.documents[0]?.storagePath).toBe(
       "proposals/student-1/1/proposal.pdf",
     );
+  });
+
+  it("auto-routes a newly submitted proposal to UNDER_REVIEW when supervisors are already assigned", async () => {
+    vi.mocked(prisma.student.findUnique).mockResolvedValue({
+      id: "student-1",
+      user: {
+        id: "user-student-1",
+        email: "student@example.com",
+        displayName: "Student One",
+      },
+      registrations: [{ id: "registration-1" }],
+      supervisorAssignments: [{ id: "assignment-1" }],
+      application: {
+        id: "application-1",
+        status: ApplicationStatus.ADMITTED,
+        researchProposal: null,
+      },
+    } as never);
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+      const tx = {
+        researchProposal: {
+          create: vi.fn().mockResolvedValue({
+            id: "proposal-1",
+            title: "Assigned Supervisor Proposal",
+            abstract:
+              "A first submission outlining a supervised research direction with clear scope and method.",
+            status: ProposalStatus.UNDER_REVIEW,
+            currentVersion: 1,
+            applicationId: "application-1",
+            createdAt: new Date("2026-04-30T09:00:00.000Z"),
+            updatedAt: new Date("2026-04-30T09:00:00.000Z"),
+            documents: [
+              {
+                id: "doc-1",
+                fileName: "proposal.pdf",
+                storagePath: "proposals/student-1/1/proposal.pdf",
+                mimeType: "application/pdf",
+                version: 1,
+                isCurrentVersion: true,
+                createdAt: new Date("2026-04-30T09:00:00.000Z"),
+              },
+            ],
+          }),
+        },
+      };
+
+      const result = await callback(tx as never);
+
+      expect(tx.researchProposal.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: ProposalStatus.UNDER_REVIEW,
+          }),
+        }),
+      );
+
+      return result;
+    });
+
+    const proposal = await submitResearchProposal(
+      {
+        title: "Assigned Supervisor Proposal",
+        abstract:
+          "A first submission outlining a supervised research direction with clear scope and method.",
+        document: {
+          fileName: "proposal.pdf",
+          storagePath: "proposals/student-1/1/proposal.pdf",
+          mimeType: "application/pdf",
+          sizeBytes: 512000,
+        },
+      },
+      {
+        uid: "firebase-student-1",
+        userId: "user-student-1",
+        firebaseUid: "firebase-student-1",
+        role: "STUDENT",
+        email: "student@example.com",
+      },
+    );
+
+    expect(proposal.status).toBe(ProposalStatus.UNDER_REVIEW);
   });
 });

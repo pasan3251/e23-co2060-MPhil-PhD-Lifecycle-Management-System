@@ -48,10 +48,16 @@ export function SupervisorStudentProfile({
         const response = await fetch(`/api/students/${studentId}`, {
           cache: "no-store",
         });
-        const payload = (await response.json()) as {
-          error?: string;
-          student?: StudentProfilePayload;
-        };
+        
+        const responseText = await response.text();
+        let payload: { error?: string; student?: StudentProfilePayload } = {};
+
+        try {
+          payload = JSON.parse(responseText);
+        } catch (e) {
+          console.error("Failed to parse student profile response:", responseText);
+          throw new Error(`Invalid response from server (${response.status}). Please check console logs.`);
+        }
 
         if (!response.ok || !payload.student) {
           throw new Error(payload.error ?? "Unable to load the student profile.");

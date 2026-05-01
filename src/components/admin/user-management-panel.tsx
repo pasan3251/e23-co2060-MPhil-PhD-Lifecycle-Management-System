@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import {
+  optionalSanitizedString,
+  sanitizedEmail,
+  sanitizedString,
+} from "@/lib/validation/schemas";
 import { z } from "zod";
 
-import { getFirebaseClientAuth } from "@/lib/firebase/client";
-
 const adminManagedRoles = [
+  "STUDENT",
   "SUPERVISOR",
   "EXAMINER",
   "ADMINISTRATOR",
@@ -23,14 +28,16 @@ type AdminUserListItem = {
   createdAt: string;
   department: string | null;
   specialization: string | null;
+  programType?: string | null;
 };
 
 const createUserSchema = z.object({
-  email: z.string().email("Enter a valid email address."),
-  displayName: z.string().min(1, "Display name is required."),
+  email: sanitizedEmail,
+  displayName: sanitizedString.min(1, "Display name is required."),
   role: z.enum(adminManagedRoles),
-  department: z.string().optional(),
-  specialization: z.string().optional(),
+  department: optionalSanitizedString,
+  specialization: optionalSanitizedString,
+  programType: optionalSanitizedString,
 });
 
 async function getAuthorizationHeader() {
@@ -58,9 +65,10 @@ export function UserManagementPanel() {
   const [formValues, setFormValues] = useState({
     email: "",
     displayName: "",
-    role: "SUPERVISOR" as AdminManagedRole,
+    role: "STUDENT" as AdminManagedRole,
     department: "",
     specialization: "",
+    programType: "MPHIL",
   });
 
   async function loadUsers(roleFilter: "ALL" | AdminManagedRole) {
@@ -140,9 +148,10 @@ export function UserManagementPanel() {
       setFormValues({
         email: "",
         displayName: "",
-        role: "SUPERVISOR",
+        role: "STUDENT",
         department: "",
         specialization: "",
+        programType: "MPHIL",
       });
       await loadUsers(selectedRole);
     } catch (error) {
@@ -190,10 +199,9 @@ export function UserManagementPanel() {
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
             Administrator User Management
           </p>
-          <h1 className="text-3xl font-semibold text-white">Manage staff accounts</h1>
+          <h1 className="text-3xl font-semibold text-white">Manage system accounts</h1>
           <p className="max-w-2xl text-sm text-slate-300">
-            Create and deactivate supervisor, examiner, and administrator accounts.
-            Student onboarding stays outside this flow by design.
+            Create and deactivate students, supervisors, examiners, and administrators.
           </p>
         </div>
 
@@ -206,6 +214,7 @@ export function UserManagementPanel() {
             className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 outline-none focus:border-sky-400"
           >
             <option value="ALL">All roles</option>
+            <option value="STUDENT">Students</option>
             <option value="SUPERVISOR">Supervisors</option>
             <option value="EXAMINER">Examiners</option>
             <option value="ADMINISTRATOR">Administrators</option>
@@ -235,13 +244,13 @@ export function UserManagementPanel() {
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/70">
+      <div className="hidden overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/70 md:block">
         <table className="min-w-full divide-y divide-slate-800 text-sm">
           <thead className="bg-slate-900/80 text-slate-300">
             <tr>
               <th className="px-5 py-4 text-left font-medium">Name</th>
               <th className="px-5 py-4 text-left font-medium">Role</th>
-              <th className="px-5 py-4 text-left font-medium">Department</th>
+              <th className="px-5 py-4 text-left font-medium">Details (Dept / Program)</th>
               <th className="px-5 py-4 text-left font-medium">Status</th>
               <th className="px-5 py-4 text-left font-medium">Action</th>
             </tr>
@@ -268,10 +277,16 @@ export function UserManagementPanel() {
                   </td>
                   <td className="px-5 py-4">{user.role}</td>
                   <td className="px-5 py-4">
-                    <div>{user.department ?? "Not set"}</div>
-                    {user.specialization ? (
-                      <div className="text-slate-400">{user.specialization}</div>
-                    ) : null}
+                    {user.role === "STUDENT" ? (
+                      <div>{user.programType ?? "Not set"} Program</div>
+                    ) : (
+                      <>
+                        <div>{user.department ?? "Not set"}</div>
+                        {user.specialization ? (
+                          <div className="text-slate-400">{user.specialization}</div>
+                        ) : null}
+                      </>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     <span
@@ -301,6 +316,73 @@ export function UserManagementPanel() {
         </table>
       </div>
 
+      <div className="space-y-4 md:hidden">
+        {isLoading ? (
+          <div className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-400">
+            Loading accounts...
+          </div>
+        ) : users.length === 0 ? (
+          <div className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-400">
+            No administrator-managed users found for this filter.
+          </div>
+        ) : (
+          users.map((user) => (
+            <article
+              key={user.id}
+              className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-4 shadow-[0_18px_40px_rgba(2,6,23,0.34)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="break-words text-base font-semibold text-white">
+                    {user.displayName}
+                  </p>
+                  <p className="mt-1 break-all text-sm text-slate-400">
+                    {user.email}
+                  </p>
+                </div>
+                <span className="rounded-full border border-slate-700 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200">
+                  {user.role}
+                </span>
+              </div>
+              <div className="mt-4 space-y-2 text-sm text-slate-300">
+                <p>
+                  <span className="text-slate-500">Details:</span>{" "}
+                  {user.role === "STUDENT"
+                    ? `${user.programType ?? "Not set"} Program`
+                    : user.department ?? "Not set"}
+                </p>
+                {user.specialization ? (
+                  <p>
+                    <span className="text-slate-500">Specialization:</span>{" "}
+                    {user.specialization}
+                  </p>
+                ) : null}
+                <p>
+                  <span className="text-slate-500">Status:</span>{" "}
+                  <span
+                    className={
+                      user.isActive
+                        ? "text-emerald-200"
+                        : "text-slate-300"
+                    }
+                  >
+                    {user.isActive ? "Active" : "Inactive"}
+                  </span>
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={!user.isActive}
+                onClick={() => void handleDeactivate(user.id)}
+                className="mt-4 w-full rounded-2xl border border-slate-700 px-3 py-3 text-sm font-semibold text-slate-100 transition hover:border-rose-400 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Deactivate
+              </button>
+            </article>
+          ))
+        )}
+      </div>
+
       {isModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4">
           <div className="w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl shadow-slate-950/60">
@@ -308,8 +390,7 @@ export function UserManagementPanel() {
               <div>
                 <h2 className="text-2xl font-semibold text-white">Create New User</h2>
                 <p className="mt-2 text-sm text-slate-400">
-                  Available roles here are limited to supervisors, examiners, and
-                  administrators.
+                  Select the role and fill out the details appropriately.
                 </p>
               </div>
               <button
@@ -367,42 +448,66 @@ export function UserManagementPanel() {
                     }
                     className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
                   >
+                    <option value="STUDENT">Student</option>
                     <option value="SUPERVISOR">Supervisor</option>
                     <option value="EXAMINER">Examiner</option>
                     <option value="ADMINISTRATOR">Administrator</option>
                   </select>
                 </label>
 
+                {formValues.role === "STUDENT" ? (
+                  <label className="space-y-2 text-sm text-slate-200">
+                    <span>Program Type</span>
+                    <select
+                      value={formValues.programType}
+                      onChange={(event) =>
+                        setFormValues((current) => ({
+                          ...current,
+                          programType: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
+                    >
+                      <option value="MPHIL">MPhil</option>
+                      <option value="PHD">PhD</option>
+                      <option value="MSC">MSc</option>
+                      <option value="MENG">MEng</option>
+                    </select>
+                  </label>
+                ) : (
+                  <label className="space-y-2 text-sm text-slate-200">
+                    <span>Department</span>
+                    <input
+                      value={formValues.department}
+                      onChange={(event) =>
+                        setFormValues((current) => ({
+                          ...current,
+                          department: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
+                      placeholder="Computer Engineering"
+                    />
+                  </label>
+                )}
+              </div>
+
+              {formValues.role !== "STUDENT" && formValues.role !== "ADMINISTRATOR" ? (
                 <label className="space-y-2 text-sm text-slate-200">
-                  <span>Department</span>
+                  <span>Specialization</span>
                   <input
-                    value={formValues.department}
+                    value={formValues.specialization}
                     onChange={(event) =>
                       setFormValues((current) => ({
                         ...current,
-                        department: event.target.value,
+                        specialization: event.target.value,
                       }))
                     }
                     className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                    placeholder="Computer Engineering"
+                    placeholder="Distributed Systems"
                   />
                 </label>
-              </div>
-
-              <label className="space-y-2 text-sm text-slate-200">
-                <span>Specialization</span>
-                <input
-                  value={formValues.specialization}
-                  onChange={(event) =>
-                    setFormValues((current) => ({
-                      ...current,
-                      specialization: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                  placeholder="Distributed Systems"
-                />
-              </label>
+              ) : null}
 
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button

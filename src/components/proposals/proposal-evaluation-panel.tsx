@@ -57,7 +57,16 @@ export function ProposalEvaluationPanel() {
       const response = await fetch(`/api/proposals/${proposalId}/evaluations`, {
         credentials: "include",
       });
-      const payload = (await response.json()) as EvaluationPayload;
+      
+      const responseText = await response.text();
+      let payload: EvaluationPayload;
+
+      try {
+        payload = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse proposal evaluations response:", responseText);
+        throw new Error(`Invalid response from server (${response.status}). Please check console logs.`);
+      }
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Unable to load proposal evaluations.");

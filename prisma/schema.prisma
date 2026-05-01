@@ -230,6 +230,7 @@ model ResearchProposal {
   abstract        String
   status          ProposalStatus   @default(SUBMITTED)
   currentVersion  Int              @default(1)
+  isArchived      Boolean          @default(false)
   student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   application     Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   evaluations     EvaluationForm[]

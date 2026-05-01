@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ProgramType, RegistrationStatus } from "@prisma/client";
 import { useEffect, useState } from "react";
 
+
+
 type SupervisorStudentListItem = {
   assignmentId: string;
   assignedAt: string | Date;
@@ -29,6 +31,8 @@ type SupervisorStudentListItem = {
     updatedAt: string | Date;
   } | null;
 };
+
+const EMPTY_STUDENTS: SupervisorStudentListItem[] = [];
 
 function formatDateLabel(value: string | Date | null | undefined) {
   if (!value) {
@@ -81,7 +85,7 @@ function getProposalLabel(proposal: SupervisorStudentListItem["latestProposal"])
 }
 
 export function SupervisorStudentsPanel({
-  initialStudents = [],
+  initialStudents = EMPTY_STUDENTS,
 }: {
   initialStudents?: SupervisorStudentListItem[];
 }) {
@@ -109,10 +113,16 @@ export function SupervisorStudentsPanel({
         const response = await fetch("/api/supervisor/students", {
           cache: "no-store",
         });
-        const payload = (await response.json()) as {
-          error?: string;
-          students?: SupervisorStudentListItem[];
-        };
+        
+        const responseText = await response.text();
+        let payload: { error?: string; students?: SupervisorStudentListItem[] } = {};
+        
+        try {
+          payload = JSON.parse(responseText);
+        } catch (e) {
+          console.error("Failed to parse supervisor students response:", responseText);
+          throw new Error(`Invalid response from server (${response.status}). Please check console logs.`);
+        }
 
         if (!response.ok || !payload.students) {
           throw new Error(payload.error ?? "Unable to load assigned students.");
@@ -140,7 +150,7 @@ export function SupervisorStudentsPanel({
     return () => {
       isMounted = false;
     };
-  }, [initialStudents]);
+  }, []);
 
   const filteredStudents = students.filter((entry) => {
     const registrationLabel = getRegistrationLabel(entry.currentRegistration);

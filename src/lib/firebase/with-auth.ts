@@ -1,26 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { AuthError, authenticateBearerRequest } from "@/lib/firebase/auth";
+import { createServerErrorResponse } from "@/lib/http/errors";
 import {
   type AppUserRole,
   type AuthenticatedUserContext,
 } from "@/types/auth";
 
-export type WithAuthContext<TParams = Record<string, string | string[]>> = {
+export type WithAuthContext<TParams = Record<string, string>> = {
   params?: TParams;
   auth: AuthenticatedUserContext;
 };
 
-type BaseRouteContext<TParams = Record<string, string | string[]>> = {
+type BaseRouteContext<TParams = Record<string, string>> = {
   params?: TParams;
 };
 
-export type AuthenticatedRouteHandler<TParams = Record<string, string | string[]>> = (
+export type AuthenticatedRouteHandler<TParams = Record<string, string>> = (
   request: NextRequest,
   context: WithAuthContext<TParams>,
 ) => Response | Promise<Response>;
 
-export function withAuth<TParams = Record<string, string | string[]>>(
+export function withAuth<TParams = Record<string, string>>(
   handler: AuthenticatedRouteHandler<TParams>,
   allowedRoles: AppUserRole[],
 ) {
@@ -45,12 +46,12 @@ export function withAuth<TParams = Record<string, string | string[]>>(
         );
       }
 
-      return NextResponse.json(
-        {
-          error: "Authentication middleware failure.",
-        },
-        { status: 500 },
-      );
+      return createServerErrorResponse({
+        error,
+        message: "Authentication middleware failure.",
+        route: request.nextUrl.pathname,
+        method: request.method,
+      });
     }
   };
 }

@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
@@ -41,7 +43,15 @@ export default function LoginPage() {
                 Use your assigned institutional account to sign in.
               </p>
             </div>
-            <LoginForm />
+            <Suspense
+              fallback={
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-sm text-slate-300">
+                  Loading sign-in form...
+                </div>
+              }
+            >
+              <LoginForm />
+            </Suspense>
           </div>
         </section>
       </div>

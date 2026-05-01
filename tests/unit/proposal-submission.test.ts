@@ -23,6 +23,7 @@ vi.mock("@/lib/prisma/client", () => ({
 import {
   ProposalSubmissionError,
   proposalSubmissionSchema,
+  submitResearchProposal,
   updateResearchProposalStatus,
 } from "@/lib/proposals/submission";
 import { prisma } from "@/lib/prisma/client";
@@ -70,5 +71,75 @@ describe("proposal submission utilities", () => {
     });
 
     expect(prisma.researchProposal.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("keeps a new proposal in SUBMITTED when no supervisors are assigned yet", async () => {
+    vi.mocked(prisma.student.findUnique).mockResolvedValue({
+      id: "student-1",
+      user: {
+        id: "user-student-1",
+        email: "student@example.com",
+        displayName: "Student One",
+      },
+      registrations: [{ id: "registration-1" }],
+      supervisorAssignments: [],
+      application: {
+        id: "application-1",
+        status: "ADMITTED",
+        researchProposal: null,
+      },
+    } as never);
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+      const tx = {
+        researchProposal: {
+          create: vi.fn().mockResolvedValue({
+            id: "proposal-1",
+            title: "New Proposal",
+            abstract:
+              "A first submission outlining the thesis direction, problem, and research method.",
+            status: ProposalStatus.SUBMITTED,
+            currentVersion: 1,
+            applicationId: "application-1",
+            createdAt: new Date("2026-04-30T09:00:00.000Z"),
+            updatedAt: new Date("2026-04-30T09:00:00.000Z"),
+            documents: [],
+          }),
+        },
+      };
+
+      const result = await callback(tx as never);
+      expect(tx.researchProposal.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: ProposalStatus.SUBMITTED,
+          }),
+        }),
+      );
+      return result;
+    });
+
+    const proposal = await submitResearchProposal(
+      {
+        title: "New Proposal",
+        abstract:
+          "A first submission outlining the thesis direction, problem, and research method.",
+        document: {
+          fileName: "proposal.pdf",
+          storagePath: "proposals/student-1/1/proposal.pdf",
+          mimeType: "application/pdf",
+          sizeBytes: 2048,
+        },
+      },
+      {
+        uid: "firebase-student-1",
+        userId: "user-student-1",
+        firebaseUid: "firebase-student-1",
+        role: "STUDENT",
+        email: "student@example.com",
+      },
+    );
+
+    expect(proposal.status).toBe(ProposalStatus.SUBMITTED);
   });
 });

@@ -7,14 +7,17 @@ import {
   type SessionCookieOptions,
   type UserRecord,
 } from "firebase-admin/auth";
-import { getStorage } from "firebase-admin/storage";
 
+import {
+  SESSION_ABSOLUTE_MAX_AGE_MS,
+  SESSION_ABSOLUTE_MAX_AGE_SECONDS,
+} from "@/lib/security/session";
 import { isAppUserRole, type AppUserRole } from "@/types/auth";
 
 const FIREBASE_ADMIN_APP_NAME = "pgsms-firebase-admin";
 export const SESSION_COOKIE_NAME =
   process.env.SESSION_COOKIE_NAME ?? "pgsms_session";
-export const SESSION_COOKIE_MAX_AGE_SECONDS = 60 * 30;
+export const SESSION_COOKIE_MAX_AGE_SECONDS = SESSION_ABSOLUTE_MAX_AGE_SECONDS;
 export const SESSION_COOKIE_MAX_AGE_MS = SESSION_COOKIE_MAX_AGE_SECONDS * 1000;
 
 function normalizePrivateKey(privateKey: string) {
@@ -55,7 +58,6 @@ export function getFirebaseAdminApp() {
         clientEmail: config.clientEmail,
         privateKey: config.privateKey,
       }),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     },
     FIREBASE_ADMIN_APP_NAME,
   );
@@ -65,13 +67,6 @@ export function getFirebaseAdminAuth() {
   return getAuth(getFirebaseAdminApp());
 }
 
-export function getFirebaseAdminStorage() {
-  return getStorage(getFirebaseAdminApp());
-}
-
-export function getFirebaseAdminBucket() {
-  return getFirebaseAdminStorage().bucket();
-}
 
 export type VerifiedFirebaseToken = DecodedIdToken & {
   role?: AppUserRole;
@@ -118,7 +113,7 @@ export async function verifyFirebaseToken(
 
 export async function createSessionCookieFromIdToken(
   idToken: string,
-  options: SessionCookieOptions = { expiresIn: SESSION_COOKIE_MAX_AGE_MS },
+  options: SessionCookieOptions = { expiresIn: SESSION_ABSOLUTE_MAX_AGE_MS },
 ) {
   return getFirebaseAdminAuth().createSessionCookie(idToken, options);
 }

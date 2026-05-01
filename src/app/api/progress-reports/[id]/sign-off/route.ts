@@ -13,9 +13,15 @@ type RouteParams = {
 
 export const PATCH = withAuth<RouteParams>(
   async (_request: NextRequest, context) => {
+    const progressReportId = context.params?.id;
+
+    if (!progressReportId) {
+      return NextResponse.json({ error: "Progress report id is required." }, { status: 400 });
+    }
+
     try {
       const result = await signOffProgressReport(
-        { id: context.params.id },
+        { id: progressReportId },
         context.auth,
       );
 

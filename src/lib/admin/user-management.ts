@@ -1,4 +1,4 @@
-import { Prisma, UserRole, type User } from "@prisma/client";
+import { UserRole, ProgramType, type User } from "@prisma/client";
 
 import {
   createFirebaseAuthUser,
@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma/client";
 import { isAppUserRole } from "@/types/auth";
 
 const ADMIN_MANAGED_ROLES = [
+  UserRole.STUDENT,
   UserRole.SUPERVISOR,
   UserRole.EXAMINER,
   UserRole.ADMINISTRATOR,
@@ -24,6 +25,7 @@ export type CreateAdminUserInput = {
   role: AdminManagedRole;
   department?: string | null;
   specialization?: string | null;
+  programType?: string | null;
 };
 
 export type AdminUserListItem = {
@@ -36,6 +38,9 @@ export type AdminUserListItem = {
   createdAt: Date;
   department: string | null;
   specialization: string | null;
+  programType?: string | null;
+  studentId?: string | null;
+  supervisorId?: string | null;
 };
 
 export class AdminUserManagementError extends Error {
@@ -51,7 +56,7 @@ export class AdminUserManagementError extends Error {
 function assertAdminManagedRole(role: string): asserts role is AdminManagedRole {
   if (!ADMIN_MANAGED_ROLES.includes(role as AdminManagedRole)) {
     throw new AdminUserManagementError(
-      "Only SUPERVISOR, EXAMINER, and ADMINISTRATOR accounts can be created here.",
+      "Only STUDENT, SUPERVISOR, EXAMINER, and ADMINISTRATOR accounts can be created here.",
       400,
     );
   }
@@ -81,12 +86,27 @@ function buildLoginUrl() {
 }
 
 async function createRoleProfile(
-  tx: Prisma.TransactionClient,
+  tx: Pick<typeof prisma, "student" | "supervisor" | "examiner" | "administrator">,
   userId: string,
   role: AdminManagedRole,
   department: string | null,
   specialization: string | null,
+  programType: string | null,
 ) {
+  if (role === UserRole.STUDENT) {
+    if (!programType) {
+      throw new AdminUserManagementError("Program type is required for student accounts.", 400);
+    }
+    await tx.student.create({
+      data: {
+        userId,
+        programType: programType as ProgramType,
+        enrollmentDate: new Date(),
+        academicStatus: "ACTIVE",
+      },
+    });
+    return;
+  }
   if (role === UserRole.SUPERVISOR) {
     await tx.supervisor.create({
       data: {
@@ -129,19 +149,28 @@ export async function listAdminManagedUsers(role?: string): Promise<AdminUserLis
     include: {
       supervisor: {
         select: {
+          id: true,
           department: true,
           specialization: true,
         },
       },
       examiner: {
         select: {
+          id: true,
           department: true,
           specialization: true,
         },
       },
       administrator: {
         select: {
+          id: true,
           department: true,
+        },
+      },
+      student: {
+        select: {
+          id: true,
+          programType: true,
         },
       },
     },
@@ -165,6 +194,9 @@ export async function listAdminManagedUsers(role?: string): Promise<AdminUserLis
       null,
     specialization:
       user.supervisor?.specialization ?? user.examiner?.specialization ?? null,
+    programType: user.student?.programType ?? null,
+    studentId: user.student?.id ?? null,
+    supervisorId: user.supervisor?.id ?? null,
   }));
 }
 
@@ -176,6 +208,7 @@ export async function createAdminManagedUser(input: CreateAdminUserInput) {
   const displayName = input.displayName.trim();
   const department = normalizeOptionalText(input.department);
   const specialization = normalizeOptionalText(input.specialization);
+  const programType = normalizeOptionalText(input.programType);
 
   if (!email || !displayName) {
     throw new AdminUserManagementError("Email and display name are required.", 400);
@@ -223,7 +256,7 @@ export async function createAdminManagedUser(input: CreateAdminUserInput) {
         },
       });
 
-      await createRoleProfile(tx, user.id, role, department, specialization);
+      await createRoleProfile(tx, user.id, role, department, specialization, programType);
 
       return user;
     });
@@ -292,6 +325,7 @@ export async function deactivateAdminManagedUser(userId: string): Promise<User> 
   }
 
   if (
+    existingUser.role !== UserRole.STUDENT &&
     existingUser.role !== UserRole.SUPERVISOR &&
     existingUser.role !== UserRole.EXAMINER &&
     existingUser.role !== UserRole.ADMINISTRATOR

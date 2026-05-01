@@ -20,7 +20,7 @@ vi.mock("@/lib/prisma/client", () => ({
 
 import { getAuth } from "firebase-admin/auth";
 
-import { POST } from "@/app/api/auth/session/route";
+import { PATCH, POST } from "@/app/api/auth/session/route";
 import { prisma } from "@/lib/prisma/client";
 
 describe("POST /api/auth/session", () => {
@@ -90,5 +90,64 @@ describe("POST /api/auth/session", () => {
       error: "Your account is inactive. Please contact an administrator.",
     });
     expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("refreshes the session activity window when the cookie is still active", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-01T10:00:00.000Z"));
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "user-1",
+      isActive: true,
+      role: "STUDENT",
+      firebaseUid: "firebase-student-1",
+    } as never);
+
+    vi.mocked(getAuth).mockReturnValue({
+      verifySessionCookie: vi.fn().mockResolvedValue({
+        uid: "firebase-student-1",
+        role: "STUDENT",
+      }),
+    } as never);
+
+    const now = new Date("2026-05-01T10:00:00.000Z").getTime();
+    const response = await PATCH(
+      new Request("http://localhost/api/auth/session", {
+        method: "PATCH",
+        headers: {
+          cookie: `pgsms_session=session-cookie-value; pgsms_session_activity=${now}`,
+        },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toContain(
+      "pgsms_session_activity=",
+    );
+
+    vi.useRealTimers();
+  });
+
+  it("expires the session when the inactivity window is older than 30 minutes", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-01T10:00:00.000Z"));
+
+    const staleActivityAt = new Date("2026-05-01T09:29:59.000Z").getTime();
+    const response = await PATCH(
+      new Request("http://localhost/api/auth/session", {
+        method: "PATCH",
+        headers: {
+          cookie: `pgsms_session=session-cookie-value; pgsms_session_activity=${staleActivityAt}`,
+        },
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Session expired due to inactivity.",
+    });
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
+
+    vi.useRealTimers();
   });
 });

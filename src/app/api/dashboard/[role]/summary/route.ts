@@ -13,9 +13,13 @@ type RouteParams = {
 
 export async function GET(
   request: NextRequest,
-  context: { params: RouteParams },
+  context: { params?: RouteParams },
 ) {
-  const requestedRole = context.params.role;
+  const requestedRole = context.params?.role;
+
+  if (!requestedRole) {
+    return NextResponse.json({ error: "Dashboard role is required." }, { status: 400 });
+  }
 
   if (!isDashboardRole(requestedRole)) {
     return NextResponse.json({ error: "Unknown dashboard role." }, { status: 404 });

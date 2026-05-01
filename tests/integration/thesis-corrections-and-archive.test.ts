@@ -22,6 +22,9 @@ vi.mock("@/lib/email", () => ({
   notifyCorrectionSubmittedToAdministrator: vi.fn().mockResolvedValue({
     success: true,
   }),
+  notifyThesisArchived: vi.fn().mockResolvedValue({
+    success: true,
+  }),
 }));
 
 vi.mock("@/lib/prisma/client", () => ({
@@ -38,6 +41,9 @@ vi.mock("@/lib/prisma/client", () => ({
     },
     student: {
       findUnique: vi.fn(),
+    },
+    notification: {
+      create: vi.fn().mockResolvedValue({ id: "notif-1" }),
     },
     $transaction: vi.fn(),
   },
@@ -138,6 +144,11 @@ describe("thesis corrections and archive integration", () => {
       studentId: "student-1",
       student: {
         academicStatus: AcademicStatus.ACTIVE,
+        user: {
+          id: "user-student-1",
+          email: "student1@example.com",
+          displayName: "Student One",
+        },
       },
       corrections: [
         {

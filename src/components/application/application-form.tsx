@@ -58,60 +58,56 @@ export function ApplicationForm() {
     setIsUploadingDocument(true);
 
     try {
-      const uploadUrlResponse = await fetch("/api/applications/upload-url", {
+      const formData = new FormData();
+      formData.append("draftId", draftId);
+      formData.append("file", file);
+
+      const uploadResponse = await fetch("/api/applications/upload", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          draftId,
-          fileName: file.name,
-          contentType: file.type,
-          fileSizeBytes: file.size,
-        }),
+        body: formData,
       });
-      const uploadUrlPayload = (await uploadUrlResponse.json()) as {
+
+      const uploadPayload = (await uploadResponse.json()) as {
         error?: string;
-        signedUrl?: string;
         storagePath?: string;
+        fileName?: string;
+        mimeType?: "application/pdf";
+        sizeBytes?: number;
       };
 
       if (
-        !uploadUrlResponse.ok ||
-        !uploadUrlPayload.signedUrl ||
-        !uploadUrlPayload.storagePath
+        !uploadResponse.ok ||
+        !uploadPayload.storagePath ||
+        !uploadPayload.fileName ||
+        !uploadPayload.mimeType ||
+        typeof uploadPayload.sizeBytes !== "number"
       ) {
-        throw new Error(
-          uploadUrlPayload.error ?? "Unable to prepare the file upload.",
-        );
+        throw new Error(uploadPayload.error ?? "Unable to upload the selected document.");
       }
 
-      const uploadResponse = await fetch(uploadUrlPayload.signedUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-        },
-        body: file,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("File upload failed.");
-      }
+      const {
+        storagePath,
+        fileName,
+        mimeType,
+        sizeBytes,
+      } = uploadPayload;
 
       setDocuments((current) => [
         ...current,
         {
-          fileName: file.name,
-          storagePath: uploadUrlPayload.storagePath,
-          mimeType: "application/pdf",
-          sizeBytes: file.size,
+          fileName,
+          storagePath,
+          mimeType,
+          sizeBytes,
         },
       ]);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to upload the selected document.",
+        error instanceof TypeError
+          ? "Unable to reach the upload service. Please try again."
+          : error instanceof Error
+            ? error.message
+            : "Unable to upload the selected document.",
       );
     } finally {
       setIsUploadingDocument(false);

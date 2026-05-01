@@ -3,11 +3,25 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import {
   assignSupervisorToStudent,
+  getAllStudentAssignments,
   SupervisorAssignmentError,
 } from "@/lib/assignments/supervisors";
 import { withAuth } from "@/lib/firebase/with-auth";
 
+export const GET = withAuth(async (request: NextRequest, context) => {
+  try {
+    const students = await getAllStudentAssignments(context.auth);
+    return NextResponse.json({ students });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Unable to load student assignments." },
+      { status: 500 },
+    );
+  }
+}, [UserRole.ADMINISTRATOR]);
+
 export const POST = withAuth(async (request: NextRequest, context) => {
+
   const body = await request.json();
 
   try {
@@ -15,6 +29,7 @@ export const POST = withAuth(async (request: NextRequest, context) => {
 
     return NextResponse.json({ assignment }, { status: 201 });
   } catch (error) {
+    console.error("[SupervisorAssignmentAPI]", error);
     if (error instanceof SupervisorAssignmentError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }

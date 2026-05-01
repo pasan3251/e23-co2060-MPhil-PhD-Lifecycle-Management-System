@@ -1,7 +1,11 @@
 import { ApplicationStatus } from "@prisma/client";
 
 const validTransitions: Record<ApplicationStatus, ApplicationStatus[]> = {
-  [ApplicationStatus.SUBMITTED]: [ApplicationStatus.UNDER_REVIEW],
+  [ApplicationStatus.SUBMITTED]: [
+    ApplicationStatus.UNDER_REVIEW,
+    ApplicationStatus.ADMITTED,
+    ApplicationStatus.REJECTED,
+  ],
   [ApplicationStatus.UNDER_REVIEW]: [
     ApplicationStatus.ADMITTED,
     ApplicationStatus.REJECTED,

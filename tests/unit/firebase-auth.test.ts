@@ -14,6 +14,12 @@ import {
   buildSessionCookieOptions,
   verifyFirebaseToken,
 } from "@/lib/firebase/admin";
+import {
+  SESSION_ACTIVITY_COOKIE_NAME,
+  SESSION_INACTIVITY_TIMEOUT_MS,
+  buildSessionActivityValue,
+  hasSessionExpiredByInactivity,
+} from "@/lib/security/session";
 import { getAuth } from "firebase-admin/auth";
 
 describe("verifyFirebaseToken", () => {
@@ -45,5 +51,26 @@ describe("buildSessionCookieOptions", () => {
       sameSite: "lax",
       path: "/",
     });
+  });
+});
+
+describe("session inactivity helpers", () => {
+  it("treats missing or stale activity cookies as expired after 30 minutes", () => {
+    const now = new Date("2026-05-01T10:00:00.000Z").getTime();
+
+    expect(hasSessionExpiredByInactivity(null, now)).toBe(true);
+    expect(
+      hasSessionExpiredByInactivity(
+        buildSessionActivityValue(now - SESSION_INACTIVITY_TIMEOUT_MS + 1),
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      hasSessionExpiredByInactivity(
+        buildSessionActivityValue(now - SESSION_INACTIVITY_TIMEOUT_MS - 1),
+        now,
+      ),
+    ).toBe(true);
+    expect(SESSION_ACTIVITY_COOKIE_NAME).toBe("pgsms_session_activity");
   });
 });

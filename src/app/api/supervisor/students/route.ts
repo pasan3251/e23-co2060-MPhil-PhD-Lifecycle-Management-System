@@ -19,6 +19,7 @@ export const GET = withAuth(async (request: NextRequest, context) => {
 
     return NextResponse.json({ students });
   } catch (error) {
+    console.error("[SupervisorStudentsAPI]", error);
     if (error instanceof SupervisorStudentsError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }

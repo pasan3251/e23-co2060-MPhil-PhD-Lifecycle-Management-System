@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { UserRole } from "@prisma/client";
 
+import { withAuth } from "@/lib/firebase/with-auth";
+import { prisma } from "@/lib/prisma/client";
 import {
   ApplicationSubmissionError,
   createApplicationSubmission,
 } from "@/lib/applications/submission";
+import { createServerErrorResponse } from "@/lib/http/errors";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -25,9 +29,42 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
 
-    return NextResponse.json(
-      { error: "Unable to submit the application." },
-      { status: 500 },
-    );
+    return createServerErrorResponse({
+      error,
+      message: "Unable to submit the application.",
+      route: "/api/applications",
+      method: "POST",
+    });
   }
 }
+
+export const GET = withAuth(
+  async (request) => {
+    try {
+      const { searchParams } = new URL(request.url);
+      const statusParam = searchParams.get("status");
+
+      const whereClause = {
+        isArchived: false,
+        ...(statusParam ? { status: statusParam as any } : {}),
+      };
+
+      const applications = await prisma.application.findMany({
+        where: whereClause,
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      return NextResponse.json({ applications });
+    } catch (error) {
+      return createServerErrorResponse({
+        error,
+        message: "Unable to retrieve applications.",
+        route: "/api/applications",
+        method: "GET",
+      });
+    }
+  },
+  [UserRole.ADMINISTRATOR],
+);

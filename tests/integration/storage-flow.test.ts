@@ -1,16 +1,43 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("firebase-admin/app", () => ({
-  cert: vi.fn(() => "mock-cert"),
-  getApps: vi.fn(() => [{ name: "pgsms-firebase-admin" }]),
-  initializeApp: vi.fn(),
-}));
+const storageObjects = new Map<string, Uint8Array>();
 
-vi.mock("firebase-admin/storage", () => ({
-  getStorage: vi.fn(),
-}));
+const mockCreateSignedUploadUrl = vi.fn(async (filePath: string) => {
+  return {
+    data: {
+      signedUrl: `https://storage.example.test/write?path=${encodeURIComponent(filePath)}`,
+    },
+    error: null,
+  };
+});
 
-import { getStorage } from "firebase-admin/storage";
+const mockCreateSignedUrl = vi.fn(async (filePath: string) => {
+  return {
+    data: {
+      signedUrl: `https://storage.example.test/read?path=${encodeURIComponent(filePath)}`,
+    },
+    error: null,
+  };
+});
+
+const mockRemove = vi.fn(async (paths: string[]) => {
+  for (const path of paths) {
+    storageObjects.delete(path);
+  }
+  return { error: null };
+});
+
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: vi.fn(() => ({
+    storage: {
+      from: vi.fn(() => ({
+        createSignedUploadUrl: mockCreateSignedUploadUrl,
+        createSignedUrl: mockCreateSignedUrl,
+        remove: mockRemove,
+      })),
+    },
+  })),
+}));
 
 import {
   MAX_STORAGE_FILE_SIZE_BYTES,
@@ -18,30 +45,19 @@ import {
   assertFileUploadConstraints,
   generateDownloadSignedUrl,
   generateUploadSignedUrl,
+  resetSupabaseClientForTests,
 } from "@/lib/storage";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 describe("storage upload flow", () => {
-  const storageObjects = new Map<string, Uint8Array>();
-
   beforeEach(() => {
     vi.clearAllMocks();
     storageObjects.clear();
+    resetSupabaseClientForTests();
 
-    vi.mocked(getStorage).mockReturnValue({
-      bucket: vi.fn(() => ({
-        file: vi.fn((filePath: string) => ({
-          getSignedUrl: vi.fn(async ({ action }: { action: "write" | "read" }) => {
-            return [
-              `https://storage.example.test/${action}?path=${encodeURIComponent(filePath)}`,
-            ];
-          }),
-          delete: vi.fn(async () => {
-            storageObjects.delete(filePath);
-          }),
-        })),
-      })),
-    } as never);
+    vi.stubEnv("SUPABASE_URL", "https://xyz.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "mock-key");
+    vi.stubEnv("SUPABASE_STORAGE_BUCKET", "demo-bucket");
   });
 
   it("simulates generating a signed upload URL and uploading a mock file via PUT", async () => {
