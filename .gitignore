@@ -90,6 +90,26 @@ reporting-buffer/
 *.reporting-buffer
 overdue-progress*.csv
 *.overdue-progress.csv
+thesis-upload*.pdf.tmp
+*.thesis-upload.pdf.tmp
+thesis-metadata-cache/
+*.thesis-metadata.json
+examiner-download-cache/
+*.examiner-download.cache
+viva-session-token*.tmp
+*.viva-session-token.tmp
+examiner-viva-report/
+correction-buffer*.pdf
+*.correction-buffer.pdf
+correction-review*.log
+*.correction-review.log
+prisma/migrations/*.local
+prisma/migrations/*.tmp
+
+# Viva scheduling local testing
+*.cal-sync.log
+*.invitation-buffer.tmp
+viva-test-data.json
 
 # editor
 .vscode/

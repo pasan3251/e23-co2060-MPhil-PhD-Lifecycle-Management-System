@@ -1,4 +1,10 @@
-import { DocumentType, ThesisStatus, UserRole } from "@prisma/client";
+import {
+  DocumentType,
+  NotificationDeliveryStatus,
+  NotificationEvent,
+  ThesisStatus,
+  UserRole,
+} from "@prisma/client";
 
 import { prisma } from "@/lib/prisma/client";
 import {
@@ -158,6 +164,96 @@ function mapThesisDocumentRecord(record: ThesisDocumentRecord) {
   };
 }
 
+async function writeThesisDownloadAuditLog(input: {
+  examinerUserId: string;
+  thesisId: string;
+  storagePath: string;
+}) {
+  try {
+    await prisma.notificationLog.create({
+      data: {
+        recipientId: input.examinerUserId,
+        event: NotificationEvent.THESIS_DOWNLOADED,
+        subject: `Thesis download accessed: ${input.thesisId}`,
+        deliveryStatus: NotificationDeliveryStatus.SENT,
+        metadata: {
+          thesisId: input.thesisId,
+          storagePath: input.storagePath,
+          downloadedAt: new Date().toISOString(),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Failed to write thesis download audit log.", error);
+  }
+}
+
+export async function getThesisVersions(
+  thesisId: string,
+  auth: AuthenticatedUserContext,
+) {
+  const thesis = await findThesisAccessRecord(thesisId);
+
+  if (!thesis) {
+    throw new ThesisVersionError("Thesis not found.", 404);
+  }
+
+  checkAccess(auth, thesis);
+  assertSingleCurrentThesisDocument(thesis.documents);
+
+  return {
+    thesis: {
+      id: thesis.id,
+      title: thesis.title,
+      status: thesis.status,
+      student: {
+        id: thesis.student.id,
+        displayName: thesis.student.user.displayName,
+        email: thesis.student.user.email,
+      },
+    },
+    versions: thesis.documents.map(mapThesisDocumentRecord),
+  };
+}
+
+export async function getThesisVersionDownloadUrl(
+  thesisId: string,
+  version: number,
+  auth: AuthenticatedUserContext,
+) {
+  if (!Number.isInteger(version) || version <= 0) {
+    throw new ThesisVersionError("Invalid thesis version number.", 400);
+  }
+
+  const thesis = await findThesisAccessRecord(thesisId);
+
+  if (!thesis) {
+    throw new ThesisVersionError("Thesis not found.", 404);
+  }
+
+  checkAccess(auth, thesis);
+  assertSingleCurrentThesisDocument(thesis.documents);
+
+  const document = thesis.documents.find((record) => record.version === version);
+
+  if (!document) {
+    throw new ThesisVersionError("Thesis version not found.", 404);
+  }
+
+  const downloadUrl = await generateDownloadSignedUrl(document.storagePath);
+
+  return {
+    thesis: {
+      id: thesis.id,
+      title: thesis.title,
+      status: thesis.status,
+    },
+    version: mapThesisDocumentRecord(document),
+    downloadUrl,
+    expiresInMinutes: STORAGE_URL_EXPIRATION_MS / (60 * 1000),
+  };
+}
+
 export async function getCurrentThesisDownloadUrl(
   thesisId: string,
   auth: AuthenticatedUserContext,
@@ -178,6 +274,14 @@ export async function getCurrentThesisDownloadUrl(
   }
 
   const downloadUrl = await generateDownloadSignedUrl(document.storagePath);
+
+  if (auth.role === UserRole.EXAMINER) {
+    await writeThesisDownloadAuditLog({
+      examinerUserId: auth.userId,
+      thesisId: thesis.id,
+      storagePath: document.storagePath,
+    });
+  }
 
   return {
     thesis: {

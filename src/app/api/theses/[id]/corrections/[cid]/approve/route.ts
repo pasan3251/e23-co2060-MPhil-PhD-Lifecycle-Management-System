@@ -3,33 +3,35 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { withAuth } from "@/lib/firebase/with-auth";
 import {
-  getCurrentThesisDownloadUrl,
-  ThesisVersionError,
-} from "@/lib/theses/versions";
+  approveCorrectionDocument,
+  ThesisCorrectionError,
+} from "@/lib/theses/corrections";
 
 type RouteParams = {
   id: string;
+  cid: string;
 };
 
-export const GET = withAuth<RouteParams>(
+export const PATCH = withAuth<RouteParams>(
   async (_request: NextRequest, context) => {
     try {
-      const payload = await getCurrentThesisDownloadUrl(
+      const correction = await approveCorrectionDocument(
         context.params?.id ?? "",
+        context.params?.cid ?? "",
         context.auth,
       );
 
-      return NextResponse.json(payload);
+      return NextResponse.json({ correction });
     } catch (error) {
-      if (error instanceof ThesisVersionError) {
+      if (error instanceof ThesisCorrectionError) {
         return NextResponse.json({ error: error.message }, { status: error.status });
       }
 
       return NextResponse.json(
-        { error: "Unable to create the thesis download URL." },
+        { error: "Unable to approve the correction document." },
         { status: 500 },
       );
     }
   },
-  [UserRole.EXAMINER],
+  [UserRole.ADMINISTRATOR],
 );

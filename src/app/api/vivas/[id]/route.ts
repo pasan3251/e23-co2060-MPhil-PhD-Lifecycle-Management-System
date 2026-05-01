@@ -2,10 +2,7 @@ import { UserRole } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { withAuth } from "@/lib/firebase/with-auth";
-import {
-  getCurrentThesisDownloadUrl,
-  ThesisVersionError,
-} from "@/lib/theses/versions";
+import { getAdminVivaDetails, getExaminerVivaWorkspace, VivaWorkflowError } from "@/lib/vivas";
 
 type RouteParams = {
   id: string;
@@ -14,22 +11,30 @@ type RouteParams = {
 export const GET = withAuth<RouteParams>(
   async (_request: NextRequest, context) => {
     try {
-      const payload = await getCurrentThesisDownloadUrl(
+      if (context.auth.role === UserRole.ADMINISTRATOR) {
+        const payload = await getAdminVivaDetails(
+          context.params?.id ?? "",
+          context.auth,
+        );
+        return NextResponse.json(payload);
+      }
+
+      const payload = await getExaminerVivaWorkspace(
         context.params?.id ?? "",
         context.auth,
       );
 
       return NextResponse.json(payload);
     } catch (error) {
-      if (error instanceof ThesisVersionError) {
+      if (error instanceof VivaWorkflowError) {
         return NextResponse.json({ error: error.message }, { status: error.status });
       }
 
       return NextResponse.json(
-        { error: "Unable to create the thesis download URL." },
+        { error: "Unable to load the viva workspace." },
         { status: 500 },
       );
     }
   },
-  [UserRole.EXAMINER],
+  [UserRole.EXAMINER, UserRole.ADMINISTRATOR],
 );

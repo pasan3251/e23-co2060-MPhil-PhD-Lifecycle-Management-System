@@ -19,6 +19,9 @@ vi.mock("@/lib/prisma/client", () => ({
     user: {
       findUnique: vi.fn(),
     },
+    notificationLog: {
+      create: vi.fn(),
+    },
     thesis: {
       findUnique: vi.fn(),
     },
