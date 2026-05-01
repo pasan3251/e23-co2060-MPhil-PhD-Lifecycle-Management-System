@@ -481,7 +481,14 @@ async function buildExaminerSummary(
 }
 
 async function buildAdminSummary(): Promise<DashboardSummary> {
-  const [activeStaffAccounts, pendingApplications, archivedTheses, failedNotifications] =
+  const [
+    activeStaffAccounts,
+    pendingApplications,
+    archivedTheses,
+    failedNotifications,
+    overdueProgressReports,
+    studentsUnderReview,
+  ] =
     await Promise.all([
       prisma.user.count({
         where: {
@@ -517,6 +524,18 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
           deliveryStatus: NotificationDeliveryStatus.FAILED,
         },
       }),
+      prisma.progressReport.count({
+        where: {
+          isOverdue: true,
+          isArchived: false,
+        },
+      }),
+      prisma.student.count({
+        where: {
+          academicStatus: AcademicStatus.UNDER_REVIEW,
+          isArchived: false,
+        },
+      }),
     ]);
 
   return {
@@ -548,6 +567,22 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
         "Theses already archived or formally closed in the lifecycle.",
         archivedTheses > 0 ? "Archive active" : "No archived theses",
         archivedTheses > 0 ? "info" : "neutral",
+      ),
+      buildCard(
+        "admin-overdue-progress-reports",
+        "Overdue Progress Reports",
+        overdueProgressReports,
+        "Progress reports that have already missed submission expectations and need follow-up.",
+        overdueProgressReports > 0 ? "Follow-up needed" : "Clear",
+        overdueProgressReports > 0 ? "warning" : "success",
+      ),
+      buildCard(
+        "admin-students-under-review",
+        "Students Under Review",
+        studentsUnderReview,
+        "Students automatically flagged for academic review after repeated failing panel evaluations.",
+        studentsUnderReview > 0 ? "Intervention needed" : "Stable",
+        studentsUnderReview > 0 ? "warning" : "success",
       ),
       buildCard(
         "admin-failed-notifications",
