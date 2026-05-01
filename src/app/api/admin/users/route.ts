@@ -13,6 +13,7 @@ const createAdminUserSchema = z.object({
   email: z.string().email("Enter a valid email address."),
   displayName: z.string().min(1, "Display name is required."),
   role: z.enum([
+    UserRole.STUDENT,
     UserRole.SUPERVISOR,
     UserRole.EXAMINER,
     UserRole.ADMINISTRATOR,

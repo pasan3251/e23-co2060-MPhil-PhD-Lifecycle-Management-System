@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma/client";
 import { isAppUserRole } from "@/types/auth";
 
 const ADMIN_MANAGED_ROLES = [
+  UserRole.STUDENT,
   UserRole.SUPERVISOR,
   UserRole.EXAMINER,
   UserRole.ADMINISTRATOR,
@@ -51,7 +52,7 @@ export class AdminUserManagementError extends Error {
 function assertAdminManagedRole(role: string): asserts role is AdminManagedRole {
   if (!ADMIN_MANAGED_ROLES.includes(role as AdminManagedRole)) {
     throw new AdminUserManagementError(
-      "Only SUPERVISOR, EXAMINER, and ADMINISTRATOR accounts can be created here.",
+      "Unsupported role for this management flow.",
       400,
     );
   }
@@ -87,6 +88,18 @@ async function createRoleProfile(
   department: string | null,
   specialization: string | null,
 ) {
+  if (role === UserRole.STUDENT) {
+    await tx.student.create({
+      data: {
+        userId,
+        programType: "MPHIL", // Default for admin-created students
+        enrollmentDate: new Date(),
+        academicStatus: "ACTIVE",
+      },
+    });
+    return;
+  }
+
   if (role === UserRole.SUPERVISOR) {
     await tx.supervisor.create({
       data: {
@@ -292,6 +305,7 @@ export async function deactivateAdminManagedUser(userId: string): Promise<User> 
   }
 
   if (
+    existingUser.role !== UserRole.STUDENT &&
     existingUser.role !== UserRole.SUPERVISOR &&
     existingUser.role !== UserRole.EXAMINER &&
     existingUser.role !== UserRole.ADMINISTRATOR

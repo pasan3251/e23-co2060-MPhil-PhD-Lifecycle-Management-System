@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 
 const adminManagedRoles = [
+  "STUDENT",
   "SUPERVISOR",
   "EXAMINER",
   "ADMINISTRATOR",
@@ -192,8 +193,7 @@ export function UserManagementPanel() {
           </p>
           <h1 className="text-3xl font-semibold text-white">Manage staff accounts</h1>
           <p className="max-w-2xl text-sm text-slate-300">
-            Create and deactivate supervisor, examiner, and administrator accounts.
-            Student onboarding stays outside this flow by design.
+            Create and manage student, supervisor, examiner, and administrator accounts.
           </p>
         </div>
 
@@ -206,6 +206,7 @@ export function UserManagementPanel() {
             className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 outline-none focus:border-sky-400"
           >
             <option value="ALL">All roles</option>
+            <option value="STUDENT">Students</option>
             <option value="SUPERVISOR">Supervisors</option>
             <option value="EXAMINER">Examiners</option>
             <option value="ADMINISTRATOR">Administrators</option>
@@ -308,8 +309,7 @@ export function UserManagementPanel() {
               <div>
                 <h2 className="text-2xl font-semibold text-white">Create New User</h2>
                 <p className="mt-2 text-sm text-slate-400">
-                  Available roles here are limited to supervisors, examiners, and
-                  administrators.
+                  Select the appropriate role for the new user.
                 </p>
               </div>
               <button
@@ -367,6 +367,7 @@ export function UserManagementPanel() {
                     }
                     className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
                   >
+                    <option value="STUDENT">Student</option>
                     <option value="SUPERVISOR">Supervisor</option>
                     <option value="EXAMINER">Examiner</option>
                     <option value="ADMINISTRATOR">Administrator</option>
