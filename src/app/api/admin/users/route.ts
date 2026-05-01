@@ -13,12 +13,14 @@ const createAdminUserSchema = z.object({
   email: z.string().email("Enter a valid email address."),
   displayName: z.string().min(1, "Display name is required."),
   role: z.enum([
+    UserRole.STUDENT,
     UserRole.SUPERVISOR,
     UserRole.EXAMINER,
     UserRole.ADMINISTRATOR,
   ]),
   department: z.string().optional().nullable(),
   specialization: z.string().optional().nullable(),
+  programType: z.enum(["MPHIL", "PHD", "MSC", "MENG"]).optional().nullable(),
 });
 
 export const GET = withAuth(async (request: NextRequest) => {
