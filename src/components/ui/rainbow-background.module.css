@@ -1,0 +1,49 @@
+.wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: white; /* The rainbow effect looks best on white or very light backgrounds */
+  overflow: hidden;
+}
+
+.rainbow {
+  height: 100vh;
+  width: 0;
+  top: 0;
+  position: absolute;
+  transform: rotate(10deg);
+  transform-origin: top right;
+  pointer-events: none;
+}
+
+@keyframes slide {
+  from {
+    right: -25vw;
+  }
+  to {
+    right: 125vw;
+  }
+}
+
+.h {
+  box-shadow: 0 0 50vh 40vh white;
+  width: 100vw;
+  height: 0;
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  z-index: 2;
+}
+
+.v {
+  box-shadow: 0 0 35vw 25vw white;
+  width: 0;
+  height: 100vh;
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  z-index: 2;
+}

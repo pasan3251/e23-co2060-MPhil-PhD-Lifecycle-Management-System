@@ -1,0 +1,62 @@
+.applyButton {
+  position: relative;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  border-radius: 0.8em;
+  cursor: pointer;
+  border: none;
+  background: linear-gradient(to right, #2de287, #2bb1ff);
+  color: white;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: transform 0.1s ease;
+  box-shadow: 0 4px 15px rgba(142, 45, 226, 0.3);
+}
+
+.applyButton span {
+  position: relative;
+  z-index: 10;
+  transition: color 0.4s;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.8em 1.5em;
+}
+
+.applyButton svg {
+  width: 1.2em;
+  height: 1.2em;
+  margin-right: 0.6em;
+  position: relative;
+  z-index: 10;
+  transition: transform 0.4s;
+}
+
+.applyButton::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -10%;
+  width: 120%;
+  height: 100%;
+  z-index: 1;
+  background: #000;
+  transform: skew(30deg);
+  transition: transform 0.4s cubic-bezier(0.3, 1, 0.8, 1);
+}
+
+.applyButton:hover::before {
+  transform: translate3d(100%, 0, 0);
+}
+
+.applyButton:hover svg {
+  transform: translateX(2px);
+}
+
+.applyButton:active {
+  transform: scale(0.95);
+}
