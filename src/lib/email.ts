@@ -293,7 +293,6 @@ export function buildProposalEvaluationSubmittedTemplate(input: {
 
   return { subject, html, text };
 }
-
 export async function notifyRegistrationExpiry(input: {
   recipientUserId: string;
   to: string;

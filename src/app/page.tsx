@@ -4,6 +4,9 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-6 py-24 text-slate-50">
       <div className="max-w-3xl space-y-8 text-center">
+        <span className="inline-flex rounded-full border border-slate-700 px-4 py-1 text-sm font-medium text-slate-300">
+          PB-001 Foundation Ready
+        </span>
         <h1 className="text-4xl font-bold tracking-tight sm:text-6xl bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
           Postgraduate Lifecycle Platform
         </h1>
