@@ -1,127 +1,69 @@
-# MPhil/PhD Lifecycle Management System
+# Testing Guide: Admin & Student Portals
 
-A Next.js-based lifecycle management platform for handling postgraduate research workflows across students, supervisors, examiners, and administrators.
+This guide explains how to set up and test the different user roles in the PGSMS application.
 
-## Overview
+## 1. Initial Setup
 
-This branch contains the early project foundation and core platform work for:
+Before testing, ensure you have the project dependencies and the database client generated:
 
-- project scaffolding with Next.js App Router
-- Prisma domain modeling for the postgraduate lifecycle
-- Firebase authentication and role-based access control
-- Firebase Storage utilities for protected document handling
-- SMTP email integration and notification logging
-- administrator user management
-- role-specific dashboard home pages
-
-## Tech Stack
-
-- Frontend: Next.js 14, React 18, TypeScript
-- Styling: Tailwind CSS
-- Backend: Next.js Route Handlers
-- Database ORM: Prisma
-- Database: PostgreSQL
-- Authentication: Firebase Auth, Firebase Admin SDK
-- File Storage: Firebase Cloud Storage
-- Email: Nodemailer (SMTP)
-- Testing: Vitest, Testing Library, Playwright
-
-## Project Structure
-
-```text
-src/
-  app/
-    (auth)/
-    (dashboard)/
-    api/
-  components/
-    admin/
-    auth/
-    dashboard/
-    ui/
-  lib/
-    admin/
-    dashboard/
-    firebase/
-    prisma/
-  types/
-
-prisma/
-tests/
-```
-
-## Implemented Areas
-
-- `PB-001` Project foundation and directory scaffolding
-- `PB-002` Prisma ORM schema and domain model setup
-- `PB-003` Firebase Auth integration and custom claims
-- `PB-004` RBAC middleware for protected route handlers
-- `PB-005` Firebase Storage utilities and rules
-- `PB-006` SMTP email integration and notification logging
-- `PB-010` Firebase login page and session management
-- `PB-011` Administrator user management
-- `PB-012` Role-specific dashboard home pages
-
-## Environment Variables
-
-Create a local `.env` file based on `.env.example`.
-
-Important variables include:
-
-- `DATABASE_URL`
-- Firebase client credentials
-- Firebase admin credentials
-- `FIREBASE_STORAGE_BUCKET`
-- SMTP credentials
-- `SESSION_COOKIE_NAME`
-- `APP_BASE_URL`
-
-## Getting Started
-
-Install dependencies:
-
-```bash
+```powershell
+# Install dependencies
 npm install
-```
 
-Generate Prisma client:
-
-```bash
+# Generate Prisma Client
 npx prisma generate
-```
 
-Run database migrations:
-
-```bash
-npx prisma migrate dev --name init_schema
-```
-
-Start the development server:
-
-```bash
+# Start development server
 npm run dev
 ```
 
-Open the app at `http://localhost:3000`.
+> **Note:** You must obtain the `.env` file from the team lead. This file is excluded from Git for security reasons.
 
-## Available Scripts
+## 2. Pre-configured Test Accounts
 
-- `npm run dev` - start the development server
-- `npm run build` - create a production build
-- `npm run start` - start the production server
-- `npm run lint` - run linting
-- `npm test` - run Vitest
-- `npm run test:unit` - run unit tests
-- `npm run test:integration` - run integration tests
-- `npm run prisma:generate` - generate Prisma client
-- `npm run prisma:migrate` - run Prisma migrations
+Since we use a shared database and Firebase project, you can use these existing accounts:
 
-## Notes
+### Administrator
+- **Email**: `admin@gmail.com`
+- **Password**: `123456`
+- **URL**: `http://localhost:3001/dashboard/admin`
 
-- Firebase, PostgreSQL, and SMTP must be configured before auth, storage, and email flows can work end-to-end.
-- Some tests and runtime flows depend on local database and Firebase setup.
-- Playwright end-to-end tests should be run separately from Vitest.
+### Student
+- **Email**: `student@gmail.com`
+- **URL**: `http://localhost:3001/dashboard/student`
 
-## Branch
+---
 
-This README was added on the `alternate` branch.
+## 3. Creating New Test Users
+
+If you need to create your own test accounts, follow these steps:
+
+1.  **Firebase Console**: Manually add a new user in the Firebase Authentication tab with an email and password.
+2.  **Sync to Database**: Run the corresponding script to assign the role and create the database profile:
+
+#### To create an Admin:
+```powershell
+node scripts/seed-admin.js your-email@example.com
+```
+
+#### To create a Student:
+```powershell
+node scripts/seed-student.js your-email@example.com
+```
+
+## 4. Troubleshooting
+
+### "Invalid or Expired Token"
+If you receive this error during login, it is likely due to a cached session from a deleted user.
+- **Solution**: Open the application in a **New Incognito Window** (Ctrl+Shift+N).
+
+### "404 Not Found" on Dashboard
+Ensure you are using the correct URL prefix. All dashboards are located under `/dashboard/`:
+- ✅ `/dashboard/admin`
+- ❌ `/admin`
+
+### Deleting Test Users
+To completely remove a user from the local PostgreSQL database:
+```powershell
+node scripts/delete-user.js your-email@example.com
+```
