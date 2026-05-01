@@ -127,3 +127,14 @@ viva-test-data.json
 /doc-cache/
 list-prisma.js
 list-users-temp.js
+
+# Notification engine — SMTP logs, email template caches, test data
+*.smtp.log
+*.smtp-debug.log
+/smtp-logs/
+*.email-cache.json
+*.email-template.cache
+/email-cache/
+notification-test-data.json
+*.notification-test.json
+/notification-exports/

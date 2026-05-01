@@ -660,3 +660,85 @@ export async function notifyVivaScheduled(input: {
     ...template,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Application status changed
+// ---------------------------------------------------------------------------
+
+export function buildApplicationStatusChangedTemplate(input: {
+  studentName: string;
+  newStatus: string;
+  programTypeLabel: string;
+}): EmailTemplate {
+  const subject = `Your ${input.programTypeLabel} application status has been updated`;
+  const text = [
+    `Dear ${input.studentName},`,
+    "",
+    `The status of your ${input.programTypeLabel} application has been updated to: ${input.newStatus}.`,
+    "Please sign in to the system to view further details.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.studentName},</p>
+    <p>The status of your <strong>${input.programTypeLabel}</strong> application has been updated to: <strong>${input.newStatus}</strong>.</p>
+    <p>Please sign in to the system to view further details.</p>
+  `;
+
+  return { subject, html, text };
+}
+
+export async function notifyApplicationStatusChanged(input: {
+  recipientUserId: string;
+  to: string;
+  studentName: string;
+  newStatus: string;
+  programTypeLabel: string;
+}) {
+  const template = buildApplicationStatusChangedTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.APPLICATION_STATUS_CHANGED,
+    ...template,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Thesis archived
+// ---------------------------------------------------------------------------
+
+export function buildThesisArchivedTemplate(input: {
+  studentName: string;
+  thesisTitle: string;
+}): EmailTemplate {
+  const subject = `Your thesis has been archived: ${input.thesisTitle}`;
+  const text = [
+    `Dear ${input.studentName},`,
+    "",
+    `Your thesis titled "${input.thesisTitle}" has been successfully archived in the Postgraduate Lifecycle Management System.`,
+    "No further action is required. Congratulations on completing your programme.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.studentName},</p>
+    <p>Your thesis titled <strong>${input.thesisTitle}</strong> has been successfully archived in the Postgraduate Lifecycle Management System.</p>
+    <p>No further action is required. Congratulations on completing your programme.</p>
+  `;
+
+  return { subject, html, text };
+}
+
+export async function notifyThesisArchived(input: {
+  recipientUserId: string;
+  to: string;
+  studentName: string;
+  thesisTitle: string;
+}) {
+  const template = buildThesisArchivedTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.THESIS_ARCHIVED,
+    ...template,
+  });
+}
