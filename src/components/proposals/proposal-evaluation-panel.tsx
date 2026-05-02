@@ -363,14 +363,14 @@ export function ProposalEvaluationPanel({
       {/* Custom Neumorphic Modal */}
       {showConfirmModal.show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md">
-          <div className="w-full max-w-md scale-100 rounded-[40px] border border-gray-300 bg-[#e0e0e0] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all">
-            <h3 className="text-2xl font-bold text-black">
+          <div className="w-full max-w-md scale-100 rounded-[24px] border border-gray-300 bg-white p-8 shadow-[10px_10px_30px_rgba(0,0,0,0.15)] transition-all">
+            <h3 className="text-2xl font-black tracking-tight text-black">
               {showConfirmModal.type === "APPROVED" ? "Confirm Approval" : "Confirm Rejection"}
             </h3>
-            <p className="mt-4 text-lg text-gray-600">
+            <p className="mt-4 text-base font-medium leading-7 text-black/70">
               Are you sure you want to {showConfirmModal.type === "APPROVED" ? "approve" : "reject"} this research proposal?
               {result && (
-                <div className="mt-2 text-black font-bold">
+                <div className="mt-2 font-black text-black">
                   {result.proposal.student.displayName}
                 </div>
               )}
@@ -378,14 +378,16 @@ export function ProposalEvaluationPanel({
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-end">
               <button
                 onClick={() => setShowConfirmModal({ show: false, type: null })}
-                className="rounded-2xl border border-gray-300 bg-[#e0e0e0] px-6 py-3 font-bold text-black shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] transition-all hover:bg-gray-300 active:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]"
+                className="rounded-xl border-2 border-black px-6 py-3 text-xs font-black uppercase tracking-widest text-black transition hover:bg-black hover:text-white"
               >
                 Cancel
               </button>
               <button
                 onClick={showConfirmModal.type === "APPROVED" ? executeApprove : executeReject}
-                className={`rounded-2xl px-6 py-3 font-bold text-white shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] transition-all active:shadow-none ${
-                  showConfirmModal.type === "APPROVED" ? "bg-black hover:bg-gray-800" : "bg-red-600 hover:bg-red-700"
+                className={`rounded-xl border-2 px-6 py-3 text-xs font-black uppercase tracking-widest transition ${
+                  showConfirmModal.type === "APPROVED"
+                    ? "border-black bg-black text-white hover:bg-white hover:text-black"
+                    : "border-black bg-white text-black hover:bg-black hover:text-white"
                 }`}
               >
                 Yes, Proceed
@@ -395,7 +397,7 @@ export function ProposalEvaluationPanel({
         </div>
       )}
 
-      <header className="pb-10 border-b-2 border-gray-300">
+      <header className="border-b-2 border-gray-200 pb-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
@@ -427,7 +429,7 @@ export function ProposalEvaluationPanel({
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-6">
-          <section className="rounded-[24px] border border-gray-200 bg-transparent p-6">
+          <section className="rounded-[24px] border border-gray-300 bg-white p-6">
             <h2 className="text-3xl font-black tracking-tight text-black">
               {isAdmin ? "All pending proposals" : "Assigned student proposals"}
             </h2>
@@ -440,11 +442,11 @@ export function ProposalEvaluationPanel({
             <div className="mt-5 space-y-3">
               {isListLoading ? (
                 <div className="animate-pulse space-y-3">
-                  <div className="h-20 rounded-2xl bg-transparent" />
-                  <div className="h-20 rounded-2xl bg-transparent" />
+                  <div className="h-20 rounded-[24px] border border-gray-300 bg-white" />
+                  <div className="h-20 rounded-[24px] border border-gray-300 bg-white" />
                 </div>
               ) : proposalsToReview.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-base font-bold text-black/40">
+                <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-6 text-center text-base font-bold text-black/40">
                   {isAdmin
                     ? "No proposals are currently pending review."
                     : "No assigned students with active proposals found."}
@@ -454,22 +456,22 @@ export function ProposalEvaluationPanel({
                   <button
                     key={item.id}
                     onClick={() => loadProposalById(item.id)}
-                    className={`group w-full rounded-2xl border p-4 text-left transition ${
+                    className={`group w-full rounded-[24px] border p-5 text-left transition-all ${
                       proposalId === item.id
                         ? "border-2 border-black bg-white"
-                        : "border border-gray-200 bg-transparent hover:bg-black/5"
+                        : "border border-gray-300 bg-white hover:bg-black"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="text-lg font-black tracking-tight text-black group-hover:text-black">
+                        <p className="text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
                           {item.student.displayName}
                         </p>
-                        <p className="mt-1 truncate text-base font-medium text-black/70">
+                        <p className="mt-2 truncate text-base font-medium text-black/70 transition-colors group-hover:text-white/80">
                           {item.title}
                         </p>
                       </div>
-                      <span className="rounded-full border-2 border-black bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-black">
+                      <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
                         V{item.currentVersion} • {item.status.replaceAll("_", " ")}
                       </span>
                     </div>
@@ -481,7 +483,7 @@ export function ProposalEvaluationPanel({
 
           <form
             onSubmit={handleLookup}
-            className="rounded-[24px] border border-gray-200 bg-transparent p-6"
+            className="rounded-[24px] border border-gray-300 bg-white p-6"
           >
             <h2 className="text-3xl font-black tracking-tight text-black">Load proposal</h2>
             <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
@@ -509,7 +511,7 @@ export function ProposalEvaluationPanel({
 
           <form
             onSubmit={handleSubmit}
-            className="rounded-[24px] border border-gray-200 bg-transparent p-6"
+            className="rounded-[24px] border border-gray-300 bg-white p-6"
           >
             <h2 className="text-3xl font-black tracking-tight text-black">
               {isAdmin ? "Finalize decision" : "Submit evaluation"}
@@ -587,19 +589,19 @@ export function ProposalEvaluationPanel({
           </form>
         </div>
 
-        <section className="rounded-[24px] border border-gray-200 bg-transparent p-6">
+        <section className="rounded-[24px] border border-gray-300 bg-white p-6">
           <h2 className="text-3xl font-black tracking-tight text-black">Evaluation history</h2>
           <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
             Existing evaluations and the current aggregate score for admin review.
           </p>
 
           {!result ? (
-            <div className="mt-6 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base font-bold text-black/40">
+            <div className="mt-6 rounded-[24px] border border-dashed border-gray-300 bg-white px-4 py-6 text-base font-bold text-black/40">
               Load a proposal to see its evaluation history.
             </div>
           ) : (
             <div className="mt-6 space-y-5">
-              <div className="rounded-[24px] border border-gray-200 bg-transparent p-5">
+              <div className="rounded-[24px] border border-gray-300 bg-white p-5">
                 <p className="text-base font-black uppercase tracking-[0.18em] text-black/40">
                   Proposal
                 </p>
@@ -615,19 +617,19 @@ export function ProposalEvaluationPanel({
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-[24px] border border-gray-200 bg-transparent p-5">
+                <div className="group rounded-[24px] border border-gray-300 bg-white p-5 transition-all hover:bg-black">
                   <p className="text-base font-black uppercase tracking-[0.18em] text-black/40">
                     Aggregate Score
                   </p>
-                  <p className="mt-2 text-3xl font-black tracking-tight text-black">
+                  <p className="mt-2 text-3xl font-black tracking-tight text-black transition-colors group-hover:text-white">
                     {result.aggregate.averageScore ?? "N/A"}
                   </p>
                 </div>
-                <div className="rounded-[24px] border border-gray-200 bg-transparent p-5">
+                <div className="group rounded-[24px] border border-gray-300 bg-white p-5 transition-all hover:bg-black">
                   <p className="text-base font-black uppercase tracking-[0.18em] text-black/40">
                     Evaluation Count
                   </p>
-                  <p className="mt-2 text-3xl font-black tracking-tight text-black">
+                  <p className="mt-2 text-3xl font-black tracking-tight text-black transition-colors group-hover:text-white">
                     {result.aggregate.evaluationCount}
                   </p>
                 </div>
@@ -635,29 +637,29 @@ export function ProposalEvaluationPanel({
 
               <div className="space-y-3">
                 {result.evaluations.length === 0 ? (
-                  <div className="rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-5 text-base font-bold text-black/40">
+                  <div className="rounded-[24px] border border-dashed border-gray-300 bg-white px-4 py-5 text-base font-bold text-black/40">
                     No evaluations submitted yet.
                   </div>
                 ) : (
                   result.evaluations.map((evaluation) => (
                     <article
                       key={evaluation.id}
-                      className="rounded-[24px] border border-gray-200 bg-transparent px-5 py-5"
+                      className="group rounded-[24px] border border-gray-300 bg-white px-5 py-5 transition-all hover:bg-black"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <p className="text-lg font-black tracking-tight text-black">
+                          <p className="text-lg font-black tracking-tight text-black transition-colors group-hover:text-white">
                             {evaluation.evaluator.displayName}
                           </p>
-                          <p className="mt-1 text-base font-black uppercase tracking-[0.16em] text-black/40">
+                          <p className="mt-1 text-base font-black uppercase tracking-[0.16em] text-black/40 transition-colors group-hover:text-white/70">
                             Submitted {formatDateLabel(evaluation.submissionDate)}
                           </p>
                         </div>
-                        <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-base font-black text-black">
+                        <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-base font-black text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
                           {evaluation.numericalScore}/100
                         </span>
                       </div>
-                      <p className="mt-3 whitespace-pre-wrap text-base font-medium leading-6 text-black/80">
+                      <p className="mt-3 whitespace-pre-wrap text-base font-medium leading-6 text-black/80 transition-colors group-hover:text-white/80">
                         {evaluation.feedback}
                       </p>
                     </article>

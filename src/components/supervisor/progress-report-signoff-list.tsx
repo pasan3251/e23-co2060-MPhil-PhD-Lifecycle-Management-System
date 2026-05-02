@@ -32,15 +32,32 @@ export function ProgressReportSignoffList() {
     }
   }
 
-  if (isLoading) return <div className="mt-8 animate-pulse space-y-4"><div className="h-20 rounded-2xl bg-transparent" /></div>;
-  if (error) return <div className="mt-8 text-black">Error loading reports</div>;
+  if (isLoading) {
+    return (
+      <div className="mt-8 space-y-4">
+        <div className="h-28 animate-pulse rounded-[24px] border border-gray-300 bg-white" />
+        <div className="h-28 animate-pulse rounded-[24px] border border-gray-300 bg-white" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-8 rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+        Error loading reports.
+      </div>
+    );
+  }
 
   const reports = data?.reports || [];
 
   if (reports.length === 0) {
     return (
-      <div className="mt-8 rounded-[2rem] border border-dashed border-gray-300 p-12 text-center text-gray-400">
+      <div className="mt-8 rounded-[24px] border border-dashed border-gray-300 bg-white p-12 text-center">
+        <p className="text-2xl font-black tracking-tight text-black">Nothing pending</p>
+        <p className="mt-2 text-base font-medium text-black/70">
         No pending progress reports requiring your sign-off.
+        </p>
       </div>
     );
   }
@@ -48,20 +65,28 @@ export function ProgressReportSignoffList() {
   return (
     <div className="mt-8 space-y-4">
       {reports.map((report: any) => (
-        <article key={report.id} className="rounded-[1.5rem] border border-gray-200 bg-transparent/40 p-5">
+        <article key={report.id} className="group rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <span className="text-base font-semibold uppercase tracking-wider text-black">{report.periodLabel}</span>
-                <span className="text-[10px] text-gray-400">Submitted {new Date(report.createdAt).toLocaleDateString()}</span>
+                <span className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
+                  {report.periodLabel}
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-black/40 transition-colors group-hover:text-white/60">
+                  Submitted {new Date(report.createdAt).toLocaleDateString()}
+                </span>
               </div>
-              <h4 className="mt-1 text-lg font-semibold text-black">{report.student.displayName}</h4>
-              <p className="mt-3 text-base leading-6 text-black whitespace-pre-wrap">{report.narrative}</p>
+              <h4 className="mt-2 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
+                {report.student.displayName}
+              </h4>
+              <p className="mt-3 whitespace-pre-wrap text-base font-medium leading-6 text-black/70 transition-colors group-hover:text-white/80">
+                {report.narrative}
+              </p>
             </div>
             <button
               onClick={() => handleSign(report.id)}
               disabled={signingId === report.id}
-              className="shrink-0 rounded-2xl bg-black px-6 py-2 text-base font-semibold text-black transition hover:bg-black disabled:opacity-50"
+              className="shrink-0 rounded-xl border-2 border-black bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-black transition group-hover:border-white group-hover:bg-transparent group-hover:text-white disabled:opacity-50"
             >
               {signingId === report.id ? "Signing..." : "Sign Off"}
             </button>

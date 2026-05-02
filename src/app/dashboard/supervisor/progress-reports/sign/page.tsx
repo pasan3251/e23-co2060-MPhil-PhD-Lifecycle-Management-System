@@ -3,7 +3,7 @@ import { ProgressReportSignoffList } from "@/components/supervisor/progress-repo
 export default function SignProgressReportsPage() {
   return (
     <div className="space-y-10">
-      <header className="pb-10 border-b-2 border-gray-300">
+      <header className="border-b-2 border-gray-200 pb-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
