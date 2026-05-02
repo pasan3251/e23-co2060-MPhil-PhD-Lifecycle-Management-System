@@ -1,11 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
+import { LandingBackRedirect } from "@/components/layout/landing-back-redirect";
 import logoImage from "../../images/logo.png";
 
 export default function HomePage() {
   return (
     <>
+      <LandingBackRedirect />
       <Header />
       <main className="relative flex min-h-screen flex-col items-center justify-center bg-white px-6 py-24 text-black overflow-hidden">
         <div className="relative z-10 flex flex-col items-center text-center space-y-16 -mt-32">
