@@ -8,7 +8,7 @@ export default function DashboardRolePage({ params }: DashboardPageProps) {
   const isAdmin = params.role === "admin";
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white px-6 py-20 text-black">
+    <main className="flex h-full items-center justify-center overflow-y-auto bg-white px-6 py-8 text-black">
       <div className="rounded-[2rem] border border-gray-200 bg-gray-50/70 px-8 py-10 text-center shadow-[0_30px_80px_rgba(2,6,23,0.45)]">
         <p className="text-sm uppercase tracking-[0.18em] text-black">
           Dashboard
@@ -22,9 +22,9 @@ export default function DashboardRolePage({ params }: DashboardPageProps) {
         {isAdmin ? (
           <a
             href="/dashboard/admin/users"
-            className="mt-6 inline-flex rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-black transition hover:bg-black"
+            className="theme-button theme-button--compact mt-6"
           >
-            Open user management
+            <span className="theme-button__label">Open user management</span>
           </a>
         ) : null}
       </div>

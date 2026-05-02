@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import { z } from "zod";
 
 import {
   applicationProgramTypes,
@@ -17,17 +19,34 @@ type UploadedSupportingDocument = {
 
 const stepLabels = ["Applicant", "Research", "Documents", "Review"] as const;
 
+const applicantStepSchema = applicationSubmissionSchema.pick({
+  applicantName: true,
+  applicantEmail: true,
+  applicantPhone: true,
+});
+
+const researchStepSchema = applicationSubmissionSchema.pick({
+  programType: true,
+  researchArea: true,
+  statementOfPurpose: true,
+});
+
+const documentsStepSchema = z.object({
+  supportingDocuments: applicationSubmissionSchema.shape.supportingDocuments,
+});
+
 function createDraftId() {
   return `application-${crypto.randomUUID()}`;
 }
 
 export function ApplicationForm() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [draftId] = useState(() => createDraftId());
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isReviewConfirmed, setIsReviewConfirmed] = useState(false);
   const [documents, setDocuments] = useState<UploadedSupportingDocument[]>([]);
   const [formValues, setFormValues] = useState({
     applicantName: "",
@@ -41,6 +60,7 @@ export function ApplicationForm() {
   const currentStepLabel = useMemo(() => stepLabels[step], [step]);
 
   function updateField(name: keyof typeof formValues, value: string) {
+    setIsReviewConfirmed(false);
     setFormValues((current) => ({
       ...current,
       [name]: value,
@@ -101,6 +121,7 @@ export function ApplicationForm() {
           sizeBytes,
         },
       ]);
+      setIsReviewConfirmed(false);
     } catch (error) {
       setErrorMessage(
         error instanceof TypeError
@@ -116,17 +137,57 @@ export function ApplicationForm() {
   }
 
   function nextStep() {
+    setErrorMessage(null);
+
+    if (step === 0) {
+      const parsed = applicantStepSchema.safeParse({
+        applicantName: formValues.applicantName,
+        applicantEmail: formValues.applicantEmail,
+        applicantPhone: formValues.applicantPhone,
+      });
+
+      if (!parsed.success) {
+        setErrorMessage(parsed.error.issues[0]?.message ?? "Complete the applicant details before continuing.");
+        return;
+      }
+    }
+
+    if (step === 1) {
+      const parsed = researchStepSchema.safeParse({
+        programType: formValues.programType,
+        researchArea: formValues.researchArea,
+        statementOfPurpose: formValues.statementOfPurpose,
+      });
+
+      if (!parsed.success) {
+        setErrorMessage(parsed.error.issues[0]?.message ?? "Complete the research details before continuing.");
+        return;
+      }
+    }
+
+    if (step === 2) {
+      const parsed = documentsStepSchema.safeParse({
+        supportingDocuments: documents,
+      });
+
+      if (!parsed.success) {
+        setErrorMessage(parsed.error.issues[0]?.message ?? "Upload at least one supporting document before continuing.");
+        return;
+      }
+    }
+
     setStep((current) => Math.min(current + 1, stepLabels.length - 1));
   }
 
   function previousStep() {
+    setErrorMessage(null);
+    setIsReviewConfirmed(false);
     setStep((current) => Math.max(current - 1, 0));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
-    setSuccessMessage(null);
 
     const parsed = applicationSubmissionSchema.safeParse({
       ...formValues,
@@ -152,18 +213,12 @@ export function ApplicationForm() {
       });
       const payload = (await response.json()) as {
         error?: string;
-        application?: {
-          id: string;
-        };
       };
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Application submission failed.");
       }
 
-      setSuccessMessage(
-        `Application submitted successfully. Reference: ${payload.application?.id ?? "pending"}.`,
-      );
       setStep(0);
       setDocuments([]);
       setFormValues({
@@ -174,6 +229,8 @@ export function ApplicationForm() {
         researchArea: "",
         statementOfPurpose: "",
       });
+      setIsReviewConfirmed(false);
+      router.push("/apply/success");
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -186,15 +243,15 @@ export function ApplicationForm() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl rounded-[30px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:p-10 space-y-8">
-      <section className="pb-6 border-b border-gray-300">
+    <div className="mx-auto max-h-full w-full max-w-5xl overflow-y-auto rounded-[30px] bg-[#e0e0e0] px-6 pt-6 pb-8 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:px-8 sm:pt-8 sm:pb-10 space-y-6">
+      <section className="border-b border-gray-300 pb-5">
         <p className="text-base font-semibold uppercase tracking-[0.26em] text-black">
           Postgraduate Admissions
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-black sm:text-4xl">
+        <h1 className="mt-2 text-3xl font-semibold text-black sm:text-4xl">
           Apply for your research programme
         </h1>
-        <p className="mt-3 max-w-2xl text-base leading-6 text-black">
+        <p className="mt-2 max-w-2xl text-base leading-6 text-black">
           Complete the public application form, upload supporting PDFs, and submit
           your research interest for review.
         </p>
@@ -225,36 +282,30 @@ export function ApplicationForm() {
         })}
       </section>
 
-      <form className="pt-2" onSubmit={handleSubmit}>
-        <div className="mb-6">
+      <form className="space-y-5 pt-1" onSubmit={handleSubmit}>
+        <div className="space-y-2">
           <p className="text-base font-semibold uppercase tracking-[0.24em] text-black">
             Current step
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-black">
+          <h2 className="text-2xl font-semibold text-black">
             {currentStepLabel}
           </h2>
         </div>
 
         {errorMessage ? (
-          <div className="mb-5 rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base font-medium text-black">
+          <div className="rounded-2xl border border-red-500 bg-red-50 px-4 py-3 text-base font-medium text-red-700">
             {errorMessage}
           </div>
         ) : null}
 
-        {successMessage ? (
-          <div className="mb-5 rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base font-medium text-black">
-            {successMessage}
-          </div>
-        ) : null}
-
         {step === 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3.5 sm:grid-cols-2">
             <label className="space-y-2 text-base text-black">
               <span>Full name</span>
               <input
                 value={formValues.applicantName}
                 onChange={(event) => updateField("applicantName", event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="Applicant full name"
               />
             </label>
@@ -263,7 +314,7 @@ export function ApplicationForm() {
               <input
                 value={formValues.applicantEmail}
                 onChange={(event) => updateField("applicantEmail", event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="name@example.com"
                 type="email"
               />
@@ -273,7 +324,7 @@ export function ApplicationForm() {
               <input
                 value={formValues.applicantPhone}
                 onChange={(event) => updateField("applicantPhone", event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="+94 7X XXX XXXX"
               />
             </label>
@@ -281,13 +332,13 @@ export function ApplicationForm() {
         ) : null}
 
         {step === 1 ? (
-          <div className="grid gap-4">
+          <div className="grid gap-3.5">
             <label className="space-y-2 text-base text-black">
               <span>Programme</span>
               <select
                 value={formValues.programType}
                 onChange={(event) => updateField("programType", event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
               >
                 {applicationProgramTypes.map((programType) => (
                   <option key={programType} value={programType}>
@@ -301,7 +352,7 @@ export function ApplicationForm() {
               <input
                 value={formValues.researchArea}
                 onChange={(event) => updateField("researchArea", event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="Machine Learning for Education"
               />
             </label>
@@ -312,7 +363,7 @@ export function ApplicationForm() {
                 onChange={(event) =>
                   updateField("statementOfPurpose", event.target.value)
                 }
-                className="min-h-40 w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="min-h-40 w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="Describe your motivation, proposed area, and fit for the programme."
               />
             </label>
@@ -320,7 +371,7 @@ export function ApplicationForm() {
         ) : null}
 
         {step === 2 ? (
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
               <p className="text-base font-medium text-black">
                 Upload supporting documents
@@ -329,7 +380,7 @@ export function ApplicationForm() {
                 PDF only. Maximum file size: 10MB per document.
               </p>
               <input
-                className="mt-4 block w-full text-base text-black file:mr-4 file:rounded-2xl file:border-0 file:bg-black file:px-4 file:py-3 file:font-semibold file:text-black"
+                className="mt-4 block w-full text-base text-black file:mr-4 file:rounded-full file:border file:border-black/10 file:bg-[linear-gradient(135deg,#fff8f5_0%,#f7f4ee_55%,#eef4ff_100%)] file:px-4 file:py-3 file:font-semibold file:text-black"
                 type="file"
                 accept="application/pdf"
                 onChange={handleDocumentUpload}
@@ -340,7 +391,7 @@ export function ApplicationForm() {
               ) : null}
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {documents.length === 0 ? (
                 <div className="rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-5 text-base text-black">
                   No supporting documents uploaded yet.
@@ -363,13 +414,17 @@ export function ApplicationForm() {
         ) : null}
 
         {step === 3 ? (
-          <div className="space-y-4 rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
+          <div className="space-y-3.5 rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
+            <div className="rounded-2xl border border-gray-300 bg-white/40 px-4 py-3 text-base text-black">
+              Review the application details below carefully. If anything is incorrect, use the Back
+              button to return and update it before submitting.
+            </div>
             <div>
               <p className="text-base font-medium text-black">{formValues.applicantName}</p>
               <p className="text-base text-black">{formValues.applicantEmail}</p>
               <p className="text-base text-black">{formValues.applicantPhone}</p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <p className="text-base uppercase tracking-[0.18em] text-black">
                   Programme
@@ -395,23 +450,34 @@ export function ApplicationForm() {
               <p className="text-base uppercase tracking-[0.18em] text-black">
                 Supporting PDFs
               </p>
-              <ul className="mt-2 space-y-2 text-base text-black">
+              <ul className="mt-2 space-y-1.5 text-base text-black">
                 {documents.map((document) => (
                   <li key={document.storagePath}>{document.fileName}</li>
                 ))}
               </ul>
             </div>
+            <label className="flex items-start gap-3 rounded-2xl border border-black/15 bg-white/40 px-4 py-3 text-base text-black">
+              <input
+                type="checkbox"
+                checked={isReviewConfirmed}
+                onChange={(event) => setIsReviewConfirmed(event.target.checked)}
+                className="mt-1 h-4 w-4 accent-black"
+              />
+              <span>
+                I have reviewed the application details and confirm they are correct before submission.
+              </span>
+            </label>
           </div>
         ) : null}
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
             onClick={previousStep}
             disabled={step === 0 || isSubmitting}
-            className="group inline-block text-[14px] font-bold bg-black rounded-[0.75em] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            className="theme-button theme-button--compact"
           >
-            <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-[white] text-black -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+            <span className="theme-button__label">
               Back
             </span>
           </button>
@@ -421,19 +487,19 @@ export function ApplicationForm() {
               <button
                 type="button"
                 onClick={nextStep}
-                className="group inline-block text-[14px] font-bold bg-black rounded-[0.75em] cursor-pointer"
+                className="theme-button theme-button--compact"
               >
-                <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-[white] text-black -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                <span className="theme-button__label">
                   Continue
                 </span>
               </button>
             ) : (
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="group inline-block text-[14px] font-bold bg-black rounded-[0.75em] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isSubmitting || !isReviewConfirmed}
+                className="theme-button theme-button--compact"
               >
-                <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-[white] text-black -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                <span className="theme-button__label">
                   {isSubmitting ? "Submitting..." : "Submit application"}
                 </span>
               </button>

@@ -16,9 +16,9 @@ export function DashboardRoleLayout({
   const meta = buildDashboardPageMeta(role);
 
   return (
-    <div className="min-h-screen bg-[#e0e0e0] text-black">
-      <div className="flex min-h-screen w-full flex-col px-4 py-4 sm:px-10 sm:py-10 lg:flex-row lg:gap-10">
-        <aside className="mb-4 rounded-[30px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] lg:mb-0 lg:w-72 lg:p-8 shrink-0">
+    <div className="h-[100dvh] overflow-hidden bg-[#e0e0e0] text-black">
+      <div className="box-border flex h-full w-full flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-6 lg:flex-row lg:gap-8">
+        <aside className="mb-4 shrink-0 overflow-y-auto rounded-[30px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] lg:mb-0 lg:w-72 lg:p-8">
           <p className="text-base font-bold uppercase tracking-[0.28em] text-black">
             {meta.eyebrow}
           </p>
@@ -133,7 +133,7 @@ export function DashboardRoleLayout({
           </nav>
         </aside>
 
-        <div className="flex-1 rounded-[30px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:p-10">
+        <div className="flex-1 overflow-y-auto rounded-[30px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:p-8">
           {children}
         </div>
       </div>
