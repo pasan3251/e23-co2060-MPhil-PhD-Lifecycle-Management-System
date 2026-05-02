@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import React, { useState, useRef, useEffect, type FormEvent } from "react";
 
 type ThesisOption = {
   id: string;
@@ -31,6 +31,98 @@ type ExaminerOption = {
   email: string;
   examinerId: string | null;
 };
+
+interface CustomSelectProps<T extends string> {
+  value: T;
+  onChange: (value: T) => void;
+  options: readonly T[];
+  labelMap: Record<T, string>;
+  className?: string;
+  fullWidth?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+function CustomSelect<T extends string>({
+  value,
+  onChange,
+  options,
+  labelMap,
+  className = "",
+  fullWidth = false,
+  placeholder = "Select an option...",
+  disabled = false,
+}: CustomSelectProps<T>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div
+      className={`relative ${fullWidth ? "w-full" : ""} ${className}`}
+      ref={containerRef}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between rounded-2xl border-2 border-black bg-white px-6 py-3 text-base font-black text-black outline-none transition-all hover:bg-gray-50 focus:ring-4 focus:ring-black/5 disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        <span className="truncate">
+          {value ? labelMap[value] : placeholder}
+        </span>
+        <svg
+          className={`h-5 w-5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="3"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 z-[110] mt-2 overflow-hidden rounded-2xl border-2 border-black bg-white shadow-none">
+          <ul className="max-h-60 overflow-y-auto py-1">
+            {options.map((option) => (
+              <li key={option}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(option);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-6 py-3 text-left text-base font-bold transition-colors hover:bg-black hover:text-white ${
+                    value === option ? "bg-black/5" : ""
+                  }`}
+                >
+                  {labelMap[option]}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ExaminerAssignmentPanel({
   theses,
@@ -88,7 +180,9 @@ export function ExaminerAssignmentPanel({
       setSelectedExaminerId("");
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to assign examiner.");
+      setError(
+        caught instanceof Error ? caught.message : "Unable to assign examiner.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -105,138 +199,211 @@ export function ExaminerAssignmentPanel({
       setMessage("Thesis moved to under examination.");
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to update thesis status.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to update thesis status.",
+      );
     }
   }
 
-  return (
-    <main className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
-          Examiner Assignment
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold text-white">
-          Assign examiners to submitted theses
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-          Add active examiner profiles, then move the thesis into examination
-          when the assignment set is ready for viva scheduling.
-        </p>
-      </section>
+  const thesisOptions = theses.map((t) => t.id);
+  const thesisLabels = theses.reduce(
+    (acc, t) => {
+      acc[t.id] = `${t.title} - ${t.student.user.displayName}`;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
 
-      {error ? (
-        <div className="rounded-[1.5rem] border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+  const activeExaminers = examiners.filter((e) => e.examinerId);
+  const examinerOptions = activeExaminers.map((e) => e.examinerId as string);
+  const examinerLabels = activeExaminers.reduce(
+    (acc, e) => {
+      acc[e.examinerId as string] = `${e.displayName} (${e.email})`;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
+
+  return (
+    <div className="space-y-12">
+      <header className="border-b-2 border-gray-200 pb-10">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-4">
+            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
+              Administration
+            </p>
+            <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
+              Examiner Assignments
+            </h2>
+            <p className="max-w-2xl font-medium text-xl leading-relaxed text-black/80">
+              Assign examiners to submitted theses and transition records into
+              the examination pipeline.
+            </p>
+          </div>
+        </div>
+      </header>
+
+      {error && (
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
           {error}
         </div>
-      ) : null}
-      {message ? (
-        <div className="rounded-[1.5rem] border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+      )}
+
+      {message && (
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
           {message}
         </div>
-      ) : null}
+      )}
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <form
-          onSubmit={handleAssign}
-          className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-6"
-        >
-          <h2 className="text-xl font-semibold text-white">Add examiner</h2>
-          <div className="mt-5 grid gap-4">
-            <label className="space-y-2 text-sm text-slate-200">
-              <span>Thesis</span>
-              <select
-                value={selectedThesisId}
-                onChange={(event) => setSelectedThesisId(event.target.value)}
-                className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-              >
-                {theses.map((thesis) => (
-                  <option key={thesis.id} value={thesis.id}>
-                    {thesis.title} - {thesis.student.user.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-2 text-sm text-slate-200">
-              <span>Examiner</span>
-              <select
-                value={selectedExaminerId}
-                onChange={(event) => setSelectedExaminerId(event.target.value)}
-                className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                required
-              >
-                <option value="">Select an examiner...</option>
-                {examiners
-                  .filter((examiner) => examiner.examinerId)
-                  .map((examiner) => (
-                    <option key={examiner.id} value={examiner.examinerId ?? ""}>
-                      {examiner.displayName} ({examiner.email})
-                    </option>
-                  ))}
-              </select>
-            </label>
+      <div className="grid gap-10 xl:grid-cols-[1fr_1.2fr]">
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <p className="text-sm font-black uppercase tracking-widest text-black/40">
+              Assign New Examiner
+            </p>
+            <div className="h-px flex-1 bg-gray-200" />
           </div>
-          <button
-            type="submit"
-            disabled={isSubmitting || !selectedThesisId || !selectedExaminerId}
-            className="mt-6 rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:opacity-60"
-          >
-            {isSubmitting ? "Assigning..." : "Assign examiner"}
-          </button>
-        </form>
 
-        <section className="space-y-4">
-          {theses.length === 0 ? (
-            <div className="rounded-[2rem] border border-dashed border-slate-700 bg-slate-950/70 p-8 text-sm text-slate-400">
-              No submitted or examination-stage theses are available.
+          <form
+            onSubmit={handleAssign}
+            className="rounded-[30px] border-4 border-black bg-white p-8 shadow-[12px_12px_0px_black]"
+          >
+            <h2 className="text-3xl font-black tracking-tighter text-black">
+              Assignment Control
+            </h2>
+            <p className="mt-2 text-base font-medium text-black/60">
+              Link an active examiner profile to a submitted thesis.
+            </p>
+
+            <div className="mt-8 space-y-6">
+              <div className="space-y-2">
+                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                  Target Thesis
+                </span>
+                <CustomSelect
+                  value={selectedThesisId}
+                  onChange={setSelectedThesisId}
+                  options={thesisOptions}
+                  labelMap={thesisLabels}
+                  placeholder="Select a thesis..."
+                  fullWidth
+                />
+              </div>
+
+              <div className="space-y-2">
+                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                  Examiner
+                </span>
+                <CustomSelect
+                  value={selectedExaminerId}
+                  onChange={setSelectedExaminerId}
+                  options={examinerOptions}
+                  labelMap={examinerLabels}
+                  placeholder="Select an examiner..."
+                  fullWidth
+                />
+              </div>
+
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={
+                    isSubmitting || !selectedThesisId || !selectedExaminerId
+                  }
+                  className="group inline-block w-full cursor-pointer rounded-[0.75em] bg-black text-base font-bold disabled:opacity-50"
+                >
+                  <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black box-border px-8 py-4 text-center text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                    {isSubmitting ? "Assigning..." : "Add Assignment"}
+                  </span>
+                </button>
+              </div>
             </div>
-          ) : (
-            theses.map((thesis) => (
-              <article
-                key={thesis.id}
-                className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-5"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                      {thesis.status.replaceAll("_", " ")}
-                    </p>
-                    <h3 className="mt-1 text-lg font-semibold text-white">
-                      {thesis.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {thesis.student.user.displayName} ({thesis.student.user.email})
-                    </p>
-                  </div>
-                  {thesis.status === "SUBMITTED" ? (
-                    <button
-                      type="button"
-                      onClick={() => void handleStartExamination(thesis.id)}
-                      className="rounded-2xl border border-emerald-400/40 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:border-emerald-200"
-                    >
-                      Start examination
-                    </button>
-                  ) : null}
-                </div>
-                <div className="mt-4 space-y-2">
-                  {thesis.examinerAssignments.length === 0 ? (
-                    <p className="text-sm text-slate-500">No examiners assigned.</p>
-                  ) : (
-                    thesis.examinerAssignments.map((assignment) => (
-                      <div
-                        key={assignment.id}
-                        className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-sm text-slate-200"
+          </form>
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <p className="text-sm font-black uppercase tracking-widest text-black/40">
+              Active Examination Queue
+            </p>
+            <div className="h-px flex-1 bg-gray-200" />
+          </div>
+
+          <div className="space-y-6">
+            {theses.length === 0 ? (
+              <div className="rounded-[30px] border-2 border-dashed border-gray-300 p-12 text-center">
+                <p className="font-bold text-black/30">
+                  No submitted or examination-stage theses available.
+                </p>
+              </div>
+            ) : (
+              theses.map((thesis) => (
+                <article
+                  key={thesis.id}
+                  className="rounded-[30px] border-2 border-black bg-white p-6 transition-transform hover:-translate-y-1 hover:shadow-[8px_8px_0px_black]"
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <span className="inline-block rounded-lg border-2 border-black px-2 py-0.5 text-[11px] font-black uppercase tracking-wider">
+                        {thesis.status.replaceAll("_", " ")}
+                      </span>
+                      <h3 className="mt-2 text-xl font-black tracking-tight text-black">
+                        {thesis.title}
+                      </h3>
+                      <p className="mt-1 font-medium text-black/60">
+                        {thesis.student.user.displayName} •{" "}
+                        {thesis.student.user.email}
+                      </p>
+                    </div>
+
+                    {thesis.status === "SUBMITTED" ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleStartExamination(thesis.id)}
+                        className="group inline-block cursor-pointer rounded-xl bg-black text-xs font-black uppercase tracking-widest"
                       >
-                        {assignment.examiner.user.displayName} -{" "}
-                        {assignment.examiner.user.email}
+                        <span className="block -translate-y-[0.2em] rounded-xl border-2 border-black bg-white box-border px-4 py-2 text-black transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                          Start examination
+                        </span>
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-6 space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-black/40">
+                      Assigned Examiners
+                    </p>
+                    {thesis.examinerAssignments.length === 0 ? (
+                      <p className="text-sm font-bold text-black/30 italic">
+                        Waiting for assignments...
+                      </p>
+                    ) : (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {thesis.examinerAssignments.map((assignment) => (
+                          <div
+                            key={assignment.id}
+                            className="rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-2"
+                          >
+                            <div className="text-sm font-black text-black">
+                              {assignment.examiner.user.displayName}
+                            </div>
+                            <div className="text-[10px] font-medium text-black/60">
+                              {assignment.examiner.user.email}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))
-                  )}
-                </div>
-              </article>
-            ))
-          )}
-        </section>
-      </section>
-    </main>
+                    )}
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
+

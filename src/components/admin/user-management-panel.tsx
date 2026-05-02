@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 import {
   optionalSanitizedString,
@@ -54,9 +54,96 @@ async function getAuthorizationHeader() {
   };
 }
 
+interface CustomSelectProps<T extends string> {
+  value: T;
+  onChange: (value: T) => void;
+  options: readonly T[];
+  labelMap: Record<T, string>;
+  className?: string;
+  fullWidth?: boolean;
+}
+
+function CustomSelect<T extends string>({
+  value,
+  onChange,
+  options,
+  labelMap,
+  className = "",
+  fullWidth = false,
+}: CustomSelectProps<T>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div
+      className={`relative ${fullWidth ? "w-full" : ""} ${className}`}
+      ref={containerRef}
+    >
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between rounded-2xl border-2 border-black bg-white px-6 py-3 text-base font-black text-black outline-none transition-all hover:bg-gray-50 focus:ring-4 focus:ring-black/5"
+      >
+        <span className="truncate">{labelMap[value]}</span>
+        <svg
+          className={`h-5 w-5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="3"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 z-[110] mt-2 overflow-hidden rounded-2xl border-2 border-black bg-white">
+          <ul className="max-h-60 overflow-y-auto py-1">
+            {options.map((option) => (
+              <li key={option}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(option);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-6 py-3 text-left text-base font-bold transition-colors hover:bg-black hover:text-white ${
+                    value === option ? "bg-black/5" : ""
+                  }`}
+                >
+                  {labelMap[option]}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function UserManagementPanel() {
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
-  const [selectedRole, setSelectedRole] = useState<"ALL" | AdminManagedRole>("ALL");
+  const [selectedRole, setSelectedRole] = useState<"ALL" | AdminManagedRole>(
+    "ALL",
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -192,119 +279,180 @@ export function UserManagementPanel() {
     }
   }
 
+  const roleFilterOptions = ["ALL", ...adminManagedRoles] as const;
+  const roleLabels: Record<string, string> = {
+    ALL: "All Roles",
+    STUDENT: "Students",
+    SUPERVISOR: "Supervisors",
+    EXAMINER: "Examiners",
+    ADMINISTRATOR: "Administrators",
+  };
+
+  const createRoleLabels: Record<string, string> = {
+    STUDENT: "Student",
+    SUPERVISOR: "Supervisor",
+    EXAMINER: "Examiner",
+    ADMINISTRATOR: "Administrator",
+  };
+
+  const programOptions = ["MPHIL", "PHD", "MSC", "MENG"] as const;
+  const programLabels: Record<string, string> = {
+    MPHIL: "MPhil",
+    PHD: "PhD",
+    MSC: "MSc",
+    MENG: "MEng",
+  };
+
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-3xl border border-slate-800 bg-slate-950/70 p-6 shadow-2xl shadow-slate-950/40 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
-            Administrator User Management
-          </p>
-          <h1 className="text-3xl font-semibold text-white">Manage system accounts</h1>
-          <p className="max-w-2xl text-sm text-slate-300">
-            Create and deactivate students, supervisors, examiners, and administrators.
-          </p>
-        </div>
+    <div className="space-y-12">
+      <header className="border-b-2 border-gray-200 pb-10">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-4">
+            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
+              Administration
+            </p>
+            <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
+              User Accounts
+            </h2>
+            <p className="max-w-2xl font-medium text-xl leading-relaxed text-black/80">
+              Manage system access for students, supervisors, examiners, and
+              staff.
+            </p>
+          </div>
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <select
-            value={selectedRole}
-            onChange={(event) =>
-              setSelectedRole(event.target.value as "ALL" | AdminManagedRole)
-            }
-            className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 outline-none focus:border-sky-400"
-          >
-            <option value="ALL">All roles</option>
-            <option value="STUDENT">Students</option>
-            <option value="SUPERVISOR">Supervisors</option>
-            <option value="EXAMINER">Examiners</option>
-            <option value="ADMINISTRATOR">Administrators</option>
-          </select>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <CustomSelect
+              value={selectedRole}
+              onChange={setSelectedRole}
+              options={roleFilterOptions}
+              labelMap={roleLabels}
+              className="min-w-[180px]"
+            />
 
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="rounded-2xl bg-sky-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
-          >
-            Create New User
-          </button>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold"
+            >
+              <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black box-border px-[1.5em] py-[0.75em] text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                Create New User
+              </span>
+            </button>
+          </div>
         </div>
+      </header>
+
+      <div className="flex items-center gap-4">
+        <p className="text-sm font-black uppercase tracking-widest text-black/40">
+          {visibleRoleHint}
+        </p>
+        <div className="h-px flex-1 bg-gray-200" />
       </div>
 
-      <p className="text-sm text-slate-400">{visibleRoleHint}</p>
-
       {errorMessage ? (
-        <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
           {errorMessage}
         </div>
       ) : null}
 
       {successMessage ? (
-        <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
           {successMessage}
         </div>
       ) : null}
 
-      <div className="hidden overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/70 md:block">
-        <table className="min-w-full divide-y divide-slate-800 text-sm">
-          <thead className="bg-slate-900/80 text-slate-300">
+      <div className="hidden overflow-hidden rounded-[24px] border border-gray-200 bg-transparent md:block">
+        <table className="min-w-full divide-y divide-gray-300 text-base">
+          <thead className="text-left text-black">
             <tr>
-              <th className="px-5 py-4 text-left font-medium">Name</th>
-              <th className="px-5 py-4 text-left font-medium">Role</th>
-              <th className="px-5 py-4 text-left font-medium">Details (Dept / Program)</th>
-              <th className="px-5 py-4 text-left font-medium">Status</th>
-              <th className="px-5 py-4 text-left font-medium">Action</th>
+              <th className="px-6 py-5 text-[14px] font-black uppercase tracking-widest text-black/40">
+                User
+              </th>
+              <th className="px-6 py-5 text-[14px] font-black uppercase tracking-widest text-black/40">
+                Role
+              </th>
+              <th className="px-6 py-5 text-[14px] font-black uppercase tracking-widest text-black/40">
+                Context
+              </th>
+              <th className="px-6 py-5 text-[14px] font-black uppercase tracking-widest text-black/40">
+                Status
+              </th>
+              <th className="px-6 py-5 text-[14px] font-black uppercase tracking-widest text-black/40">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800 text-slate-200">
+          <tbody className="divide-y divide-gray-300 text-black">
             {isLoading ? (
               <tr>
-                <td className="px-5 py-6 text-slate-400" colSpan={5}>
-                  Loading accounts...
+                <td
+                  className="px-6 py-12 text-center font-bold text-black/40"
+                  colSpan={5}
+                >
+                  Loading user records...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td className="px-5 py-6 text-slate-400" colSpan={5}>
-                  No administrator-managed users found for this filter.
+                <td
+                  className="px-6 py-12 text-center font-bold text-black/40"
+                  colSpan={5}
+                >
+                  No matching user accounts found.
                 </td>
               </tr>
             ) : (
               users.map((user) => (
-                <tr key={user.id} className="align-top">
-                  <td className="px-5 py-4">
-                    <div className="font-medium text-white">{user.displayName}</div>
-                    <div className="text-slate-400">{user.email}</div>
+                <tr
+                  key={user.id}
+                  className="align-top transition-colors hover:bg-black/5"
+                >
+                  <td className="px-6 py-6">
+                    <div className="text-lg font-black">{user.displayName}</div>
+                    <div className="font-medium text-black/60">
+                      {user.email}
+                    </div>
                   </td>
-                  <td className="px-5 py-4">{user.role}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-6 py-6">
+                    <span className="inline-block rounded-lg border-2 border-black px-3 py-1 text-[13px] font-black uppercase tracking-wider">
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-6 font-black">
                     {user.role === "STUDENT" ? (
-                      <div>{user.programType ?? "Not set"} Program</div>
+                      <div className="text-lg">
+                        {user.programType ?? "N/A"} Candidate
+                      </div>
                     ) : (
                       <>
-                        <div>{user.department ?? "Not set"}</div>
+                        <div className="text-lg">
+                          {user.department ?? "No Department"}
+                        </div>
                         {user.specialization ? (
-                          <div className="text-slate-400">{user.specialization}</div>
+                          <div className="text-sm text-black/70">
+                            {user.specialization}
+                          </div>
                         ) : null}
                       </>
                     )}
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-6 py-6">
                     <span
-                      className={
+                      className={`inline-block rounded-full border-2 px-3 py-1 text-[13px] font-black uppercase tracking-widest ${
                         user.isActive
-                          ? "rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-200"
-                          : "rounded-full bg-slate-700/70 px-3 py-1 text-xs font-medium text-slate-300"
-                      }
+                          ? "border-black text-black"
+                          : "border-gray-300 text-gray-300"
+                      }`}
                     >
                       {user.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-6 py-6">
                     <button
                       type="button"
                       disabled={!user.isActive}
                       onClick={() => void handleDeactivate(user.id)}
-                      className="rounded-2xl border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-100 transition hover:border-rose-400 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-xl border-2 border-black px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition hover:bg-red-600 hover:border-red-600 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       Deactivate
                     </button>
@@ -317,95 +465,75 @@ export function UserManagementPanel() {
       </div>
 
       <div className="space-y-4 md:hidden">
-        {isLoading ? (
-          <div className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-400">
-            Loading accounts...
-          </div>
-        ) : users.length === 0 ? (
-          <div className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-400">
-            No administrator-managed users found for this filter.
-          </div>
-        ) : (
-          users.map((user) => (
-            <article
-              key={user.id}
-              className="rounded-[1.75rem] border border-slate-800 bg-slate-950/70 p-4 shadow-[0_18px_40px_rgba(2,6,23,0.34)]"
+        {users.map((user) => (
+          <article
+            key={user.id}
+            className="rounded-[24px] border border-gray-200 bg-transparent p-6"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xl font-black tracking-tight text-black">
+                  {user.displayName}
+                </p>
+                <p className="text-sm font-medium text-black/60">
+                  {user.email}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-lg border-2 border-black px-2 py-1 text-[12px] font-black uppercase">
+                {user.role}
+              </span>
+            </div>
+            <button
+              type="button"
+              disabled={!user.isActive}
+              onClick={() => void handleDeactivate(user.id)}
+              className="mt-6 w-full rounded-xl border-2 border-black py-3 text-xs font-black uppercase tracking-widest transition hover:bg-red-600 hover:border-red-600 hover:text-white disabled:opacity-20"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="break-words text-base font-semibold text-white">
-                    {user.displayName}
-                  </p>
-                  <p className="mt-1 break-all text-sm text-slate-400">
-                    {user.email}
-                  </p>
-                </div>
-                <span className="rounded-full border border-slate-700 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200">
-                  {user.role}
-                </span>
-              </div>
-              <div className="mt-4 space-y-2 text-sm text-slate-300">
-                <p>
-                  <span className="text-slate-500">Details:</span>{" "}
-                  {user.role === "STUDENT"
-                    ? `${user.programType ?? "Not set"} Program`
-                    : user.department ?? "Not set"}
-                </p>
-                {user.specialization ? (
-                  <p>
-                    <span className="text-slate-500">Specialization:</span>{" "}
-                    {user.specialization}
-                  </p>
-                ) : null}
-                <p>
-                  <span className="text-slate-500">Status:</span>{" "}
-                  <span
-                    className={
-                      user.isActive
-                        ? "text-emerald-200"
-                        : "text-slate-300"
-                    }
-                  >
-                    {user.isActive ? "Active" : "Inactive"}
-                  </span>
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={!user.isActive}
-                onClick={() => void handleDeactivate(user.id)}
-                className="mt-4 w-full rounded-2xl border border-slate-700 px-3 py-3 text-sm font-semibold text-slate-100 transition hover:border-rose-400 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Deactivate
-              </button>
-            </article>
-          ))
-        )}
+              Deactivate Account
+            </button>
+          </article>
+        ))}
       </div>
 
       {isModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4">
-          <div className="w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl shadow-slate-950/60">
-            <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-[30px] border-4 border-black bg-white p-8 shadow-[15px_15px_0px_black]">
+            <div className="mb-8 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-semibold text-white">Create New User</h2>
-                <p className="mt-2 text-sm text-slate-400">
-                  Select the role and fill out the details appropriately.
+                <h2 className="text-4xl font-black tracking-tighter text-black">
+                  Create User
+                </h2>
+                <p className="mt-2 text-lg font-medium text-black/60">
+                  Provision a new system account.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-full border border-slate-700 px-3 py-1 text-sm text-slate-300"
+                className="rounded-full border-2 border-black p-2 transition-colors hover:bg-black hover:text-white"
               >
-                Close
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="3"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
               </button>
             </div>
 
-            <form className="space-y-4" onSubmit={handleCreateUser}>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-2 text-sm text-slate-200">
-                  <span>Email</span>
+            <form className="space-y-6" onSubmit={handleCreateUser}>
+              <div className="grid gap-6 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                    Email Address
+                  </span>
                   <input
                     value={formValues.email}
                     onChange={(event) =>
@@ -414,13 +542,15 @@ export function UserManagementPanel() {
                         email: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                    placeholder="name@eng.pdn.ac.lk"
+                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
+                    placeholder="name@pdn.ac.lk"
                   />
                 </label>
 
-                <label className="space-y-2 text-sm text-slate-200">
-                  <span>Display name</span>
+                <label className="space-y-2">
+                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                    Full Name
+                  </span>
                   <input
                     value={formValues.displayName}
                     onChange={(event) =>
@@ -429,54 +559,48 @@ export function UserManagementPanel() {
                         displayName: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                    placeholder="Dr. Jane Perera"
+                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
+                    placeholder="Enter name"
                   />
                 </label>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-2 text-sm text-slate-200">
-                  <span>Role</span>
-                  <select
+              <div className="grid gap-6 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                    System Role
+                  </span>
+                  <CustomSelect
                     value={formValues.role}
-                    onChange={(event) =>
-                      setFormValues((current) => ({
-                        ...current,
-                        role: event.target.value as AdminManagedRole,
-                      }))
+                    onChange={(val) =>
+                      setFormValues((c) => ({ ...c, role: val }))
                     }
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                  >
-                    <option value="STUDENT">Student</option>
-                    <option value="SUPERVISOR">Supervisor</option>
-                    <option value="EXAMINER">Examiner</option>
-                    <option value="ADMINISTRATOR">Administrator</option>
-                  </select>
+                    options={adminManagedRoles}
+                    labelMap={createRoleLabels}
+                    fullWidth
+                  />
                 </label>
 
                 {formValues.role === "STUDENT" ? (
-                  <label className="space-y-2 text-sm text-slate-200">
-                    <span>Program Type</span>
-                    <select
+                  <label className="space-y-2">
+                    <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                      Program
+                    </span>
+                    <CustomSelect
                       value={formValues.programType}
-                      onChange={(event) =>
-                        setFormValues((current) => ({
-                          ...current,
-                          programType: event.target.value,
-                        }))
+                      onChange={(val) =>
+                        setFormValues((c) => ({ ...c, programType: val }))
                       }
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                    >
-                      <option value="MPHIL">MPhil</option>
-                      <option value="PHD">PhD</option>
-                      <option value="MSC">MSc</option>
-                      <option value="MENG">MEng</option>
-                    </select>
+                      options={programOptions}
+                      labelMap={programLabels}
+                      fullWidth
+                    />
                   </label>
                 ) : (
-                  <label className="space-y-2 text-sm text-slate-200">
-                    <span>Department</span>
+                  <label className="space-y-2">
+                    <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                      Department
+                    </span>
                     <input
                       value={formValues.department}
                       onChange={(event) =>
@@ -485,50 +609,36 @@ export function UserManagementPanel() {
                           department: event.target.value,
                         }))
                       }
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                      placeholder="Computer Engineering"
+                      className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none"
+                      placeholder="e.g. Computer Engineering"
                     />
                   </label>
                 )}
               </div>
 
-              {formValues.role !== "STUDENT" && formValues.role !== "ADMINISTRATOR" ? (
-                <label className="space-y-2 text-sm text-slate-200">
-                  <span>Specialization</span>
-                  <input
-                    value={formValues.specialization}
-                    onChange={(event) =>
-                      setFormValues((current) => ({
-                        ...current,
-                        specialization: event.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                    placeholder="Distributed Systems"
-                  />
-                </label>
-              ) : null}
-
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex items-center justify-end gap-4 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-2xl border border-slate-700 px-4 py-3 text-sm font-medium text-slate-200"
+                  className="px-6 py-4 text-base font-black uppercase tracking-widest text-black/40 transition-colors hover:text-black"
                 >
-                  Cancel
+                  Discard
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-2xl bg-sky-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold"
                 >
-                  {isSubmitting ? "Creating..." : "Create account"}
+                  <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black box-border px-8 py-4 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                    {isSubmitting ? "Creating..." : "Confirm Creation"}
+                  </span>
                 </button>
               </div>
             </form>
           </div>
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }
+

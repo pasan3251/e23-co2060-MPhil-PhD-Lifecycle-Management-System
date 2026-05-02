@@ -132,16 +132,16 @@ export function LoginForm() {
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
       {timeoutMessage ? (
-        <div className="rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+        <div className="rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-base font-medium text-black">
           {timeoutMessage}
         </div>
       ) : null}
 
       {errorMessage ? (
         <div
-          className="rounded-2xl border border-rose-300/30 bg-rose-300/10 px-4 py-3 text-sm text-rose-100"
+          className="rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-base font-medium text-black"
           role="alert"
         >
           {errorMessage}
@@ -149,7 +149,7 @@ export function LoginForm() {
       ) : null}
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-200" htmlFor="email">
+        <label className="text-base font-bold text-black" htmlFor="email">
           Email
         </label>
         <input
@@ -159,14 +159,14 @@ export function LoginForm() {
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-slate-50 outline-none transition focus:border-sky-400"
+          className="w-full rounded-2xl border border-gray-300 bg-gray-50/80 px-4 py-3 text-black outline-none transition focus:border-gray-300"
           placeholder="name@eng.pdn.ac.lk"
           data-testid="login-email"
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-200" htmlFor="password">
+        <label className="text-base font-bold text-black" htmlFor="password">
           Password
         </label>
         <input
@@ -176,7 +176,7 @@ export function LoginForm() {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-slate-50 outline-none transition focus:border-sky-400"
+          className="w-full rounded-2xl border border-gray-300 bg-gray-50/80 px-4 py-3 text-black outline-none transition focus:border-gray-300"
           placeholder="Enter your password"
           data-testid="login-password"
         />
@@ -185,10 +185,12 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-2xl bg-sky-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-70"
+        className="group relative inline-block w-full text-[16px] font-bold bg-black rounded-[0.75em] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         data-testid="login-submit"
       >
-        {isSubmitting ? "Signing in..." : "Sign in"}
+        <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-[white] text-black -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+          {isSubmitting ? "Signing in..." : "Sign in"}
+        </span>
       </button>
     </form>
   );

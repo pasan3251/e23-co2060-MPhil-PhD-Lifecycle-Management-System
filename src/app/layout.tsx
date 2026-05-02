@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Poppins } from "next/font/google";
 import "@/app/globals.css";
 import { SessionActivityTracker } from "@/components/auth/session-activity-tracker";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "PGSMS",
@@ -15,7 +22,7 @@ type RootLayoutProps = {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body>
+      <body className={poppins.className}>
         <SessionActivityTracker />
         {children}
       </body>

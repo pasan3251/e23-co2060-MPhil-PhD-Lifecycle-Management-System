@@ -1,51 +1,40 @@
 import Link from "next/link";
+import Image from "next/image";
+import { Header } from "@/components/layout/header";
+import { LandingBackRedirect } from "@/components/layout/landing-back-redirect";
+import logoImage from "../../images/logo.png";
 
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-6 py-24 text-slate-50">
-      <div className="max-w-3xl space-y-8 text-center">
-        <span className="inline-flex rounded-full border border-slate-700 px-4 py-1 text-sm font-medium text-slate-300">
-          PB-001 Foundation Ready
-        </span>
-        <h1 className="text-4xl font-bold tracking-tight sm:text-6xl bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-          Postgraduate Lifecycle Platform
-        </h1>
-        <p className="text-lg leading-8 text-slate-300">
-          The foundation is laid. Navigate through the available modules below to access the application submission, dashboards, and settings.
-        </p>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-10">
-          <Link href="/apply" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
-            <h3 className="text-lg font-semibold text-white group-hover:text-blue-400">Apply Now &rarr;</h3>
-            <p className="mt-2 text-sm text-slate-400">Submit a new application for MPhil/PhD programs.</p>
-          </Link>
+    <>
+      <LandingBackRedirect />
+      <Header />
+      <main className="relative flex min-h-screen flex-col items-center justify-center bg-white px-6 py-24 text-black overflow-hidden">
+        <div className="relative z-10 flex flex-col items-center text-center space-y-16 -mt-32">
+          <div className="flex justify-center">
+            <Image 
+              src={logoImage} 
+              alt="Logo" 
+              width={220} 
+              height={220} 
+              className="object-contain drop-shadow-xl"
+              priority
+            />
+          </div>
+          <h1 className="text-6xl sm:text-8xl font-bold tracking-tight text-black">
+            Postgraduate Lifecycle Platform
+          </h1>
           
-          <Link href="/login" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
-            <h3 className="text-lg font-semibold text-white group-hover:text-indigo-400">Login &rarr;</h3>
-            <p className="mt-2 text-sm text-slate-400">Access your account and manage personal details.</p>
-          </Link>
-
-          <Link href="/dashboard/student" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
-            <h3 className="text-lg font-semibold text-white group-hover:text-green-400">Student Portal &rarr;</h3>
-            <p className="mt-2 text-sm text-slate-400">View progress reports and manage your studies.</p>
-          </Link>
-
-          <Link href="/dashboard/supervisor" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
-            <h3 className="text-lg font-semibold text-white group-hover:text-purple-400">Supervisor Portal &rarr;</h3>
-            <p className="mt-2 text-sm text-slate-400">Manage students and review progress reports.</p>
-          </Link>
-
-          <Link href="/dashboard/examiner" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
-            <h3 className="text-lg font-semibold text-white group-hover:text-amber-400">Examiner Portal &rarr;</h3>
-            <p className="mt-2 text-sm text-slate-400">Evaluate theses and submit examination reports.</p>
-          </Link>
-
-          <Link href="/dashboard/admin" className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-left transition-all hover:border-slate-600 hover:bg-slate-800">
-            <h3 className="text-lg font-semibold text-white group-hover:text-red-400">Admin Dashboard &rarr;</h3>
-            <p className="mt-2 text-sm text-slate-400">System configuration and user management.</p>
+          <Link
+            href="/apply"
+            className="group inline-block text-[21px] font-bold bg-black rounded-[0.75em] cursor-pointer"
+          >
+            <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-[white] text-black -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+              Apply Now
+            </span>
           </Link>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

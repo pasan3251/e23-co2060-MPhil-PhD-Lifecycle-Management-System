@@ -41,18 +41,20 @@ export default async function AdminVivaSchedulePage() {
   });
 
   return (
-    <VivaSchedulePanel
-      theses={theses.map((thesis) => ({
-        ...thesis,
-        status: thesis.status,
-        viva: thesis.viva
-          ? {
-              ...thesis.viva,
-              scheduledDate: thesis.viva.scheduledDate.toISOString(),
-              outcome: thesis.viva.outcome,
-            }
-          : null,
-      }))}
-    />
+    <div className="space-y-8">
+      <VivaSchedulePanel
+        theses={theses.map((thesis) => ({
+          ...thesis,
+          status: thesis.status,
+          viva: thesis.viva
+            ? {
+                ...thesis.viva,
+                scheduledDate: thesis.viva.scheduledDate.toISOString(),
+                outcome: thesis.viva.outcome,
+              }
+            : null,
+        }))}
+      />
+    </div>
   );
 }
