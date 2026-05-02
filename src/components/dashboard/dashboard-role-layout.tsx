@@ -3,9 +3,16 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { Montserrat } from "next/font/google";
 
 import { buildDashboardPageMeta } from "@/lib/dashboard/page-meta";
 import type { DashboardRole } from "@/types/dashboard";
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 type DashboardRoleLayoutProps = {
   role: DashboardRole;
@@ -35,7 +42,7 @@ export function DashboardRoleLayout({
   }
 
   return (
-    <div className="h-[100dvh] overflow-hidden bg-[#e0e0e0] text-black">
+    <div className={`${montserrat.className} h-[100dvh] overflow-hidden bg-[#e0e0e0] text-black`}>
       <div className="box-border flex h-full w-full flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-6 lg:flex-row lg:gap-8">
         <aside className="mb-4 shrink-0 overflow-y-auto rounded-[30px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] lg:mb-0 lg:w-72 lg:p-8">
           {!isAdmin ? (
