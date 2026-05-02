@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
-import { buildDashboardPageMeta } from "@/lib/dashboard/summary";
+import { buildDashboardPageMeta } from "@/lib/dashboard/page-meta";
 import type { DashboardRole } from "@/types/dashboard";
 
 type DashboardRoleLayoutProps = {
@@ -13,9 +16,23 @@ export function DashboardRoleLayout({
   role,
   children,
 }: DashboardRoleLayoutProps) {
+  const pathname = usePathname();
   const meta = buildDashboardPageMeta(role);
   const isAdmin = role === "admin";
   const heading = isAdmin ? "Administrator Dashboard" : meta.heading;
+  const navItemClassName =
+    "group block rounded-2xl border px-5 py-4 text-base font-bold transition-all";
+
+  function getNavItemClassName(href: string) {
+    const isActive =
+      pathname === href || (href !== `/dashboard/${role}` && pathname.startsWith(`${href}/`));
+
+    if (isActive) {
+      return `${navItemClassName} border-gray-400 bg-gray-300 text-black`;
+    }
+
+    return `${navItemClassName} border-gray-300 bg-transparent text-black hover:bg-black hover:text-white`;
+  }
 
   return (
     <div className="h-[100dvh] overflow-hidden bg-[#e0e0e0] text-black">
@@ -36,7 +53,7 @@ export function DashboardRoleLayout({
           <nav className="mt-10 space-y-4">
             <Link
               href={`/dashboard/${role}`}
-              className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+              className={getNavItemClassName(`/dashboard/${role}`)}
             >
               Overview
             </Link>
@@ -44,31 +61,31 @@ export function DashboardRoleLayout({
               <>
                 <Link
                   href="/dashboard/student/proposals"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/student/proposals")}
                 >
                   Submit Proposal
                 </Link>
                 <Link
                   href="/dashboard/student/progress-reports"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/student/progress-reports")}
                 >
                   Progress Reports
                 </Link>
                 <Link
                   href="/dashboard/student/progress"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/student/progress")}
                 >
                   Progress Dashboard
                 </Link>
                 <Link
                   href="/dashboard/student/theses/submit"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/student/theses/submit")}
                 >
                   Submit Thesis
                 </Link>
                 <Link
                   href="/dashboard/student/theses/corrections"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/student/theses/corrections")}
                 >
                   Thesis Corrections
                 </Link>
@@ -78,13 +95,13 @@ export function DashboardRoleLayout({
               <>
                 <Link
                   href="/dashboard/supervisor/students"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/supervisor/students")}
                 >
                   My Students
                 </Link>
                 <Link
                   href="/dashboard/supervisor/progress-reports/sign"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/supervisor/progress-reports/sign")}
                 >
                   Sign Progress Reports
                 </Link>
@@ -94,37 +111,37 @@ export function DashboardRoleLayout({
               <>
                 <Link
                   href="/dashboard/admin/users"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/admin/users")}
                 >
                   Manage Users
                 </Link>
                 <Link
                   href="/dashboard/admin/proposals/evaluate"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/admin/proposals/evaluate")}
                 >
                   Review & Approve Proposals
                 </Link>
                 <Link
                   href="/dashboard/admin/assignments/supervisors"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/admin/assignments/supervisors")}
                 >
                   Supervisor Assignments
                 </Link>
                 <Link
                   href="/dashboard/admin/assignments/examiners"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/admin/assignments/examiners")}
                 >
                   Examiner Assignments
                 </Link>
                 <Link
                   href="/dashboard/admin/vivas/schedule"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/admin/vivas/schedule")}
                 >
                   Schedule Vivas
                 </Link>
                 <Link
                   href="/dashboard/admin/theses"
-                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                  className={getNavItemClassName("/dashboard/admin/theses")}
                 >
                   Finalize Theses
                 </Link>
@@ -133,7 +150,7 @@ export function DashboardRoleLayout({
             {role === "examiner" ? (
               <Link
                 href="/dashboard/examiner/vivas"
-                className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                className={getNavItemClassName("/dashboard/examiner/vivas")}
               >
                 Assigned Vivas
               </Link>

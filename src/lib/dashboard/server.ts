@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { buildDashboardPageMeta, getDashboardSummaryForUser } from "@/lib/dashboard/summary";
+import { buildDashboardPageMeta } from "@/lib/dashboard/page-meta";
+import { getDashboardSummaryForUser } from "@/lib/dashboard/summary";
 import { mapAppRoleToDashboardRole, type DashboardRole } from "@/types/dashboard";
 
 export async function getServerDashboardContext(role: DashboardRole) {
