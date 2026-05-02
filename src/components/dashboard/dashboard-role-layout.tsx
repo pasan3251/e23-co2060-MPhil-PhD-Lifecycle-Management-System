@@ -28,144 +28,93 @@ export function DashboardRoleLayout({
   const isAdmin = role === "admin";
   const heading = isAdmin ? "Administrator Dashboard" : meta.heading;
   const navItemClassName =
-    "group block rounded-2xl border px-5 py-4 text-base font-bold transition-all";
+    "group block rounded-2xl border px-5 py-4 text-base font-bold transition-all shadow-[8px_8px_16px_#bebebe]";
 
   function getNavItemClassName(href: string) {
     const isActive =
       pathname === href || (href !== `/dashboard/${role}` && pathname.startsWith(`${href}/`));
 
     if (isActive) {
-      return `${navItemClassName} border-gray-400 bg-gray-300 text-black`;
+      return `${navItemClassName} border-gray-400 bg-gray-300 text-black shadow-[inset_4px_4px_8px_#bebebe]`;
     }
 
-    return `${navItemClassName} border-gray-300 bg-transparent text-black hover:bg-black hover:text-white`;
+    return `${navItemClassName} border-gray-300 bg-white text-black hover:bg-black hover:text-white`;
   }
 
   return (
     <div className={`${montserrat.className} h-[100dvh] overflow-hidden bg-[#e0e0e0] text-black`}>
       <div className="box-border flex h-full w-full flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-6 lg:flex-row lg:gap-8">
-        <aside className="mb-4 shrink-0 overflow-y-auto rounded-[30px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] lg:mb-0 lg:w-72 lg:p-8">
+        <aside className="mb-4 flex shrink-0 flex-col overflow-y-auto rounded-[40px] bg-[#e0e0e0] p-6 shadow-[20px_20px_40px_#bebebe,-20px_-20px_40px_#ffffff] lg:mb-0 lg:w-80 lg:p-10">
           {!isAdmin ? (
-            <p className="text-base font-bold uppercase tracking-[0.28em] text-black">
+            <p className="text-base font-bold uppercase tracking-[0.28em] text-black/40">
               {meta.eyebrow}
             </p>
           ) : null}
-          <h1 className={`${isAdmin ? "" : "mt-4 "}text-3xl font-bold tracking-tight`}>
+          <h1 className={`${isAdmin ? "" : "mt-4 "}text-3xl font-black tracking-tighter`}>
             {heading}
           </h1>
           {!isAdmin ? (
-            <p className="mt-4 text-base leading-7 text-black">{meta.description}</p>
+            <p className="mt-4 text-sm font-medium leading-relaxed text-black/60">{meta.description}</p>
           ) : null}
 
-          <nav className="mt-10 space-y-4">
-            <Link
-              href={`/dashboard/${role}`}
-              className={getNavItemClassName(`/dashboard/${role}`)}
-            >
-              Overview
-            </Link>
-            {role === "student" ? (
-              <>
-                <Link
-                  href="/dashboard/student/proposals"
-                  className={getNavItemClassName("/dashboard/student/proposals")}
-                >
-                  Submit Proposal
-                </Link>
-                <Link
-                  href="/dashboard/student/progress-reports"
-                  className={getNavItemClassName("/dashboard/student/progress-reports")}
-                >
-                  Progress Reports
-                </Link>
-                <Link
-                  href="/dashboard/student/progress"
-                  className={getNavItemClassName("/dashboard/student/progress")}
-                >
-                  Progress Dashboard
-                </Link>
-                <Link
-                  href="/dashboard/student/theses/submit"
-                  className={getNavItemClassName("/dashboard/student/theses/submit")}
-                >
-                  Submit Thesis
-                </Link>
-                <Link
-                  href="/dashboard/student/theses/corrections"
-                  className={getNavItemClassName("/dashboard/student/theses/corrections")}
-                >
-                  Thesis Corrections
-                </Link>
-              </>
-            ) : null}
-            {role === "supervisor" ? (
-              <>
-                <Link
-                  href="/dashboard/supervisor/students"
-                  className={getNavItemClassName("/dashboard/supervisor/students")}
-                >
-                  My Students
-                </Link>
-                <Link
-                  href="/dashboard/supervisor/progress-reports/sign"
-                  className={getNavItemClassName("/dashboard/supervisor/progress-reports/sign")}
-                >
-                  Sign Progress Reports
-                </Link>
-              </>
-            ) : null}
-            {role === "admin" ? (
-              <>
-                <Link
-                  href="/dashboard/admin/users"
-                  className={getNavItemClassName("/dashboard/admin/users")}
-                >
-                  Manage Users
-                </Link>
-                <Link
-                  href="/dashboard/admin/proposals/evaluate"
-                  className={getNavItemClassName("/dashboard/admin/proposals/evaluate")}
-                >
-                  Review & Approve Proposals
-                </Link>
-                <Link
-                  href="/dashboard/admin/assignments/supervisors"
-                  className={getNavItemClassName("/dashboard/admin/assignments/supervisors")}
-                >
-                  Supervisor Assignments
-                </Link>
-                <Link
-                  href="/dashboard/admin/assignments/examiners"
-                  className={getNavItemClassName("/dashboard/admin/assignments/examiners")}
-                >
-                  Examiner Assignments
-                </Link>
-                <Link
-                  href="/dashboard/admin/vivas/schedule"
-                  className={getNavItemClassName("/dashboard/admin/vivas/schedule")}
-                >
-                  Schedule Vivas
-                </Link>
-                <Link
-                  href="/dashboard/admin/theses"
-                  className={getNavItemClassName("/dashboard/admin/theses")}
-                >
-                  Finalize Theses
-                </Link>
-              </>
-            ) : null}
-            {role === "examiner" ? (
+          <div className="mt-10 flex flex-col gap-3 flex-1">
+            <nav className="contents">
               <Link
-                href="/dashboard/examiner/vivas"
-                className={getNavItemClassName("/dashboard/examiner/vivas")}
+                href={`/dashboard/${role}`}
+                className={getNavItemClassName(`/dashboard/${role}`)}
               >
-                Assigned Vivas
+                Overview
               </Link>
-            ) : null}
-          </nav>
+              
+              {role === "student" ? (
+                <>
+                  <Link href="/dashboard/student/proposals" className={getNavItemClassName("/dashboard/student/proposals")}>Proposals</Link>
+                  <Link href="/dashboard/student/progress-reports" className={getNavItemClassName("/dashboard/student/progress-reports")}>Progress Reports</Link>
+                  <Link href="/dashboard/student/progress" className={getNavItemClassName("/dashboard/student/progress")}>Milestones</Link>
+                  <Link href="/dashboard/student/theses/submit" className={getNavItemClassName("/dashboard/student/theses/submit")}>Thesis Submission</Link>
+                  <Link href="/dashboard/student/theses/corrections" className={getNavItemClassName("/dashboard/student/theses/corrections")}>Corrections</Link>
+                </>
+              ) : null}
+
+              {role === "supervisor" ? (
+                <>
+                  <Link href="/dashboard/supervisor/students" className={getNavItemClassName("/dashboard/supervisor/students")}>Student Roster</Link>
+                  <Link href="/dashboard/supervisor/proposals/evaluate" className={getNavItemClassName("/dashboard/supervisor/proposals/evaluate")}>Review Proposals</Link>
+                  <Link href="/dashboard/supervisor/progress-reports/sign" className={getNavItemClassName("/dashboard/supervisor/progress-reports/sign")}>Sign Progress Reports</Link>
+                </>
+              ) : null}
+
+              {role === "admin" ? (
+                <>
+                  <Link href="/dashboard/admin/users" className={getNavItemClassName("/dashboard/admin/users")}>Manage Users</Link>
+                  <Link href="/dashboard/admin/applications" className={getNavItemClassName("/dashboard/admin/applications")}>Applications</Link>
+                  <Link href="/dashboard/admin/proposals/evaluate" className={getNavItemClassName("/dashboard/admin/proposals/evaluate")}>Approve Proposals</Link>
+                  <Link href="/dashboard/admin/assignments/supervisors" className={getNavItemClassName("/dashboard/admin/assignments/supervisors")}>Supervisor Assignments</Link>
+                  <Link href="/dashboard/admin/assignments/examiners" className={getNavItemClassName("/dashboard/admin/assignments/examiners")}>Examiner Assignments</Link>
+                  <Link href="/dashboard/admin/vivas/schedule" className={getNavItemClassName("/dashboard/admin/vivas/schedule")}>Schedule Vivas</Link>
+                  <Link href="/dashboard/admin/theses" className={getNavItemClassName("/dashboard/admin/theses")}>Finalize Theses</Link>
+                </>
+              ) : null}
+
+              {role === "examiner" ? (
+                <>
+                  <Link href="/dashboard/examiner/vivas" className={getNavItemClassName("/dashboard/examiner/vivas")}>Assigned Vivas</Link>
+                </>
+              ) : null}
+            </nav>
+          </div>
+
+          <div className="mt-auto pt-8">
+            <Link
+              href="/logout"
+              className="block rounded-xl border-2 border-black bg-white px-5 py-4 text-center text-[10px] font-black uppercase tracking-widest text-black transition hover:bg-black hover:text-white shadow-[8px_8px_16px_#bebebe]"
+            >
+              Sign Out
+            </Link>
+          </div>
         </aside>
 
-        <div className="flex-1 overflow-y-auto rounded-[30px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:p-8">
+        <div className="flex-1 overflow-y-auto rounded-[40px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:p-10">
           {children}
         </div>
       </div>

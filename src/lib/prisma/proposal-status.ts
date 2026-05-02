@@ -4,6 +4,7 @@ const validTransitions: Record<ProposalStatus, ProposalStatus[]> = {
   [ProposalStatus.SUBMITTED]: [
     ProposalStatus.UNDER_REVIEW,
     ProposalStatus.REJECTED,
+    ProposalStatus.APPROVED,
   ],
   [ProposalStatus.UNDER_REVIEW]: [
     ProposalStatus.APPROVED,

@@ -104,77 +104,100 @@ export function SupervisorStudentProfile({
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[2rem] border border-gray-200 bg-transparent/75 p-5 shadow-none sm:p-7">
-        <Link
-          href="/dashboard/supervisor/students"
-          className="text-base font-medium text-black transition hover:text-black"
-        >
-          Back to My Students
-        </Link>
-        <h2 className="mt-4 text-3xl font-semibold text-black sm:text-4xl">
-          {student.user.displayName}
-        </h2>
-        <p className="mt-2 text-base text-black">{student.user.email}</p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-4">
-            <p className="text-base uppercase tracking-[0.18em] text-gray-400">
-              Programme
-            </p>
-            <p className="mt-2 text-lg font-semibold text-black">
-              {student.programType}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-4">
-            <p className="text-base uppercase tracking-[0.18em] text-gray-400">
-              Academic status
-            </p>
-            <p className="mt-2 text-lg font-semibold text-black">
-              {student.academicStatus}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-4">
-            <p className="text-base uppercase tracking-[0.18em] text-gray-400">
-              Enrolled
-            </p>
-            <p className="mt-2 text-lg font-semibold text-black">
-              {formatDateLabel(student.enrollmentDate)}
+    <div className="space-y-10">
+      <header className="pb-10 border-b-2 border-gray-300">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-4">
+            <Link
+              href="/dashboard/supervisor/students"
+              className="group inline-flex items-center text-xs font-black uppercase tracking-widest text-black/40 transition-colors hover:text-black"
+            >
+              <span className="mr-2 transition-transform group-hover:-translate-x-1">&larr;</span> Back to Roster
+            </Link>
+            <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
+              {student.user.displayName}
+            </h1>
+            <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
+              {student.user.email} · {student.programType} Researcher
             </p>
           </div>
         </div>
+      </header>
+
+      <section className="grid gap-6 sm:grid-cols-3">
+        <div className="rounded-[30px] border border-gray-300 bg-[#e0e0e0] px-8 py-6 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+            Programme
+          </p>
+          <p className="mt-2 text-2xl font-black text-black">
+            {student.programType}
+          </p>
+        </div>
+        <div className="rounded-[30px] border border-gray-300 bg-[#e0e0e0] px-8 py-6 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+            Academic Status
+          </p>
+          <p className="mt-2 text-2xl font-black text-black">
+            {student.academicStatus}
+          </p>
+        </div>
+        <div className="rounded-[30px] border border-gray-300 bg-[#e0e0e0] px-8 py-6 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+            Enrolled Since
+          </p>
+          <p className="mt-2 text-2xl font-black text-black">
+            {formatDateLabel(student.enrollmentDate)}
+          </p>
+        </div>
       </section>
 
-      <section
-        id="research-proposals"
-        className="rounded-[2rem] border border-gray-200 bg-transparent p-5 sm:p-7"
-      >
-        <p className="text-base font-semibold uppercase tracking-[0.2em] text-black">
-          Research Proposals
-        </p>
-        <h3 className="mt-3 text-2xl font-semibold text-black">
-          Proposal history access
-        </h3>
-        <p className="mt-3 text-base leading-6 text-black">
-          Use this student profile as your anchor point before opening proposal
-          workflow actions and historical review pages tied to the assigned student.
-        </p>
-      </section>
+      <div className="grid gap-8 lg:grid-cols-2">
+        <section
+          id="research-proposals"
+          className="rounded-[40px] bg-[#e0e0e0] p-1 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff]"
+        >
+          <div className="p-8 sm:p-10">
+            <h3 className="text-3xl font-black tracking-tight text-black">
+              Research Proposals
+            </h3>
+            <p className="mt-4 text-lg font-medium leading-relaxed text-gray-600">
+              Access the full history of research proposal submissions, supervisor evaluations, 
+              and final approval records for this student.
+            </p>
+            <div className="mt-8">
+              <Link
+                href={`#`}
+                className="rounded-2xl bg-black px-6 py-3 text-sm font-black text-white shadow-[4px_4px_8px_#bebebe] transition-all hover:bg-gray-800"
+              >
+                View Proposal History
+              </Link>
+            </div>
+          </div>
+        </section>
 
-      <section
-        id="progress-reports"
-        className="rounded-[2rem] border border-gray-200 bg-transparent p-5 sm:p-7"
-      >
-        <p className="text-base font-semibold uppercase tracking-[0.2em] text-black">
-          Progress Reports
-        </p>
-        <h3 className="mt-3 text-2xl font-semibold text-black">
-          Progress reporting context
-        </h3>
-        <p className="mt-3 text-base leading-6 text-black">
-          This workspace keeps the assigned student context visible while you review
-          their academic progress and coordinate future reporting follow-up.
-        </p>
-      </section>
+        <section
+          id="progress-reports"
+          className="rounded-[40px] bg-[#e0e0e0] p-1 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff]"
+        >
+          <div className="p-8 sm:p-10">
+            <h3 className="text-3xl font-black tracking-tight text-black">
+              Progress Reports
+            </h3>
+            <p className="mt-4 text-lg font-medium leading-relaxed text-gray-600">
+              Monitor periodic narrative reports, check sign-off status, and review 
+              feedback history from the assigned panels.
+            </p>
+            <div className="mt-8">
+              <Link
+                href={`#`}
+                className="rounded-2xl border border-black bg-transparent px-6 py-3 text-sm font-black text-black transition-all hover:bg-black hover:text-white"
+              >
+                Open Progress Logs
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

@@ -57,6 +57,10 @@ export function ProposalEvaluationPanel({
   const [isApproving, setIsApproving] = useState(false);
   const [proposalsToReview, setProposalsToReview] = useState<any[]>([]);
   const [isListLoading, setIsListLoading] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<{
+    show: boolean;
+    type: "APPROVED" | "REJECTED" | null;
+  }>({ show: false, type: null });
   const isAdmin = reviewerRole === "ADMINISTRATOR";
 
   useEffect(() => {
@@ -227,8 +231,9 @@ export function ProposalEvaluationPanel({
     }
   }
 
-  async function handleReject() {
+  async function executeReject() {
     const normalizedProposalId = proposalId.trim();
+    setShowConfirmModal({ show: false, type: null });
 
     if (!normalizedProposalId) {
       setErrorMessage("Load a proposal before requesting revisions.");
@@ -283,8 +288,21 @@ export function ProposalEvaluationPanel({
     }
   }
 
-  async function handleApprove() {
+  function handleReject() {
+    if (!proposalId) {
+      setErrorMessage("Load a proposal before requesting revisions.");
+      return;
+    }
+    if (!feedback.trim() || feedback.length < 50) {
+      setErrorMessage("Provide at least 50 characters of feedback explaining the rejection.");
+      return;
+    }
+    setShowConfirmModal({ show: true, type: "REJECTED" });
+  }
+
+  async function executeApprove() {
     const normalizedProposalId = proposalId.trim();
+    setShowConfirmModal({ show: false, type: null });
 
     if (!normalizedProposalId) {
       setErrorMessage("Load a proposal before approving it.");
@@ -332,20 +350,67 @@ export function ProposalEvaluationPanel({
     }
   }
 
+  function handleApprove() {
+    if (!proposalId) {
+      setErrorMessage("Load a proposal before approving it.");
+      return;
+    }
+    setShowConfirmModal({ show: true, type: "APPROVED" });
+  }
+
   return (
-    <main className="space-y-12">
-      <header className="border-b-2 border-gray-200 pb-10">
-        <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-          {isAdmin ? "Admin Review" : "Supervisor Evaluation"}
-        </p>
-        <h1 className="mt-3 text-5xl font-black tracking-tighter text-black sm:text-6xl">
-          {isAdmin ? "Approve research proposals" : "Evaluate a proposal under review"}
-        </h1>
-        <p className="mt-3 max-w-3xl text-xl font-medium leading-relaxed text-black/80">
-          {isAdmin
-            ? "Review pending proposals from all students and provide final approval or request revisions."
-            : "Load a proposal by ID, inspect existing evaluation history, and submit a single supervisor evaluation."}
-        </p>
+    <div className="relative space-y-10">
+      {/* Custom Neumorphic Modal */}
+      {showConfirmModal.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md">
+          <div className="w-full max-w-md scale-100 rounded-[40px] border border-gray-300 bg-[#e0e0e0] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all">
+            <h3 className="text-2xl font-bold text-black">
+              {showConfirmModal.type === "APPROVED" ? "Confirm Approval" : "Confirm Rejection"}
+            </h3>
+            <p className="mt-4 text-lg text-gray-600">
+              Are you sure you want to {showConfirmModal.type === "APPROVED" ? "approve" : "reject"} this research proposal?
+              {result && (
+                <div className="mt-2 text-black font-bold">
+                  {result.proposal.student.displayName}
+                </div>
+              )}
+            </p>
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-end">
+              <button
+                onClick={() => setShowConfirmModal({ show: false, type: null })}
+                className="rounded-2xl border border-gray-300 bg-[#e0e0e0] px-6 py-3 font-bold text-black shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] transition-all hover:bg-gray-300 active:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={showConfirmModal.type === "APPROVED" ? executeApprove : executeReject}
+                className={`rounded-2xl px-6 py-3 font-bold text-white shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] transition-all active:shadow-none ${
+                  showConfirmModal.type === "APPROVED" ? "bg-black hover:bg-gray-800" : "bg-red-600 hover:bg-red-700"
+                }`}
+              >
+                Yes, Proceed
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <header className="pb-10 border-b-2 border-gray-300">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-4">
+            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
+              {isAdmin ? "Admin Review" : "Supervisor Overview"}
+            </p>
+            <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
+              {isAdmin ? "Approve Proposals" : "Review Proposals"}
+            </h1>
+            <p className="max-w-3xl text-xl font-medium leading-relaxed text-black/80">
+              {isAdmin
+                ? "Review pending research proposals from all active students and provide final approval or request revisions."
+                : "Evaluate submitted proposals from your assigned postgraduate students and provide formal academic feedback."}
+            </p>
+          </div>
+        </div>
       </header>
 
       {errorMessage ? (
@@ -450,8 +515,9 @@ export function ProposalEvaluationPanel({
               {isAdmin ? "Finalize decision" : "Submit evaluation"}
             </h2>
             <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
-              The proposal must already be in the <span className="font-black text-black">UNDER_REVIEW</span> state
-              {!isAdmin && ", and you must be assigned to the student"}.
+              {isAdmin 
+                ? "Provide your final administrative decision and feedback to transition the proposal status."
+                : "Submit your academic evaluation and score for the assigned student's research proposal."}
             </p>
 
             <div className="mt-5 grid gap-4">
@@ -602,6 +668,6 @@ export function ProposalEvaluationPanel({
           )}
         </section>
       </section>
-    </main>
+    </div>
   );
 }

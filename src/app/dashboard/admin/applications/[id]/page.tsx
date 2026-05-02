@@ -2,7 +2,7 @@ import { ApplicationReviewPanel } from "@/components/admin/application-review-pa
 
 export default function AdminApplicationReviewPage({ params }: { params: { id: string } }) {
   return (
-    <main className="h-full overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.18),_transparent_28%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)] px-6 py-8">
+    <main className="h-full overflow-y-auto px-2 py-4 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-4xl">
         <ApplicationReviewPanel applicationId={params.id} />
       </div>
