@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createSessionRequestSchema } from "@/lib/auth/schemas";
 import {
   SESSION_COOKIE_MAX_AGE_SECONDS,
   SESSION_COOKIE_NAME,
@@ -18,6 +17,11 @@ import {
   buildSessionActivityValue,
   hasSessionExpiredByInactivity,
 } from "@/lib/security/session";
+import { sanitizedString } from "@/lib/validation/schemas";
+
+const createSessionRequestSchema = z.object({
+  idToken: sanitizedString.min(1, "Missing idToken."),
+});
 
 function setSessionCookies(response: NextResponse, sessionCookie: string) {
   response.cookies.set(
@@ -71,7 +75,12 @@ export async function POST(request: Request) {
 
   try {
     decodedToken = await verifyFirebaseToken(body.idToken);
-  } catch {
+  } catch (error: any) {
+    console.error("Firebase Token Verification Failed:", {
+      message: error.message,
+      code: error.code,
+      projectId: process.env.FIREBASE_PROJECT_ID,
+    });
     return NextResponse.json(
       { error: "Invalid or expired Firebase token." },
       { status: 401 },

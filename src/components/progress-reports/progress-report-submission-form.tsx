@@ -3,8 +3,6 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import { progressReportSubmissionSchema } from "@/lib/progress-reports/schemas";
-
 export function ProgressReportSubmissionForm() {
   const router = useRouter();
   const [periodLabel, setPeriodLabel] = useState("");
@@ -16,15 +14,8 @@ export function ProgressReportSubmissionForm() {
     event.preventDefault();
     setErrorMessage(null);
 
-    const parsed = progressReportSubmissionSchema.safeParse({
-      periodLabel,
-      narrative,
-    });
-
-    if (!parsed.success) {
-      setErrorMessage(
-        parsed.error.issues[0]?.message ?? "Invalid progress report details.",
-      );
+    if (narrative.length < 100) {
+      setErrorMessage("Narrative must be at least 100 characters long.");
       return;
     }
 
@@ -37,8 +28,8 @@ export function ProgressReportSubmissionForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          periodLabel: parsed.data.periodLabel,
-          narrative: parsed.data.narrative,
+          periodLabel,
+          narrative,
         }),
       });
 
@@ -109,13 +100,7 @@ export function ProgressReportSubmissionForm() {
         </button>
         <button
           type="submit"
-          disabled={
-            isSubmitting ||
-            !progressReportSubmissionSchema.safeParse({
-              periodLabel,
-              narrative,
-            }).success
-          }
+          disabled={isSubmitting || narrative.length < 100 || !periodLabel}
           className="rounded-2xl bg-black px-8 py-3 text-base font-semibold text-black transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? "Submitting..." : "Submit Report"}

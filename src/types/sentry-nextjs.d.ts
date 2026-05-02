@@ -1,3 +1,5 @@
+import "@sentry/nextjs";
+
 declare module "@sentry/nextjs" {
   export function captureException(
     error: unknown,

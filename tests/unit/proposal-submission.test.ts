@@ -51,26 +51,24 @@ describe("proposal submission utilities", () => {
   });
 
   it("allows only an Administrator to transition a proposal to APPROVED", async () => {
-    const promise = updateResearchProposalStatus(
-      "proposal-1",
-      {
-        status: ProposalStatus.APPROVED,
-      },
-      {
-        uid: "firebase-student-1",
-        userId: "user-student-1",
-        firebaseUid: "firebase-student-1",
-        role: "STUDENT",
-        email: "student@example.com",
-      },
-    );
-
-    await expect(promise).rejects.toMatchObject<ProposalSubmissionError>({
+    await expect(
+      updateResearchProposalStatus(
+        "proposal-1",
+        {
+          status: ProposalStatus.APPROVED,
+        },
+        {
+          uid: "firebase-student-1",
+          userId: "user-student-1",
+          firebaseUid: "firebase-student-1",
+          role: "STUDENT",
+          email: "student@example.com",
+        },
+      ),
+    ).rejects.toMatchObject<ProposalSubmissionError>({
       status: 403,
+      message: "Only administrators can update proposal status.",
     });
-    await expect(promise).rejects.toThrow(
-      /Only administrators can update the proposal status\./,
-    );
 
     expect(prisma.researchProposal.findUnique).not.toHaveBeenCalled();
   });

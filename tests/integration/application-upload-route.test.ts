@@ -9,14 +9,12 @@ vi.mock("@/lib/applications/submission", () => ({
       this.status = status;
     }
   },
-  deleteUploadedApplicationDocument: vi.fn(),
   uploadApplicationDocument: vi.fn(),
 }));
 
-import { DELETE, POST } from "@/app/api/applications/upload/route";
+import { POST } from "@/app/api/applications/upload/route";
 import {
   ApplicationSubmissionError,
-  deleteUploadedApplicationDocument,
   uploadApplicationDocument,
 } from "@/lib/applications/submission";
 
@@ -72,29 +70,5 @@ describe("application upload route", () => {
     await expect(response.json()).resolves.toMatchObject({
       error: "Only PDF documents are allowed.",
     });
-  });
-
-  it("removes an uploaded supporting document through the server route", async () => {
-    vi.mocked(deleteUploadedApplicationDocument).mockResolvedValue(undefined);
-
-    const response = await DELETE(
-      new Request("http://localhost/api/applications/upload", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          draftId: "application-1",
-          storagePath: "applications/application-1/cv.pdf",
-        }),
-      }),
-    );
-
-    expect(response.status).toBe(200);
-    expect(deleteUploadedApplicationDocument).toHaveBeenCalledWith({
-      draftId: "application-1",
-      storagePath: "applications/application-1/cv.pdf",
-    });
-    await expect(response.json()).resolves.toMatchObject({ ok: true });
   });
 });

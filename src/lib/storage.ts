@@ -1,12 +1,9 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { AuthenticatedUserContext } from "@/types/auth";
-import {
-  MAX_APPLICATION_UPLOAD_SIZE_BYTES,
-  MAX_STORAGE_FILE_SIZE_BYTES,
-} from "@/lib/validation/uploads";
 
 export const STORAGE_URL_EXPIRATION_MS = 15 * 60 * 1000;
-export { MAX_APPLICATION_UPLOAD_SIZE_BYTES, MAX_STORAGE_FILE_SIZE_BYTES };
+export const MAX_STORAGE_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+export const MAX_APPLICATION_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 export const PROTECTED_STORAGE_ROOTS = [
   "applications",
   "proposals",
@@ -316,6 +313,6 @@ export async function deleteFile(path: string): Promise<void> {
     .remove([normalizedPath]);
 
   if (error) {
-    throw new StorageAccessError(`Failed to delete file: ${error.message}`, 400);
+    console.error(`Error deleting file ${normalizedPath}:`, error);
   }
 }

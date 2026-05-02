@@ -21,7 +21,7 @@ export const SESSION_COOKIE_MAX_AGE_SECONDS = SESSION_ABSOLUTE_MAX_AGE_SECONDS;
 export const SESSION_COOKIE_MAX_AGE_MS = SESSION_COOKIE_MAX_AGE_SECONDS * 1000;
 
 function normalizePrivateKey(privateKey: string) {
-  return privateKey.replace(/\\n/g, "\n");
+  return privateKey.replace(/^["']|["']$/g, "").replace(/\\n/g, "\n");
 }
 
 function getRequiredFirebaseAdminConfig() {

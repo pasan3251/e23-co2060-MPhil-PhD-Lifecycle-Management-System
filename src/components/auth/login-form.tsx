@@ -2,14 +2,20 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { z } from "zod";
 
-import { loginCredentialsSchema } from "@/lib/auth/schemas";
 import {
   getUserIdTokenResult,
   signInWithEmailPassword,
   signOutUser,
 } from "@/lib/firebase/client";
+import { sanitizedEmail, securePassword } from "@/lib/validation/schemas";
 import { isAppUserRole, type AppUserRole } from "@/types/auth";
+
+const loginSchema = z.object({
+  email: sanitizedEmail,
+  password: securePassword,
+});
 
 const roleRedirectMap: Record<AppUserRole, string> = {
   STUDENT: "/dashboard/student",
@@ -53,7 +59,6 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -67,7 +72,7 @@ export function LoginForm() {
     event.preventDefault();
     setErrorMessage(null);
 
-    const parsedCredentials = loginCredentialsSchema.safeParse({
+    const parsedCredentials = loginSchema.safeParse({
       email,
       password,
     });
@@ -164,51 +169,29 @@ export function LoginForm() {
         <label className="text-base font-bold text-black" htmlFor="password">
           Password
         </label>
-        <div className="flex items-center gap-2 rounded-2xl border border-gray-300 bg-gray-50/80 px-4 py-1.5 focus-within:border-gray-300">
-          <input
-            id="password"
-            name="password"
-            type={isPasswordVisible ? "text" : "password"}
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full bg-transparent py-1.5 text-black outline-none"
-            placeholder="Enter your password"
-            data-testid="login-password"
-          />
-          <button
-            type="button"
-            onClick={() => setIsPasswordVisible((current) => !current)}
-            className="shrink-0 text-sm font-semibold text-black transition hover:opacity-70"
-            aria-label={isPasswordVisible ? "Hide password" : "Show password"}
-            aria-pressed={isPasswordVisible}
-          >
-            {isPasswordVisible ? "Hide" : "Show"}
-          </button>
-        </div>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          className="w-full rounded-2xl border border-gray-300 bg-gray-50/80 px-4 py-3 text-black outline-none transition focus:border-gray-300"
+          placeholder="Enter your password"
+          data-testid="login-password"
+        />
       </div>
 
-      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          disabled={isSubmitting}
-          className="theme-button theme-button--compact theme-button--black"
-        >
-          <span className="theme-button__label">Back</span>
-        </button>
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="theme-button"
-          data-testid="login-submit"
-        >
-          <span className="theme-button__label">
-            {isSubmitting ? "Signing in..." : "Sign in"}
-          </span>
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="theme-button theme-button--block"
+        data-testid="login-submit"
+      >
+        <span className="theme-button__label">
+          {isSubmitting ? "Signing in..." : "Sign in"}
+        </span>
+      </button>
     </form>
   );
 }

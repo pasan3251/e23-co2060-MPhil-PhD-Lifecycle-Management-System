@@ -3,11 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 
-import {
-  correctionSubmissionSchema,
-  uploadedPdfDocumentSchema,
-} from "@/lib/theses/schemas";
-
 type Correction = {
   id: string;
   correctionType: string;
@@ -43,31 +38,7 @@ export function ThesisCorrectionPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const nextFile = event.target.files?.[0] ?? null;
-
-    if (!nextFile) {
-      setFile(null);
-      return;
-    }
-
-    const parsedDocument = uploadedPdfDocumentSchema.safeParse({
-      fileName: nextFile.name,
-      mimeType: nextFile.type,
-      sizeBytes: nextFile.size,
-    });
-
-    if (!parsedDocument.success) {
-      setError(
-        parsedDocument.error.issues[0]?.message ??
-          "Choose a valid corrected PDF document.",
-      );
-      setFile(null);
-      event.target.value = "";
-      return;
-    }
-
-    setError(null);
-    setFile(nextFile);
+    setFile(event.target.files?.[0] ?? null);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -83,26 +54,6 @@ export function ThesisCorrectionPanel({
       return;
     }
 
-    const parsedSubmission = correctionSubmissionSchema.safeParse({
-      correctionType,
-      description,
-      document: file
-        ? {
-            fileName: file.name,
-            mimeType: file.type,
-            sizeBytes: file.size,
-          }
-        : undefined,
-    });
-
-    if (!parsedSubmission.success) {
-      setError(
-        parsedSubmission.error.issues[0]?.message ??
-          "Invalid correction submission details.",
-      );
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -110,7 +61,15 @@ export function ThesisCorrectionPanel({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(parsedSubmission.data),
+        body: JSON.stringify({
+          correctionType,
+          description,
+          document: {
+            fileName: file.name,
+            mimeType: "application/pdf",
+            sizeBytes: file.size,
+          },
+        }),
       });
       const payload = (await response.json()) as {
         error?: string;

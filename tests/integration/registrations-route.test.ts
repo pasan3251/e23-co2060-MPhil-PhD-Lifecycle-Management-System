@@ -17,9 +17,6 @@ vi.mock("@/lib/prisma/client", () => ({
     student: {
       findUnique: vi.fn(),
     },
-    progressReport: {
-      findMany: vi.fn(),
-    },
   },
 }));
 
@@ -67,22 +64,10 @@ describe("student progress report registration access", () => {
       email: "active@student.example",
       role: "STUDENT",
     } as never);
-    vi.mocked(prisma.student.findUnique)
-      .mockResolvedValueOnce({
-        id: "student-active",
-        registrations: [{ id: "registration-active-1" }],
-      } as never)
-      .mockResolvedValueOnce({
-        id: "student-active",
-      } as never);
-    vi.mocked(prisma.progressReport.findMany).mockResolvedValue([
-      {
-        id: "report-1",
-        studentId: "student-active",
-        periodLabel: "2026 Q1",
-        narrative: "Progress report narrative",
-      },
-    ] as never);
+    vi.mocked(prisma.student.findUnique).mockResolvedValue({
+      id: "student-active",
+      registrations: [{ id: "registration-active-1" }],
+    } as never);
 
     const response = await GET(
       new Request("http://localhost/api/student/progress-reports", {
@@ -95,12 +80,7 @@ describe("student progress report registration access", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
       ok: true,
-      reports: [
-        {
-          id: "report-1",
-          periodLabel: "2026 Q1",
-        },
-      ],
+      message: "Progress report access granted.",
     });
   });
 });

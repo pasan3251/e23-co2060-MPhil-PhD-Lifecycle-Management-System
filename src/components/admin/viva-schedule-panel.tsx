@@ -3,8 +3,6 @@
 import { useRouter } from "next/navigation";
 import React, { useState, useRef, useEffect, type FormEvent } from "react";
 
-import { scheduleVivaSchema } from "@/lib/vivas/schemas";
-
 type ThesisForViva = {
   id: string;
   title: string;
@@ -136,21 +134,6 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
     event.preventDefault();
     setMessage(null);
     setError(null);
-
-    const parsedSchedule = scheduleVivaSchema.safeParse({
-      thesisId,
-      venue,
-      scheduledDate,
-    });
-
-    if (!parsedSchedule.success) {
-      setError(
-        parsedSchedule.error.issues[0]?.message ??
-          "Invalid viva scheduling details.",
-      );
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -159,9 +142,9 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          thesisId: parsedSchedule.data.thesisId,
-          venue: parsedSchedule.data.venue,
-          scheduledDate: parsedSchedule.data.scheduledDate.toISOString(),
+          thesisId,
+          venue,
+          scheduledDate: new Date(scheduledDate).toISOString(),
         }),
       });
       const payload = (await response.json()) as { error?: string };

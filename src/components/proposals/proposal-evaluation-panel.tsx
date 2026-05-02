@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
-import { proposalEvaluationSchema } from "@/lib/proposals/evaluation-schemas";
-
 type EvaluationPayload = {
   proposal: {
     id: string;
@@ -154,15 +152,7 @@ export function ProposalEvaluationPanel() {
 
   async function handleLookup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    const normalizedProposalId = proposalId.trim();
-
-    if (!normalizedProposalId) {
-      setErrorMessage("Enter a proposal ID before loading evaluations.");
-      return;
-    }
-
-    await loadProposalById(normalizedProposalId);
+    await loadProposalById(proposalId);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -170,41 +160,24 @@ export function ProposalEvaluationPanel() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const normalizedProposalId = proposalId.trim();
-
-    if (!normalizedProposalId) {
+    if (!proposalId.trim()) {
       setErrorMessage("Enter a proposal ID before submitting an evaluation.");
-      return;
-    }
-
-    if (!numericalScore.trim()) {
-      setErrorMessage("Enter a score between 0 and 100 before submitting.");
-      return;
-    }
-
-    const parsedEvaluation = proposalEvaluationSchema.safeParse({
-      numericalScore: Number(numericalScore),
-      feedback,
-    });
-
-    if (!parsedEvaluation.success) {
-      setErrorMessage(
-        parsedEvaluation.error.issues[0]?.message ??
-          "Invalid proposal evaluation.",
-      );
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/proposals/${normalizedProposalId}/evaluations`, {
+      const response = await fetch(`/api/proposals/${proposalId}/evaluations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify(parsedEvaluation.data),
+        body: JSON.stringify({
+          numericalScore: Number(numericalScore),
+          feedback,
+        }),
       });
       const payload = (await response.json()) as {
         evaluation?: unknown;
@@ -220,7 +193,7 @@ export function ProposalEvaluationPanel() {
       setNumericalScore("");
       setFeedback("");
 
-      const refreshResponse = await fetch(`/api/proposals/${normalizedProposalId}/evaluations`, {
+      const refreshResponse = await fetch(`/api/proposals/${proposalId}/evaluations`, {
         credentials: "include",
       });
       const refreshPayload = (await refreshResponse.json()) as EvaluationPayload;
@@ -240,12 +213,7 @@ export function ProposalEvaluationPanel() {
   }
 
   async function handleReject() {
-    const normalizedProposalId = proposalId.trim();
-
-    if (!normalizedProposalId) {
-      setErrorMessage("Load a proposal before requesting revisions.");
-      return;
-    }
+    if (!proposalId) return;
     setErrorMessage(null);
     setSuccessMessage(null);
 
@@ -259,7 +227,7 @@ export function ProposalEvaluationPanel() {
     setIsRejecting(true);
 
     try {
-      const response = await fetch(`/api/proposals/${normalizedProposalId}/status`, {
+      const response = await fetch(`/api/proposals/${proposalId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -285,7 +253,7 @@ export function ProposalEvaluationPanel() {
       setNumericalScore("");
       setFeedback("");
 
-      await loadProposalById(normalizedProposalId);
+      await loadProposalById(proposalId);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Unable to reject the proposal.",
@@ -296,19 +264,14 @@ export function ProposalEvaluationPanel() {
   }
 
   async function handleApprove() {
-    const normalizedProposalId = proposalId.trim();
-
-    if (!normalizedProposalId) {
-      setErrorMessage("Load a proposal before approving it.");
-      return;
-    }
+    if (!proposalId) return;
     setErrorMessage(null);
     setSuccessMessage(null);
 
     setIsApproving(true);
 
     try {
-      const response = await fetch(`/api/proposals/${normalizedProposalId}/status`, {
+      const response = await fetch(`/api/proposals/${proposalId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -334,7 +297,7 @@ export function ProposalEvaluationPanel() {
       setNumericalScore("");
       setFeedback("");
 
-      await loadProposalById(normalizedProposalId);
+      await loadProposalById(proposalId);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Unable to approve the proposal.",
