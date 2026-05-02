@@ -142,14 +142,13 @@ export function SupervisorStudentsPanel({
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Supervisor Overview
+              Roster
             </p>
             <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
               Student Roster
             </h2>
             <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-              Review assigned postgraduate researchers, spot lapsed registrations, and
-              jump directly to each student's profile and progress context.
+              Review assigned students, registrations, and latest proposals.
             </p>
           </div>
         </div>
@@ -213,7 +212,7 @@ export function SupervisorStudentsPanel({
       ) : filteredStudents.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-gray-300 bg-white py-24 text-center">
           <h3 className="text-3xl font-black text-black">No matches found</h3>
-          <p className="mt-4 text-lg font-medium text-black/70">Try adjusting your filters to find who you're looking for.</p>
+          <p className="mt-4 text-lg font-medium text-black/70">Adjust your filters and try again.</p>
         </div>
       ) : (
         <div className="rounded-[24px] border border-gray-300 bg-white p-4 sm:p-6">
@@ -232,21 +231,21 @@ export function SupervisorStudentsPanel({
                   const proposalLabel = getProposalLabel(entry.latestProposal);
 
                   return (
-                    <tr key={entry.assignmentId} className="group transition-colors hover:bg-black">
+                    <tr key={entry.assignmentId}>
                       <td className="py-8 pl-4 pr-6">
                         <div className="flex flex-col">
                           <Link
                             href={`/dashboard/supervisor/students/${entry.student.id}`}
-                            className="text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white"
+                            className="text-2xl font-black tracking-tight text-black"
                           >
                             {entry.student.displayName}
                           </Link>
-                          <span className="mt-1 text-sm font-bold text-black/60 transition-colors group-hover:text-white/70">{entry.student.email}</span>
+                          <span className="mt-1 text-sm font-bold text-black/60">{entry.student.email}</span>
                           <div className="mt-3 flex items-center gap-3">
-                            <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
+                            <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black">
                               {entry.student.programType}
                             </span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-black/40 transition-colors group-hover:text-white/60">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-black/40">
                               {entry.isPrimary ? "Primary" : "Co-supervisor"} · {formatDateLabel(entry.assignedAt)}
                             </span>
                           </div>
@@ -255,17 +254,17 @@ export function SupervisorStudentsPanel({
                       <td className="py-8 pr-6">
                         <div className="flex flex-col space-y-4">
                           <div className="flex items-center gap-4">
-                            <div className="h-2 w-2 rounded-full bg-black transition-colors group-hover:bg-white" />
+                            <div className="h-2 w-2 rounded-full bg-black" />
                             <div className="flex flex-col">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/60">Registration</span>
-                              <span className="text-sm font-bold text-black transition-colors group-hover:text-white">{registrationLabel} · Expires {formatDateLabel(entry.currentRegistration?.expirationDate)}</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-black/40">Registration</span>
+                              <span className="text-sm font-bold text-black">{registrationLabel} · Expires {formatDateLabel(entry.currentRegistration?.expirationDate)}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
-                            <div className={`h-2 w-2 rounded-full transition-colors group-hover:bg-white ${proposalLabel === 'APPROVED' ? 'bg-black' : 'bg-gray-400'}`} />
+                            <div className={`h-2 w-2 rounded-full ${proposalLabel === 'APPROVED' ? 'bg-black' : 'bg-gray-400'}`} />
                             <div className="flex flex-col">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/60">Latest Proposal</span>
-                              <span className="max-w-[200px] truncate text-sm font-bold text-black transition-colors group-hover:text-white">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-black/40">Latest Proposal</span>
+                              <span className="max-w-[200px] truncate text-sm font-bold text-black">
                                 {entry.latestProposal ? entry.latestProposal.title : "No proposal submitted"}
                               </span>
                             </div>
@@ -276,15 +275,9 @@ export function SupervisorStudentsPanel({
                         <div className="flex flex-col items-end gap-3">
                           <Link
                             href={`/dashboard/supervisor/students/${entry.student.id}`}
-                            className="rounded-xl border-2 border-black bg-white px-5 py-2 text-xs font-black text-black transition group-hover:border-white group-hover:bg-transparent group-hover:text-white"
+                            className="rounded-xl border-2 border-black bg-white px-5 py-2 text-xs font-black text-black transition-all duration-150 hover:-translate-y-0.5 hover:bg-black hover:text-white"
                           >
                             Open Profile
-                          </Link>
-                          <Link
-                            href={`/dashboard/supervisor/students/${entry.student.id}#progress-reports`}
-                            className="rounded-xl border border-gray-300 bg-white px-5 py-2 text-xs font-black text-black transition group-hover:border-white group-hover:bg-transparent group-hover:text-white"
-                          >
-                            Reports
                           </Link>
                         </div>
                       </td>

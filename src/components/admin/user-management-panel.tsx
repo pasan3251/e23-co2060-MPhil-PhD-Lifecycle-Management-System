@@ -194,8 +194,8 @@ export function UserManagementPanel() {
 
   const visibleRoleHint = useMemo(() => {
     return selectedRole === "ALL"
-      ? "Showing all administrator-managed accounts."
-      : `Showing ${selectedRole.toLowerCase()} accounts only.`;
+      ? "Showing all accounts."
+      : `Showing ${selectedRole.toLowerCase()} accounts.`;
   }, [selectedRole]);
 
   async function handleCreateUser(event: React.FormEvent<HTMLFormElement>) {
@@ -309,14 +309,13 @@ export function UserManagementPanel() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Administration
+              Users
             </p>
             <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
               User Accounts
             </h2>
             <p className="max-w-2xl font-medium text-xl leading-relaxed text-black/80">
-              Manage system access for students, supervisors, examiners, and
-              staff.
+              Review and update access for students, supervisors, examiners, and staff.
             </p>
           </div>
 
@@ -335,7 +334,7 @@ export function UserManagementPanel() {
               className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold"
             >
               <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black box-border px-[1.5em] py-[0.75em] text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-                Create New User
+                Create User
               </span>
             </button>
           </div>
@@ -398,7 +397,7 @@ export function UserManagementPanel() {
                   className="px-6 py-12 text-center font-bold text-black/40"
                   colSpan={5}
                 >
-                  No matching user accounts found.
+                  No matching users.
                 </td>
               </tr>
             ) : (

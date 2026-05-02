@@ -54,9 +54,9 @@ export function ProgressReportSignoffList() {
   if (reports.length === 0) {
     return (
       <div className="mt-8 rounded-[24px] border border-dashed border-gray-300 bg-white p-12 text-center">
-        <p className="text-2xl font-black tracking-tight text-black">Nothing pending</p>
+        <p className="text-2xl font-black tracking-tight text-black">No reports pending</p>
         <p className="mt-2 text-base font-medium text-black/70">
-        No pending progress reports requiring your sign-off.
+        No progress reports need your sign-off.
         </p>
       </div>
     );

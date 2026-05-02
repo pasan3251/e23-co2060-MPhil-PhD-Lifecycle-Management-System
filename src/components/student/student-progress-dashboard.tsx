@@ -111,13 +111,13 @@ export function StudentProgressDashboard({
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Student Progress
+              Milestones
             </p>
             <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
               {progress.student.displayName}
             </h2>
             <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-              Postgraduate Lifecycle Tracking for {progress.student.programType} Candidate
+              {progress.student.programType} candidate
             </p>
           </div>
         </div>
@@ -171,7 +171,7 @@ export function StudentProgressDashboard({
               </h3>
             </div>
             <div className="rounded-full border-2 border-black bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black">
-              Confidential Review Phase
+              Review phase
             </div>
           </div>
 
@@ -217,7 +217,7 @@ export function StudentProgressDashboard({
           ) : (
             <div className="mt-8 rounded-[24px] border border-dashed border-gray-300 bg-white px-6 py-5">
               <p className="text-base font-medium text-black/70">
-                Examiner feedback is currently locked and will be released following administrative validation.
+                Examiner feedback will be released after administrative validation.
               </p>
             </div>
           )}

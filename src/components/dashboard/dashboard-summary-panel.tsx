@@ -79,10 +79,9 @@ export function DashboardEmptyState({ roleLabel }: { roleLabel: string }) {
       <p className="text-base font-bold uppercase tracking-[0.24em] text-black/40">
         {roleLabel}
       </p>
-      <h2 className="mt-6 text-4xl font-black text-black tracking-tight">Nothing to show yet</h2>
+      <h2 className="mt-6 text-4xl font-black text-black tracking-tight">No data yet</h2>
       <p className="mt-4 text-lg leading-relaxed text-black/60 max-w-lg mx-auto">
-        This dashboard will populate once live workflow data becomes available for
-        your role.
+        This dashboard will populate when workflow data is available for your role.
       </p>
     </section>
   );
@@ -116,7 +115,7 @@ export function DashboardSummaryPanel({
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              {summary.roleLabel} Overview
+              {summary.roleLabel}
             </p>
             <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
               {summary.title}
@@ -136,7 +135,7 @@ export function DashboardSummaryPanel({
 
       <section className="pt-6">
         <div className="flex items-center gap-4 mb-8">
-          <h3 className="text-3xl font-black tracking-tight text-black">Quick Actions</h3>
+          <h3 className="text-3xl font-black tracking-tight text-black">Actions</h3>
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 

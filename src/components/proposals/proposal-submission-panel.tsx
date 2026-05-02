@@ -276,14 +276,13 @@ export function ProposalSubmissionPanel() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Research Workspace
+              Proposal workflow
             </p>
             <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
               Proposals
             </h1>
             <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-              Submit and manage your research proposals. New versions can be 
-              uploaded following academic feedback or rejection.
+              Submit proposals and new versions after feedback.
             </p>
           </div>
           {proposal && (
@@ -318,7 +317,7 @@ export function ProposalSubmissionPanel() {
                   {proposal ? "Revise Proposal" : "New Submission"}
                 </h2>
                 <p className="mt-3 text-base font-medium leading-6 text-black/70">
-                  Version control remains enabled for academic integrity and review history.
+                  All versions remain available for review.
                 </p>
               </div>
               {proposal && (
@@ -366,7 +365,7 @@ export function ProposalSubmissionPanel() {
                     Document Upload
                   </p>
                   <p className="mt-3 text-base font-medium text-black/70">
-                    Upload a PDF document to create a new version for review.
+                    Upload a PDF to create a new version.
                   </p>
                   <input
                     type="file"
@@ -392,7 +391,7 @@ export function ProposalSubmissionPanel() {
                     className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-sm font-bold uppercase tracking-widest disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black px-8 py-3 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-                      {isSubmitting ? "Processing..." : proposal ? "Submit Revision" : "Send Proposal"}
+                      {isSubmitting ? "Processing..." : proposal ? "Submit Revision" : "Submit Proposal"}
                     </span>
                   </button>
                 </div>
@@ -407,7 +406,7 @@ export function ProposalSubmissionPanel() {
               <div>
                 <h2 className="text-3xl font-black tracking-tight text-black">History</h2>
                 <p className="mt-3 text-base font-medium text-black/70">
-                  Every proposal version stays visible in the repository.
+                  All proposal versions remain available here.
                 </p>
               </div>
               <button
@@ -422,7 +421,7 @@ export function ProposalSubmissionPanel() {
 
             {!proposal ? (
               <div className="mt-8 rounded-[24px] border border-dashed border-gray-300 bg-white px-5 py-12 text-center">
-                <p className="text-2xl font-black tracking-tight text-black">Repository Empty</p>
+                <p className="text-2xl font-black tracking-tight text-black">No proposal submitted</p>
                 <p className="mt-2 text-base font-medium text-black/70">
                   Submit your first proposal to start version tracking.
                 </p>

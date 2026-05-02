@@ -264,14 +264,13 @@ export function SupervisorAssignmentPanel() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Administration
+              Assignments
             </p>
             <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
               Supervisor Assignments
             </h2>
             <p className="max-w-2xl font-medium text-xl leading-relaxed text-black/80">
-              Manage student-supervisor pairings and primary oversight roles for
-              the postgraduate journey.
+              Assign supervisors and primary roles for students.
             </p>
           </div>
         </div>
@@ -294,7 +293,7 @@ export function SupervisorAssignmentPanel() {
         <div className="space-y-6 lg:col-span-2">
           <div className="flex items-center gap-4">
             <p className="text-sm font-black uppercase tracking-widest text-black/40">
-              Student Records & Assignments
+              Students
             </p>
             <div className="h-px flex-1 bg-gray-200" />
           </div>

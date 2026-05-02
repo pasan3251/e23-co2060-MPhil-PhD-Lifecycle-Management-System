@@ -68,7 +68,7 @@ export function ProgressReportSubmissionForm() {
 
       <div className="space-y-2">
         <label htmlFor="periodLabel" className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
-          Reporting Period (e.g., Jan-Jun 2024)
+          Reporting period
         </label>
         <input
           id="periodLabel"
@@ -76,14 +76,14 @@ export function ProgressReportSubmissionForm() {
           required
           value={periodLabel}
           onChange={(e) => setPeriodLabel(e.target.value)}
-          placeholder="Enter the time period this report covers"
+          placeholder="e.g. Jan-Jun 2024"
           className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none transition focus:bg-gray-50"
         />
       </div>
 
       <div className="space-y-2">
         <label htmlFor="narrative" className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
-          Narrative Report
+          Report
         </label>
         <textarea
           id="narrative"
@@ -91,7 +91,7 @@ export function ProgressReportSubmissionForm() {
           rows={10}
           value={narrative}
           onChange={(e) => setNarrative(e.target.value)}
-          placeholder="Provide a detailed update on your research progress, challenges, and next steps (min 100 characters)..."
+          placeholder="Summarize your progress, challenges, and next steps (min 100 characters)..."
           className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none transition focus:bg-gray-50"
         />
         <p className="text-right text-base font-medium text-black/40">

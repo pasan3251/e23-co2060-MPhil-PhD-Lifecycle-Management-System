@@ -401,15 +401,15 @@ export function ProposalEvaluationPanel({
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              {isAdmin ? "Admin Review" : "Supervisor Overview"}
+              Proposals
             </p>
             <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
               {isAdmin ? "Approve Proposals" : "Review Proposals"}
             </h1>
             <p className="max-w-3xl text-xl font-medium leading-relaxed text-black/80">
               {isAdmin
-                ? "Review pending research proposals from all active students and provide final approval or request revisions."
-                : "Evaluate submitted proposals from your assigned postgraduate students and provide formal academic feedback."}
+                ? "Review pending proposals and approve or request revisions."
+                : "Review assigned proposals and submit evaluations."}
             </p>
           </div>
         </div>
@@ -435,8 +435,8 @@ export function ProposalEvaluationPanel({
             </h2>
             <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
               {isAdmin
-                ? "Select a submission from the list below to review its history and status."
-                : "Quickly select a proposal from your assigned students to start evaluating."}
+                ? "Select a proposal to review its status and history."
+                : "Select a proposal to load it for review."}
             </p>
 
             <div className="mt-5 space-y-3">
@@ -448,8 +448,8 @@ export function ProposalEvaluationPanel({
               ) : proposalsToReview.length === 0 ? (
                 <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-6 text-center text-base font-bold text-black/40">
                   {isAdmin
-                    ? "No proposals are currently pending review."
-                    : "No assigned students with active proposals found."}
+                    ? "No proposals pending review."
+                    : "No assigned proposals found."}
                 </div>
               ) : (
                 proposalsToReview.map((item) => (
@@ -487,7 +487,7 @@ export function ProposalEvaluationPanel({
           >
             <h2 className="text-3xl font-black tracking-tight text-black">Load proposal</h2>
             <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
-              Enter the proposal ID to load its evaluation history and status.
+              Enter a proposal ID to load its status and evaluation history.
             </p>
             <label className="mt-5 block space-y-2 text-base text-black">
               <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Proposal ID</span>
@@ -517,9 +517,9 @@ export function ProposalEvaluationPanel({
               {isAdmin ? "Finalize decision" : "Submit evaluation"}
             </h2>
             <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
-              {isAdmin 
-                ? "Provide your final administrative decision and feedback to transition the proposal status."
-                : "Submit your academic evaluation and score for the assigned student's research proposal."}
+              {isAdmin
+                ? "Approve or reject the proposal with feedback."
+                : "Submit a score and feedback for the selected proposal."}
             </p>
 
             <div className="mt-5 grid gap-4">
@@ -592,12 +592,12 @@ export function ProposalEvaluationPanel({
         <section className="rounded-[24px] border border-gray-300 bg-white p-6">
           <h2 className="text-3xl font-black tracking-tight text-black">Evaluation history</h2>
           <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
-            Existing evaluations and the current aggregate score for admin review.
+            Review submitted evaluations and the current aggregate score.
           </p>
 
           {!result ? (
             <div className="mt-6 rounded-[24px] border border-dashed border-gray-300 bg-white px-4 py-6 text-base font-bold text-black/40">
-              Load a proposal to see its evaluation history.
+              Load a proposal to view its evaluation history.
             </div>
           ) : (
             <div className="mt-6 space-y-5">

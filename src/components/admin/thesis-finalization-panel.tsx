@@ -71,14 +71,13 @@ export function ThesisFinalizationPanel({
       <header className="border-b-2 border-gray-200 pb-10">
         <div className="space-y-4">
           <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-            Thesis Management
+            Theses
           </p>
           <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-            Records Awaiting Archive
+            Finalize Theses
           </h2>
           <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-            Oversee the final stages of the postgraduate journey, from 
-            correction approvals to permanent repository archiving.
+            Approve corrections and archive completed theses.
           </p>
         </div>
       </header>
@@ -98,9 +97,9 @@ export function ThesisFinalizationPanel({
       <div className="space-y-10">
         {theses.length === 0 ? (
           <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-20 text-center">
-            <p className="text-3xl font-black tracking-tight text-black">Repository Cleared</p>
+            <p className="text-3xl font-black tracking-tight text-black">No theses awaiting archive</p>
             <p className="mt-3 text-base font-medium text-black/70">
-              No thesis records are currently awaiting final archival.
+              No thesis records currently need final archiving.
             </p>
           </div>
         ) : (
@@ -154,14 +153,14 @@ export function ThesisFinalizationPanel({
                 <div className="mt-12 space-y-6">
                     <div className="flex items-center gap-4">
                       <p className="text-[10px] font-black uppercase tracking-widest text-black/40">
-                        Correction Workflow
+                        Corrections
                       </p>
                       <div className="h-px flex-1 bg-gray-300" />
                     </div>
 
                     {thesis.corrections.length === 0 ? (
                       <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-8 text-center">
-                        <p className="text-sm font-bold uppercase tracking-widest text-black/40">Awaiting Correction Documents</p>
+                        <p className="text-sm font-bold uppercase tracking-widest text-black/40">No corrections submitted</p>
                       </div>
                     ) : (
                       <div className="grid gap-6 sm:grid-cols-2">

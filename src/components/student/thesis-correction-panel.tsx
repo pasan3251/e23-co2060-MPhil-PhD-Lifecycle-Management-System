@@ -151,14 +151,13 @@ export function ThesisCorrectionPanel({
     <main className="space-y-12">
       <section className="border-b-2 border-gray-200 pb-10">
         <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-          Thesis Corrections
+          Corrections
         </p>
         <h1 className="mt-3 text-5xl font-black tracking-tighter text-black sm:text-6xl">
-          Upload corrected thesis documents
+          Submit Corrections
         </h1>
         <p className="mt-3 max-w-3xl text-xl font-medium leading-relaxed text-black/80">
-          This workspace opens after a viva outcome requires minor or major
-          corrections.
+          Upload corrected thesis files when corrections are required.
         </p>
       </section>
 
@@ -178,10 +177,10 @@ export function ThesisCorrectionPanel({
           onSubmit={handleSubmit}
           className="rounded-[24px] border border-gray-300 bg-white p-6"
         >
-          <h2 className="text-3xl font-black tracking-tight text-black">Submit correction</h2>
+          <h2 className="text-3xl font-black tracking-tight text-black">Submit Corrections</h2>
           {!thesis ? (
             <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base font-bold text-black/40">
-              No thesis record is available yet.
+              No thesis record yet.
             </p>
           ) : !canSubmit ? (
             <p className="mt-4 rounded-2xl border-2 border-black bg-white px-4 py-3 text-base font-bold text-black">
@@ -236,7 +235,7 @@ export function ThesisCorrectionPanel({
           <h2 className="text-3xl font-black tracking-tight text-black">Correction history</h2>
           {!thesis || thesis.corrections.length === 0 ? (
             <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base font-bold text-black/40">
-              No correction documents have been submitted.
+              No corrections submitted.
             </p>
           ) : (
             <div className="mt-4 space-y-4">

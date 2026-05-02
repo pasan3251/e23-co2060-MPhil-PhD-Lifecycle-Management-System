@@ -198,14 +198,13 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Administration
+              Vivas
             </p>
             <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-              Viva Voce Scheduling
+              Schedule Vivas
             </h2>
             <p className="max-w-2xl font-medium text-xl leading-relaxed text-black/80">
-              Set examination dates and venues for theses currently under formal
-              review.
+              Set viva dates and venues for theses under review.
             </p>
           </div>
         </div>
@@ -227,7 +226,7 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <p className="text-sm font-black uppercase tracking-widest text-black/40">
-              New Schedule Entry
+              New schedule
             </p>
             <div className="h-px flex-1 bg-gray-200" />
           </div>
@@ -340,7 +339,7 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
                   <div className="mt-6 flex flex-wrap gap-4">
                     <div className="flex flex-col gap-1">
                       <p className="text-[10px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/60">
-                        Assigned Examiners
+                        Examiners
                       </p>
                       <p className="text-sm font-bold text-black transition-colors group-hover:text-white">
                         {thesis.examinerAssignments.length > 0

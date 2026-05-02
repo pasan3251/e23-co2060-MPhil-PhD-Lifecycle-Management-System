@@ -38,16 +38,16 @@ export function ProgressReportList() {
   if (!reports || reports.length === 0) {
     return (
       <div className="mt-8 rounded-[24px] border border-dashed border-gray-300 bg-white px-5 py-12 text-center">
-        <h3 className="text-2xl font-black tracking-tight text-black">No reports found</h3>
+        <h3 className="text-2xl font-black tracking-tight text-black">No reports yet</h3>
         <p className="mt-2 text-base font-medium text-black/70">
-          You haven&apos;t submitted any progress reports yet.
+          Submit your first progress report to get started.
         </p>
         <Link
           href="/dashboard/student/progress-reports/submit"
           className="group mt-6 inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold"
         >
           <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black px-[1.5em] py-[0.75em] text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-            Submit your first report
+            Submit first report
           </span>
         </Link>
       </div>

@@ -125,27 +125,27 @@ export function SupervisorStudentProfile({
       </header>
 
       <section className="grid gap-6 sm:grid-cols-3">
-        <div className="rounded-[30px] border border-gray-300 bg-[#e0e0e0] px-8 py-6 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
             Programme
           </p>
-          <p className="mt-2 text-2xl font-black text-black">
+          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
             {student.programType}
           </p>
         </div>
-        <div className="rounded-[30px] border border-gray-300 bg-[#e0e0e0] px-8 py-6 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
             Academic Status
           </p>
-          <p className="mt-2 text-2xl font-black text-black">
+          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
             {student.academicStatus}
           </p>
         </div>
-        <div className="rounded-[30px] border border-gray-300 bg-[#e0e0e0] px-8 py-6 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
             Enrolled Since
           </p>
-          <p className="mt-2 text-2xl font-black text-black">
+          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
             {formatDateLabel(student.enrollmentDate)}
           </p>
         </div>
@@ -154,47 +154,41 @@ export function SupervisorStudentProfile({
       <div className="grid gap-8 lg:grid-cols-2">
         <section
           id="research-proposals"
-          className="rounded-[40px] bg-[#e0e0e0] p-1 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff]"
+          className="group rounded-[24px] border border-gray-300 bg-white p-8 transition-all hover:bg-black"
         >
-          <div className="p-8 sm:p-10">
-            <h3 className="text-3xl font-black tracking-tight text-black">
-              Research Proposals
-            </h3>
-            <p className="mt-4 text-lg font-medium leading-relaxed text-gray-600">
-              Access the full history of research proposal submissions, supervisor evaluations, 
-              and final approval records for this student.
-            </p>
-            <div className="mt-8">
-              <Link
-                href={`#`}
-                className="rounded-2xl bg-black px-6 py-3 text-sm font-black text-white shadow-[4px_4px_8px_#bebebe] transition-all hover:bg-gray-800"
-              >
-                View Proposal History
-              </Link>
-            </div>
+          <h3 className="text-3xl font-black tracking-tight text-black transition-colors group-hover:text-white">
+            Research Proposals
+          </h3>
+          <p className="mt-4 text-lg font-medium leading-relaxed text-black/70 transition-colors group-hover:text-white/80">
+            Review proposal submissions, evaluations, and approval history.
+          </p>
+          <div className="mt-8">
+            <Link
+              href={`#`}
+              className="rounded-xl border-2 border-black bg-white px-6 py-3 text-sm font-black text-black transition-all hover:bg-black hover:text-white"
+            >
+              View Proposal History
+            </Link>
           </div>
         </section>
 
         <section
           id="progress-reports"
-          className="rounded-[40px] bg-[#e0e0e0] p-1 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff]"
+          className="group rounded-[24px] border border-gray-300 bg-white p-8 transition-all hover:bg-black"
         >
-          <div className="p-8 sm:p-10">
-            <h3 className="text-3xl font-black tracking-tight text-black">
-              Progress Reports
-            </h3>
-            <p className="mt-4 text-lg font-medium leading-relaxed text-gray-600">
-              Monitor periodic narrative reports, check sign-off status, and review 
-              feedback history from the assigned panels.
-            </p>
-            <div className="mt-8">
-              <Link
-                href={`#`}
-                className="rounded-2xl border border-black bg-transparent px-6 py-3 text-sm font-black text-black transition-all hover:bg-black hover:text-white"
-              >
-                Open Progress Logs
-              </Link>
-            </div>
+          <h3 className="text-3xl font-black tracking-tight text-black transition-colors group-hover:text-white">
+            Progress Reports
+          </h3>
+          <p className="mt-4 text-lg font-medium leading-relaxed text-black/70 transition-colors group-hover:text-white/80">
+            Review submitted reports, sign-off status, and panel feedback.
+          </p>
+          <div className="mt-8">
+            <Link
+              href={`#`}
+              className="rounded-xl border-2 border-black bg-white px-6 py-3 text-sm font-black text-black transition-all hover:bg-black hover:text-white"
+            >
+              Open Progress Reports
+            </Link>
           </div>
         </section>
       </div>

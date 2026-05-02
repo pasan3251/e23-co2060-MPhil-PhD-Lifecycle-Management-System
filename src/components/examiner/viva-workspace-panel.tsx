@@ -133,14 +133,13 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
       <header className="border-b-2 border-gray-200 pb-10">
         <div className="space-y-4">
           <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-            Examiner Portal
+            Vivas
           </p>
           <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-            Viva Workspace
+            Assigned Vivas
           </h1>
           <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-            Official evaluation workspace for assigned oral defenses. Record final
-            outcomes to advance the postgraduate lifecycle.
+            Review assigned vivas and record final outcomes.
           </p>
         </div>
       </header>
@@ -160,9 +159,9 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
       <section className="grid gap-8">
         {vivas.length === 0 ? (
           <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-20 text-center">
-            <p className="text-3xl font-black tracking-tight text-black">No Assigned Vivas</p>
+            <p className="text-3xl font-black tracking-tight text-black">No assigned vivas</p>
             <p className="mt-3 text-base font-medium text-black/70">
-              Assigned oral defense workspaces will appear here once scheduled.
+              Scheduled vivas will appear here.
             </p>
           </div>
         ) : (
@@ -229,7 +228,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                       className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-xs font-bold uppercase tracking-widest disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black px-8 py-3 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-                        {busyId === viva.id ? "Recording..." : "Record Official Outcome"}
+                        {busyId === viva.id ? "Recording..." : "Record Outcome"}
                       </span>
                     </button>
                   </div>

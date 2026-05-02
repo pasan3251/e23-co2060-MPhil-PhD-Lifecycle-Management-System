@@ -232,14 +232,13 @@ export function ExaminerAssignmentPanel({
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Administration
+              Assignments
             </p>
             <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
               Examiner Assignments
             </h2>
             <p className="max-w-2xl font-medium text-xl leading-relaxed text-black/80">
-              Assign examiners to submitted theses and transition records into
-              the examination pipeline.
+              Assign examiners to theses entering examination.
             </p>
           </div>
         </div>
@@ -261,7 +260,7 @@ export function ExaminerAssignmentPanel({
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <p className="text-sm font-black uppercase tracking-widest text-black/40">
-              Assign New Examiner
+              New assignment
             </p>
             <div className="h-px flex-1 bg-gray-200" />
           </div>
@@ -373,11 +372,11 @@ export function ExaminerAssignmentPanel({
 
                   <div className="mt-6 space-y-2">
                       <p className="text-[10px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/60">
-                        Assigned Examiners
+                        Examiners
                       </p>
                     {thesis.examinerAssignments.length === 0 ? (
                       <p className="text-sm font-bold italic text-black/40 transition-colors group-hover:text-white/60">
-                        Waiting for assignments...
+                        No examiners assigned.
                       </p>
                     ) : (
                       <div className="grid gap-2 sm:grid-cols-2">

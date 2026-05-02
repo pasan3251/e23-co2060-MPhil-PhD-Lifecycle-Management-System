@@ -140,16 +140,15 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
     <main className="space-y-12">
       <section className="border-b-2 border-gray-200 pb-10">
         <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-          Thesis Submission
+          Thesis
         </p>
         <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-              Submit final thesis
+              Submit Thesis
             </h1>
             <p className="mt-3 max-w-3xl text-xl font-medium leading-relaxed text-black/80">
-              Upload the final PDF manuscript for examination. Resubmissions
-              create a new document version while keeping prior files visible.
+              Upload the thesis PDF for examination. New submissions create a new version.
             </p>
           </div>
           {thesis ? (
@@ -177,7 +176,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
           className="rounded-[24px] border border-gray-300 bg-white p-6"
         >
           <h2 className="text-3xl font-black tracking-tight text-black">
-            {thesis ? "Submit a thesis revision" : "Create thesis submission"}
+            {thesis ? "Submit Revision" : "New Submission"}
           </h2>
           <div className="mt-5 grid gap-4">
             <label className="space-y-2 text-base text-black">
