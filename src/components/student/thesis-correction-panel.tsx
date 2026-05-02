@@ -148,27 +148,27 @@ export function ThesisCorrectionPanel({
   const canSubmit = thesis?.status === "CORRECTIONS_REQUIRED";
 
   return (
-    <main className="space-y-6">
-      <section className="rounded-[2rem] border border-gray-200 bg-transparent p-6">
-        <p className="text-base font-semibold uppercase tracking-[0.24em] text-black">
+    <main className="space-y-12">
+      <section className="border-b-2 border-gray-200 pb-10">
+        <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
           Thesis Corrections
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-black">
+        <h1 className="mt-3 text-5xl font-black tracking-tighter text-black sm:text-6xl">
           Upload corrected thesis documents
         </h1>
-        <p className="mt-2 max-w-3xl text-base leading-6 text-black">
+        <p className="mt-3 max-w-3xl text-xl font-medium leading-relaxed text-black/80">
           This workspace opens after a viva outcome requires minor or major
           corrections.
         </p>
       </section>
 
       {error ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
           {error}
         </div>
       ) : null}
       {message ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
           {message}
         </div>
       ) : null}
@@ -176,64 +176,66 @@ export function ThesisCorrectionPanel({
       <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <form
           onSubmit={handleSubmit}
-          className="rounded-[2rem] border border-gray-200 bg-transparent p-6"
+          className="rounded-[24px] border border-gray-300 bg-white p-6"
         >
-          <h2 className="text-xl font-semibold text-black">Submit correction</h2>
+          <h2 className="text-3xl font-black tracking-tight text-black">Submit correction</h2>
           {!thesis ? (
-            <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base text-black">
+            <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base font-bold text-black/40">
               No thesis record is available yet.
             </p>
           ) : !canSubmit ? (
-            <p className="mt-4 rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
+            <p className="mt-4 rounded-2xl border-2 border-black bg-white px-4 py-3 text-base font-bold text-black">
               Corrections can only be uploaded while the thesis status is
               CORRECTIONS REQUIRED. Current status: {thesis.status.replaceAll("_", " ")}.
             </p>
           ) : (
             <div className="mt-5 grid gap-4">
               <label className="space-y-2 text-base text-black">
-                <span>Correction type</span>
+                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Correction type</span>
                 <select
                   value={correctionType}
                   onChange={(event) => setCorrectionType(event.target.value)}
-                  className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
+                  className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
                 >
                   <option value="MINOR">Minor</option>
                   <option value="MAJOR">Major</option>
                 </select>
               </label>
               <label className="space-y-2 text-base text-black">
-                <span>Description</span>
+                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Description</span>
                 <textarea
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  className="min-h-32 w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
+                  className="min-h-32 w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
                 />
               </label>
               <label className="space-y-2 text-base text-black">
-                <span>Corrected PDF</span>
+                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Corrected PDF</span>
                 <input
                   type="file"
                   accept="application/pdf"
                   onChange={handleFileChange}
-                  className="block w-full text-base text-black file:mr-4 file:rounded-2xl file:border-0 file:bg-black file:px-4 file:py-3 file:font-semibold file:text-black"
+                  className="block w-full text-base text-black file:mr-4 file:rounded-[0.75em] file:border-2 file:border-black file:bg-black file:px-4 file:py-3 file:font-bold file:text-white"
                   required
                 />
               </label>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-2xl bg-black px-5 py-3 text-base font-semibold text-black transition hover:bg-black disabled:opacity-60"
+                className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold disabled:opacity-60"
               >
-                {isSubmitting ? "Submitting..." : "Submit correction"}
+                <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black px-5 py-3 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                  {isSubmitting ? "Submitting..." : "Submit correction"}
+                </span>
               </button>
             </div>
           )}
         </form>
 
-        <section className="rounded-[2rem] border border-gray-200 bg-transparent p-6">
-          <h2 className="text-xl font-semibold text-black">Correction history</h2>
+        <section className="rounded-[24px] border border-gray-300 bg-white p-6">
+          <h2 className="text-3xl font-black tracking-tight text-black">Correction history</h2>
           {!thesis || thesis.corrections.length === 0 ? (
-            <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base text-black">
+            <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base font-bold text-black/40">
               No correction documents have been submitted.
             </p>
           ) : (
@@ -241,28 +243,28 @@ export function ThesisCorrectionPanel({
               {thesis.corrections.map((correction) => (
                 <article
                   key={correction.id}
-                  className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4"
+                  className="rounded-[24px] border border-gray-300 bg-white p-5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-black">
+                      <p className="text-lg font-black tracking-tight text-black">
                         {correction.correctionType} correction
                       </p>
-                      <p className="mt-1 text-base text-gray-400">
+                      <p className="mt-1 text-base font-black uppercase tracking-wider text-black/40">
                         {new Date(correction.createdAt).toLocaleString()}
                       </p>
                     </div>
-                    <span className="rounded-full border border-gray-300 px-3 py-1 text-base text-black">
+                    <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-base font-black text-black">
                       {correction.isApproved ? "Approved" : "Pending"}
                     </span>
                   </div>
                   {correction.description ? (
-                    <p className="mt-3 text-base leading-6 text-black">
+                    <p className="mt-3 text-base font-medium leading-6 text-black/80">
                       {correction.description}
                     </p>
                   ) : null}
                   {correction.documents.map((document) => (
-                    <p key={document.id} className="mt-3 break-all text-base text-black">
+                    <p key={document.id} className="mt-3 break-all text-base font-medium text-black/80">
                       {document.fileName}: {document.storagePath}
                     </p>
                   ))}
