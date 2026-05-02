@@ -150,7 +150,7 @@ export function SupervisorStudentsPanel({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [initialStudents.length]);
 
   const filteredStudents = students.filter((entry) => {
     const registrationLabel = getRegistrationLabel(entry.currentRegistration);

@@ -209,10 +209,11 @@ function assertSupervisorAssignedToProposal(
 }
 
 function assertProposalUnderReview(proposal: ProposalEvaluationView) {
-  if (
-    proposal.status !== ProposalStatus.SUBMITTED &&
-    proposal.status !== ProposalStatus.UNDER_REVIEW
-  ) {
+  const allowedStatuses: ProposalStatus[] = [
+    ProposalStatus.SUBMITTED,
+    ProposalStatus.UNDER_REVIEW,
+  ];
+  if (!allowedStatuses.includes(proposal.status)) {
     throw new ProposalEvaluationError(
       "Proposal evaluations are only allowed while the proposal is SUBMITTED or UNDER_REVIEW.",
       409,

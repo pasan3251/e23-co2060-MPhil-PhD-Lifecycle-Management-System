@@ -26,17 +26,17 @@ function DashboardKpi({
 }) {
   return (
     <article className="group flex flex-col rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black h-full cursor-default">
-      <div className="flex items-start justify-between gap-4 mb-2">
-        <div className="min-h-[2.8em] flex-1">
-          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-gray-400 leading-tight transition-colors group-hover:text-gray-400">
-            {card.title}
-          </p>
-        </div>
+      <div className="mb-2 flex flex-col items-start gap-3">
         <span
           className={`shrink-0 rounded-full border-2 px-3 py-1 text-[12px] font-black uppercase tracking-wider transition-colors group-hover:border-white group-hover:text-white ${getStatusBadgeClassName(card.statusTone)}`}
         >
           {card.statusLabel}
         </span>
+        <div className="min-h-[2.8em]">
+          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-gray-400 leading-tight transition-colors group-hover:text-gray-400">
+            {card.title}
+          </p>
+        </div>
       </div>
       
       <p className="text-5xl font-black text-black tracking-tighter sm:text-6xl transition-colors group-hover:text-white">
