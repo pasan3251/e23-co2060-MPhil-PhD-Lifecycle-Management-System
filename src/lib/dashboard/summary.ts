@@ -665,6 +665,6 @@ export function buildDashboardPageMeta(role: DashboardRole) {
           ? "A live view of supervision workload, pending approvals, and student progress."
           : role === "examiner"
             ? "A concise home for thesis examination tasks, vivas, and correction follow-up."
-            : "A real-time operations view across accounts, intake, communication, and archive health.",
+            : "Centralized management for system users, applications, and operational health.",
   };
 }

@@ -50,14 +50,16 @@ export default async function AdminExaminerAssignmentsPage() {
   ]);
 
   return (
-    <ExaminerAssignmentPanel
-      theses={theses}
-      examiners={examiners.map((examiner) => ({
-        id: examiner.id,
-        displayName: examiner.displayName,
-        email: examiner.email,
-        examinerId: examiner.examinerId ?? null,
-      }))}
-    />
+    <div className="space-y-8">
+      <ExaminerAssignmentPanel
+        theses={theses}
+        examiners={examiners.map((examiner) => ({
+          id: examiner.id,
+          displayName: examiner.displayName,
+          email: examiner.email,
+          examinerId: examiner.examinerId ?? null,
+        }))}
+      />
+    </div>
   );
 }

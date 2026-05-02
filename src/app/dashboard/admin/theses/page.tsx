@@ -44,16 +44,18 @@ export default async function AdminThesesPage() {
   });
 
   return (
-    <ThesisFinalizationPanel
-      theses={theses.map((thesis) => ({
-        ...thesis,
-        status: thesis.status,
-        corrections: thesis.corrections.map((correction) => ({
-          ...correction,
-          correctionType: correction.correctionType,
-          createdAt: correction.createdAt.toISOString(),
-        })),
-      }))}
-    />
+    <div className="space-y-8">
+      <ThesisFinalizationPanel
+        theses={theses.map((thesis) => ({
+          ...thesis,
+          status: thesis.status,
+          corrections: thesis.corrections.map((correction) => ({
+            ...correction,
+            correctionType: correction.correctionType,
+            createdAt: correction.createdAt.toISOString(),
+          })),
+        }))}
+      />
+    </div>
   );
 }

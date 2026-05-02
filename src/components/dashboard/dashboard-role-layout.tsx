@@ -91,6 +91,12 @@ export function DashboardRoleLayout({
                   Manage Users
                 </Link>
                 <Link
+                  href="/dashboard/admin/proposals/evaluate"
+                  className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
+                >
+                  Review & Approve Proposals
+                </Link>
+                <Link
                   href="/dashboard/admin/assignments/supervisors"
                   className="group block rounded-2xl border border-gray-300 bg-transparent px-5 py-4 text-base font-bold text-black transition-all hover:bg-black hover:text-white"
                 >

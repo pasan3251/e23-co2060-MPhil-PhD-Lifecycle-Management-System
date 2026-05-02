@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import React, { useState, useRef, useEffect, type FormEvent } from "react";
 
 type ThesisForViva = {
   id: string;
@@ -28,6 +28,98 @@ type ThesisForViva = {
     };
   }>;
 };
+
+interface CustomSelectProps<T extends string> {
+  value: T;
+  onChange: (value: T) => void;
+  options: readonly T[];
+  labelMap: Record<T, string>;
+  className?: string;
+  fullWidth?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+function CustomSelect<T extends string>({
+  value,
+  onChange,
+  options,
+  labelMap,
+  className = "",
+  fullWidth = false,
+  placeholder = "Select an option...",
+  disabled = false,
+}: CustomSelectProps<T>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div
+      className={`relative ${fullWidth ? "w-full" : ""} ${className}`}
+      ref={containerRef}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between rounded-2xl border-2 border-black bg-white px-6 py-3 text-base font-black text-black outline-none transition-all hover:bg-gray-50 focus:ring-4 focus:ring-black/5 disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        <span className="truncate">
+          {value ? labelMap[value] : placeholder}
+        </span>
+        <svg
+          className={`h-5 w-5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="3"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 z-[110] mt-2 overflow-hidden rounded-2xl border-2 border-black bg-white shadow-none">
+          <ul className="max-h-60 overflow-y-auto py-1">
+            {options.map((option) => (
+              <li key={option}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(option);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-6 py-3 text-left text-base font-bold transition-colors hover:bg-black hover:text-white ${
+                    value === option ? "bg-black/5" : ""
+                  }`}
+                >
+                  {labelMap[option]}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
   const router = useRouter();
@@ -66,127 +158,251 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
       setScheduledDate("");
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to schedule viva.");
+      setError(
+        caught instanceof Error ? caught.message : "Unable to schedule viva.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  return (
-    <main className="space-y-6">
-      <section className="rounded-[2rem] border border-gray-200 bg-transparent p-6">
-        <p className="text-base font-semibold uppercase tracking-[0.24em] text-black">
-          Viva Voce
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold text-black">Schedule vivas</h1>
-        <p className="mt-2 max-w-3xl text-base leading-6 text-black">
-          Schedule or update viva details for theses currently under examination.
-        </p>
-      </section>
+  const thesisOptions = theses.map((t) => t.id);
+  const thesisLabels = theses.reduce(
+    (acc, t) => {
+      acc[t.id] = `${t.title} - ${t.student.user.displayName}`;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
 
-      {error ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
+  return (
+    <div className="space-y-12">
+      <header className="border-b-2 border-gray-200 pb-10">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-4">
+            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
+              Administration
+            </p>
+            <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
+              Viva Voce Scheduling
+            </h2>
+            <p className="max-w-2xl font-medium text-xl leading-relaxed text-black/80">
+              Set examination dates and venues for theses currently under formal
+              review.
+            </p>
+          </div>
+        </div>
+      </header>
+
+      {error && (
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
           {error}
         </div>
-      ) : null}
-      {message ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
+      )}
+
+      {message && (
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
           {message}
         </div>
-      ) : null}
+      )}
 
-      <section className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-[2rem] border border-gray-200 bg-transparent p-6"
-        >
-          <h2 className="text-xl font-semibold text-black">Viva details</h2>
-          <div className="mt-5 grid gap-4">
-            <label className="space-y-2 text-base text-black">
-              <span>Thesis</span>
-              <select
-                value={thesisId}
-                onChange={(event) => setThesisId(event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
-              >
-                {theses.map((thesis) => (
-                  <option key={thesis.id} value={thesis.id}>
-                    {thesis.title} - {thesis.student.user.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-2 text-base text-black">
-              <span>Venue</span>
-              <input
-                value={venue}
-                onChange={(event) => setVenue(event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
-                required
-              />
-            </label>
-            <label className="space-y-2 text-base text-black">
-              <span>Date and time</span>
-              <input
-                type="datetime-local"
-                value={scheduledDate}
-                onChange={(event) => setScheduledDate(event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
-                required
-              />
-            </label>
+      <div className="grid gap-10 xl:grid-cols-[0.8fr_1.2fr]">
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <p className="text-sm font-black uppercase tracking-widest text-black/40">
+              New Schedule Entry
+            </p>
+            <div className="h-px flex-1 bg-gray-200" />
           </div>
-          <button
-            type="submit"
-            disabled={isSubmitting || !thesisId}
-            className="mt-6 rounded-2xl bg-black px-5 py-3 text-base font-semibold text-black transition hover:bg-black disabled:opacity-60"
-          >
-            {isSubmitting ? "Scheduling..." : "Schedule viva"}
-          </button>
-        </form>
 
-        <section className="space-y-4">
-          {theses.length === 0 ? (
-            <div className="rounded-[2rem] border border-dashed border-gray-300 bg-transparent p-8 text-base text-black">
-              No theses are currently under examination.
-            </div>
-          ) : (
-            theses.map((thesis) => (
-              <article
-                key={thesis.id}
-                className="rounded-[2rem] border border-gray-200 bg-transparent p-5"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-black">{thesis.title}</h3>
-                    <p className="mt-1 text-base text-black">
-                      {thesis.student.user.displayName} - {thesis.student.user.email}
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-gray-300 bg-transparent px-3 py-1 text-base font-semibold text-black">
-                    {thesis.viva ? "Scheduled" : "Not scheduled"}
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-[30px] border-4 border-black bg-white p-8 shadow-[12px_12px_0px_black]"
+          >
+            <h2 className="text-3xl font-black tracking-tighter text-black">
+              Viva Details
+            </h2>
+            <p className="mt-2 text-base font-medium text-black/60">
+              Enter logistics for the upcoming oral examination.
+            </p>
+
+            <div className="mt-8 space-y-6">
+              <div className="space-y-2">
+                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                  Target Thesis
+                </span>
+                <CustomSelect
+                  value={thesisId}
+                  onChange={setThesisId}
+                  options={thesisOptions}
+                  labelMap={thesisLabels}
+                  placeholder="Select a thesis..."
+                  fullWidth
+                />
+              </div>
+
+              <div className="space-y-2">
+                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                  Venue
+                </span>
+                <input
+                  value={venue}
+                  onChange={(event) => setVenue(event.target.value)}
+                  placeholder="e.g. Boardroom 1 / Zoom Link"
+                  className="w-full rounded-2xl border-2 border-black bg-white px-6 py-3 text-base font-black text-black outline-none transition-all hover:bg-gray-50 focus:ring-4 focus:ring-black/5"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                  Date and Time
+                </span>
+                <input
+                  type="datetime-local"
+                  value={scheduledDate}
+                  onChange={(event) => setScheduledDate(event.target.value)}
+                  className="w-full rounded-2xl border-2 border-black bg-white px-6 py-3 text-base font-black text-black outline-none transition-all hover:bg-gray-50 focus:ring-4 focus:ring-black/5"
+                  required
+                />
+              </div>
+
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !thesisId}
+                  className="group inline-block w-full cursor-pointer rounded-[0.75em] bg-black text-base font-bold disabled:opacity-50"
+                >
+                  <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black box-border px-8 py-4 text-center text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                    {isSubmitting ? "Scheduling..." : "Schedule Viva"}
                   </span>
-                </div>
-                <p className="mt-4 text-base text-black">
-                  Examiners:{" "}
-                  {thesis.examinerAssignments.length > 0
-                    ? thesis.examinerAssignments
-                        .map((assignment) => assignment.examiner.user.displayName)
-                        .join(", ")
-                    : "None assigned"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <p className="text-sm font-black uppercase tracking-widest text-black/40">
+              Upcoming Vivas
+            </p>
+            <div className="h-px flex-1 bg-gray-200" />
+          </div>
+
+          <div className="space-y-6">
+            {theses.length === 0 ? (
+              <div className="rounded-[30px] border-2 border-dashed border-gray-300 p-12 text-center">
+                <p className="font-bold text-black/30">
+                  No theses are currently under examination.
                 </p>
-                {thesis.viva ? (
-                  <div className="mt-4 rounded-2xl border border-gray-200 bg-transparent px-4 py-3 text-base text-black">
-                    {new Date(thesis.viva.scheduledDate).toLocaleString()} at{" "}
-                    {thesis.viva.venue}
-                    {thesis.viva.outcome ? ` - ${thesis.viva.outcome}` : ""}
+              </div>
+            ) : (
+              theses.map((thesis) => (
+                <article
+                  key={thesis.id}
+                  className="rounded-[30px] border-2 border-black bg-white p-6 transition-transform hover:-translate-y-1 hover:shadow-[8px_8px_0px_black]"
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 className="text-xl font-black tracking-tight text-black">
+                        {thesis.title}
+                      </h3>
+                      <p className="mt-1 font-medium text-black/60">
+                        {thesis.student.user.displayName} •{" "}
+                        {thesis.student.user.email}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-block self-start rounded-full border-2 px-3 py-1 text-[11px] font-black uppercase tracking-widest ${thesis.viva ? "border-black bg-black text-white" : "border-gray-200 text-black/40"}`}
+                    >
+                      {thesis.viva ? "Scheduled" : "Not Scheduled"}
+                    </span>
                   </div>
-                ) : null}
-              </article>
-            ))
-          )}
-        </section>
-      </section>
-    </main>
+
+                  <div className="mt-6 flex flex-wrap gap-4">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-black/40">
+                        Assigned Examiners
+                      </p>
+                      <p className="text-sm font-bold text-black">
+                        {thesis.examinerAssignments.length > 0
+                          ? thesis.examinerAssignments
+                              .map(
+                                (assignment) =>
+                                  assignment.examiner.user.displayName,
+                              )
+                              .join(", ")
+                          : "None assigned"}
+                      </p>
+                    </div>
+
+                    {thesis.viva && (
+                      <div className="flex flex-1 flex-col gap-2 rounded-xl border-2 border-black bg-gray-50 p-4">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-black/40">
+                            Logistics
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <svg
+                            className="h-4 w-4 text-black"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2.5"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          <p className="text-sm font-black text-black">
+                            {new Date(
+                              thesis.viva.scheduledDate,
+                            ).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <svg
+                            className="h-4 w-4 text-black"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2.5"
+                              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2.5"
+                              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                          </svg>
+                          <p className="text-sm font-black text-black">
+                            {thesis.viva.venue}
+                          </p>
+                        </div>
+                        {thesis.viva.outcome && (
+                          <div className="mt-1 border-t border-black/10 pt-2 text-xs font-bold text-black">
+                            Status: {thesis.viva.outcome}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
+

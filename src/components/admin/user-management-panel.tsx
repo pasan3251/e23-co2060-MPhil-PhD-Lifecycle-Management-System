@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 import {
   optionalSanitizedString,
@@ -54,9 +54,96 @@ async function getAuthorizationHeader() {
   };
 }
 
+interface CustomSelectProps<T extends string> {
+  value: T;
+  onChange: (value: T) => void;
+  options: readonly T[];
+  labelMap: Record<T, string>;
+  className?: string;
+  fullWidth?: boolean;
+}
+
+function CustomSelect<T extends string>({
+  value,
+  onChange,
+  options,
+  labelMap,
+  className = "",
+  fullWidth = false,
+}: CustomSelectProps<T>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div
+      className={`relative ${fullWidth ? "w-full" : ""} ${className}`}
+      ref={containerRef}
+    >
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between rounded-2xl border-2 border-black bg-white px-6 py-3 text-base font-black text-black outline-none transition-all hover:bg-gray-50 focus:ring-4 focus:ring-black/5"
+      >
+        <span className="truncate">{labelMap[value]}</span>
+        <svg
+          className={`h-5 w-5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="3"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 z-[110] mt-2 overflow-hidden rounded-2xl border-2 border-black bg-white">
+          <ul className="max-h-60 overflow-y-auto py-1">
+            {options.map((option) => (
+              <li key={option}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(option);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-6 py-3 text-left text-base font-bold transition-colors hover:bg-black hover:text-white ${
+                    value === option ? "bg-black/5" : ""
+                  }`}
+                >
+                  {labelMap[option]}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function UserManagementPanel() {
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
-  const [selectedRole, setSelectedRole] = useState<"ALL" | AdminManagedRole>("ALL");
+  const [selectedRole, setSelectedRole] = useState<"ALL" | AdminManagedRole>(
+    "ALL",
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -192,9 +279,33 @@ export function UserManagementPanel() {
     }
   }
 
+  const roleFilterOptions = ["ALL", ...adminManagedRoles] as const;
+  const roleLabels: Record<string, string> = {
+    ALL: "All Roles",
+    STUDENT: "Students",
+    SUPERVISOR: "Supervisors",
+    EXAMINER: "Examiners",
+    ADMINISTRATOR: "Administrators",
+  };
+
+  const createRoleLabels: Record<string, string> = {
+    STUDENT: "Student",
+    SUPERVISOR: "Supervisor",
+    EXAMINER: "Examiner",
+    ADMINISTRATOR: "Administrator",
+  };
+
+  const programOptions = ["MPHIL", "PHD", "MSC", "MENG"] as const;
+  const programLabels: Record<string, string> = {
+    MPHIL: "MPhil",
+    PHD: "PhD",
+    MSC: "MSc",
+    MENG: "MEng",
+  };
+
   return (
     <div className="space-y-12">
-      <header className="pb-10 border-b-2 border-gray-200">
+      <header className="border-b-2 border-gray-200 pb-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
@@ -203,32 +314,27 @@ export function UserManagementPanel() {
             <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
               User Accounts
             </h2>
-            <p className="max-w-2xl text-xl leading-relaxed text-black/80 font-medium">
-              Manage system access for students, supervisors, examiners, and staff.
+            <p className="max-w-2xl font-medium text-xl leading-relaxed text-black/80">
+              Manage system access for students, supervisors, examiners, and
+              staff.
             </p>
           </div>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <select
+            <CustomSelect
               value={selectedRole}
-              onChange={(event) =>
-                setSelectedRole(event.target.value as "ALL" | AdminManagedRole)
-              }
-              className="rounded-[0.75em] border-2 border-black bg-transparent px-4 py-3 text-base font-bold text-black outline-none"
-            >
-              <option value="ALL">All Roles</option>
-              <option value="STUDENT">Students</option>
-              <option value="SUPERVISOR">Supervisors</option>
-              <option value="EXAMINER">Examiners</option>
-              <option value="ADMINISTRATOR">Administrators</option>
-            </select>
+              onChange={setSelectedRole}
+              options={roleFilterOptions}
+              labelMap={roleLabels}
+              className="min-w-[180px]"
+            />
 
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="group inline-block text-base font-bold bg-black rounded-[0.75em] cursor-pointer"
+              className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold"
             >
-              <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-black text-white -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+              <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black box-border px-[1.5em] py-[0.75em] text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
                 Create New User
               </span>
             </button>
@@ -240,7 +346,7 @@ export function UserManagementPanel() {
         <p className="text-sm font-black uppercase tracking-widest text-black/40">
           {visibleRoleHint}
         </p>
-        <div className="flex-1 h-px bg-gray-200" />
+        <div className="h-px flex-1 bg-gray-200" />
       </div>
 
       {errorMessage ? (
@@ -259,46 +365,73 @@ export function UserManagementPanel() {
         <table className="min-w-full divide-y divide-gray-300 text-base">
           <thead className="text-left text-black">
             <tr>
-              <th className="px-6 py-5 font-black uppercase tracking-widest text-[14px] text-black/40">User</th>
-              <th className="px-6 py-5 font-black uppercase tracking-widest text-[14px] text-black/40">Role</th>
-              <th className="px-6 py-5 font-black uppercase tracking-widest text-[14px] text-black/40">Context</th>
-              <th className="px-6 py-5 font-black uppercase tracking-widest text-[14px] text-black/40">Status</th>
-              <th className="px-6 py-5 font-black uppercase tracking-widest text-[14px] text-black/40">Actions</th>
+              <th className="px-6 py-5 text-[14px] font-black uppercase tracking-widest text-black/40">
+                User
+              </th>
+              <th className="px-6 py-5 text-[14px] font-black uppercase tracking-widest text-black/40">
+                Role
+              </th>
+              <th className="px-6 py-5 text-[14px] font-black uppercase tracking-widest text-black/40">
+                Context
+              </th>
+              <th className="px-6 py-5 text-[14px] font-black uppercase tracking-widest text-black/40">
+                Status
+              </th>
+              <th className="px-6 py-5 text-[14px] font-black uppercase tracking-widest text-black/40">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-300 text-black">
             {isLoading ? (
               <tr>
-                <td className="px-6 py-12 text-center font-bold text-black/40" colSpan={5}>
+                <td
+                  className="px-6 py-12 text-center font-bold text-black/40"
+                  colSpan={5}
+                >
                   Loading user records...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td className="px-6 py-12 text-center font-bold text-black/40" colSpan={5}>
+                <td
+                  className="px-6 py-12 text-center font-bold text-black/40"
+                  colSpan={5}
+                >
                   No matching user accounts found.
                 </td>
               </tr>
             ) : (
               users.map((user) => (
-                <tr key={user.id} className="align-top hover:bg-black/5 transition-colors">
+                <tr
+                  key={user.id}
+                  className="align-top transition-colors hover:bg-black/5"
+                >
                   <td className="px-6 py-6">
-                    <div className="font-black text-lg">{user.displayName}</div>
-                    <div className="text-black/60 font-medium">{user.email}</div>
+                    <div className="text-lg font-black">{user.displayName}</div>
+                    <div className="font-medium text-black/60">
+                      {user.email}
+                    </div>
                   </td>
                   <td className="px-6 py-6">
-                    <span className="inline-block px-3 py-1 border-2 border-black rounded-lg text-[13px] font-black uppercase tracking-wider">
+                    <span className="inline-block rounded-lg border-2 border-black px-3 py-1 text-[13px] font-black uppercase tracking-wider">
                       {user.role}
                     </span>
                   </td>
                   <td className="px-6 py-6 font-black">
                     {user.role === "STUDENT" ? (
-                      <div className="text-lg">{user.programType ?? "N/A"} Candidate</div>
+                      <div className="text-lg">
+                        {user.programType ?? "N/A"} Candidate
+                      </div>
                     ) : (
                       <>
-                        <div className="text-lg">{user.department ?? "No Department"}</div>
+                        <div className="text-lg">
+                          {user.department ?? "No Department"}
+                        </div>
                         {user.specialization ? (
-                          <div className="text-sm text-black/70">{user.specialization}</div>
+                          <div className="text-sm text-black/70">
+                            {user.specialization}
+                          </div>
                         ) : null}
                       </>
                     )}
@@ -319,7 +452,7 @@ export function UserManagementPanel() {
                       type="button"
                       disabled={!user.isActive}
                       onClick={() => void handleDeactivate(user.id)}
-                      className="rounded-xl border-2 border-black px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition hover:bg-black hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
+                      className="rounded-xl border-2 border-black px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition hover:bg-red-600 hover:border-red-600 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       Deactivate
                     </button>
@@ -339,7 +472,7 @@ export function UserManagementPanel() {
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xl font-black text-black tracking-tight">
+                <p className="text-xl font-black tracking-tight text-black">
                   {user.displayName}
                 </p>
                 <p className="text-sm font-medium text-black/60">
@@ -354,7 +487,7 @@ export function UserManagementPanel() {
               type="button"
               disabled={!user.isActive}
               onClick={() => void handleDeactivate(user.id)}
-              className="mt-6 w-full rounded-xl border-2 border-black py-3 text-xs font-black uppercase tracking-widest transition hover:bg-black hover:text-white disabled:opacity-20"
+              className="mt-6 w-full rounded-xl border-2 border-black py-3 text-xs font-black uppercase tracking-widest transition hover:bg-red-600 hover:border-red-600 hover:text-white disabled:opacity-20"
             >
               Deactivate Account
             </button>
@@ -363,11 +496,13 @@ export function UserManagementPanel() {
       </div>
 
       {isModalOpen ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
           <div className="w-full max-w-xl rounded-[30px] border-4 border-black bg-white p-8 shadow-[15px_15px_0px_black]">
             <div className="mb-8 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-4xl font-black tracking-tighter text-black">Create User</h2>
+                <h2 className="text-4xl font-black tracking-tighter text-black">
+                  Create User
+                </h2>
                 <p className="mt-2 text-lg font-medium text-black/60">
                   Provision a new system account.
                 </p>
@@ -375,10 +510,20 @@ export function UserManagementPanel() {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-full border-2 border-black p-2 hover:bg-black hover:text-white transition-colors"
+                className="rounded-full border-2 border-black p-2 transition-colors hover:bg-black hover:text-white"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="3"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -386,7 +531,9 @@ export function UserManagementPanel() {
             <form className="space-y-6" onSubmit={handleCreateUser}>
               <div className="grid gap-6 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="text-xs font-black uppercase tracking-widest text-black/40 ml-1">Email Address</span>
+                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                    Email Address
+                  </span>
                   <input
                     value={formValues.email}
                     onChange={(event) =>
@@ -395,13 +542,15 @@ export function UserManagementPanel() {
                         email: event.target.value,
                       }))
                     }
-                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-black font-bold outline-none focus:bg-gray-50"
+                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
                     placeholder="name@pdn.ac.lk"
                   />
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-xs font-black uppercase tracking-widest text-black/40 ml-1">Full Name</span>
+                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                    Full Name
+                  </span>
                   <input
                     value={formValues.displayName}
                     onChange={(event) =>
@@ -410,7 +559,7 @@ export function UserManagementPanel() {
                         displayName: event.target.value,
                       }))
                     }
-                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-black font-bold outline-none focus:bg-gray-50"
+                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
                     placeholder="Enter name"
                   />
                 </label>
@@ -418,46 +567,40 @@ export function UserManagementPanel() {
 
               <div className="grid gap-6 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="text-xs font-black uppercase tracking-widest text-black/40 ml-1">System Role</span>
-                  <select
+                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                    System Role
+                  </span>
+                  <CustomSelect
                     value={formValues.role}
-                    onChange={(event) =>
-                      setFormValues((current) => ({
-                        ...current,
-                        role: event.target.value as AdminManagedRole,
-                      }))
+                    onChange={(val) =>
+                      setFormValues((c) => ({ ...c, role: val }))
                     }
-                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-black font-bold outline-none"
-                  >
-                    <option value="STUDENT">Student</option>
-                    <option value="SUPERVISOR">Supervisor</option>
-                    <option value="EXAMINER">Examiner</option>
-                    <option value="ADMINISTRATOR">Administrator</option>
-                  </select>
+                    options={adminManagedRoles}
+                    labelMap={createRoleLabels}
+                    fullWidth
+                  />
                 </label>
 
                 {formValues.role === "STUDENT" ? (
                   <label className="space-y-2">
-                    <span className="text-xs font-black uppercase tracking-widest text-black/40 ml-1">Program</span>
-                    <select
+                    <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                      Program
+                    </span>
+                    <CustomSelect
                       value={formValues.programType}
-                      onChange={(event) =>
-                        setFormValues((current) => ({
-                          ...current,
-                          programType: event.target.value,
-                        }))
+                      onChange={(val) =>
+                        setFormValues((c) => ({ ...c, programType: val }))
                       }
-                      className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-black font-bold outline-none"
-                    >
-                      <option value="MPHIL">MPhil</option>
-                      <option value="PHD">PhD</option>
-                      <option value="MSC">MSc</option>
-                      <option value="MENG">MEng</option>
-                    </select>
+                      options={programOptions}
+                      labelMap={programLabels}
+                      fullWidth
+                    />
                   </label>
                 ) : (
                   <label className="space-y-2">
-                    <span className="text-xs font-black uppercase tracking-widest text-black/40 ml-1">Department</span>
+                    <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                      Department
+                    </span>
                     <input
                       value={formValues.department}
                       onChange={(event) =>
@@ -466,7 +609,7 @@ export function UserManagementPanel() {
                           department: event.target.value,
                         }))
                       }
-                      className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-black font-bold outline-none"
+                      className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none"
                       placeholder="e.g. Computer Engineering"
                     />
                   </label>
@@ -477,16 +620,16 @@ export function UserManagementPanel() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-4 text-base font-black uppercase tracking-widest text-black/40 hover:text-black transition-colors"
+                  className="px-6 py-4 text-base font-black uppercase tracking-widest text-black/40 transition-colors hover:text-black"
                 >
                   Discard
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="group inline-block text-base font-bold bg-black rounded-[0.75em] cursor-pointer"
+                  className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold"
                 >
-                  <span className="block box-border border-2 border-black rounded-[0.75em] px-8 py-4 bg-black text-white -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                  <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black box-border px-8 py-4 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
                     {isSubmitting ? "Creating..." : "Confirm Creation"}
                   </span>
                 </button>
@@ -498,3 +641,4 @@ export function UserManagementPanel() {
     </div>
   );
 }
+
