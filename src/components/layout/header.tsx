@@ -1,18 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { Montserrat } from "next/font/google";
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
 
 export function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
-      <nav className="w-full px-8 md:px-12 py-6 flex items-center justify-end">
+      <nav className="flex w-full items-center justify-end px-5 py-5 sm:px-8 md:px-10 md:py-6">
         <Link
           href="/login"
-          className="group inline-block text-[20px] font-bold bg-black rounded-[0.75em] cursor-pointer"
+          className={`${montserrat.className} inline-flex items-center justify-center rounded-full border-2 border-black bg-black px-5 py-3 text-base font-medium text-white shadow-[0_10px_24px_rgba(15,23,42,0.12)] transition-transform duration-150 ease-out hover:-translate-y-0.5 sm:px-6 sm:text-[18px]`}
         >
-          <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-[white] text-black -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-            Sign In
-          </span>
+          Sign In
         </Link>
       </nav>
     </header>
