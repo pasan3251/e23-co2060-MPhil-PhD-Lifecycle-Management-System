@@ -134,14 +134,14 @@ export function LoginForm() {
   return (
     <form className="space-y-6" onSubmit={handleSubmit} noValidate>
       {timeoutMessage ? (
-        <div className="rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-base font-medium text-black">
+        <div className="rounded-2xl border border-red-500 bg-red-50 px-4 py-3 text-base font-medium text-red-700">
           {timeoutMessage}
         </div>
       ) : null}
 
       {errorMessage ? (
         <div
-          className="rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-base font-medium text-black"
+          className="rounded-2xl border border-red-500 bg-red-50 px-4 py-3 text-base font-medium text-red-700"
           role="alert"
         >
           {errorMessage}
@@ -185,10 +185,10 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="group relative inline-block w-full text-[16px] font-bold bg-black rounded-[0.75em] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+        className="theme-button theme-button--block"
         data-testid="login-submit"
       >
-        <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-[white] text-black -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+        <span className="theme-button__label">
           {isSubmitting ? "Signing in..." : "Sign in"}
         </span>
       </button>

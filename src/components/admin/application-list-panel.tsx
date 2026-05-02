@@ -87,9 +87,9 @@ export function ApplicationListPanel() {
               <td className="px-6 py-4 text-right">
                 <Link
                   href={`/dashboard/admin/applications/${app.id}`}
-                  className="inline-flex items-center justify-center rounded-lg bg-black px-4 py-2 text-base font-semibold text-black transition-colors hover:bg-black"
+                  className="theme-button theme-button--compact"
                 >
-                  Review
+                  <span className="theme-button__label">Review</span>
                 </Link>
               </td>
             </tr>

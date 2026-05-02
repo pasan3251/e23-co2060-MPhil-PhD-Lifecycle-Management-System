@@ -163,16 +163,18 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
             <button
               onClick={() => handleUpdateStatus("REJECTED")}
               disabled={isUpdating}
-              className="rounded-lg border border-gray-300 bg-transparent px-6 py-2.5 text-base font-semibold text-black transition-colors hover:bg-transparent disabled:opacity-50"
+              className="theme-button theme-button--compact"
             >
-              Reject Application
+              <span className="theme-button__label">Reject Application</span>
             </button>
             <button
               onClick={() => handleUpdateStatus("ADMITTED")}
               disabled={isUpdating}
-              className="rounded-lg bg-black px-6 py-2.5 text-base font-semibold text-black transition-colors hover:bg-black disabled:opacity-50"
+              className="theme-button theme-button--compact"
             >
-              {isUpdating ? "Processing..." : "Admit Student"}
+              <span className="theme-button__label">
+                {isUpdating ? "Processing..." : "Admit Student"}
+              </span>
             </button>
           </div>
         </div>
