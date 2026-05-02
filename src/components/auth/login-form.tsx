@@ -182,16 +182,27 @@ export function LoginForm() {
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="theme-button theme-button--block"
-        data-testid="login-submit"
-      >
-        <span className="theme-button__label">
-          {isSubmitting ? "Signing in..." : "Sign in"}
-        </span>
-      </button>
+      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          disabled={isSubmitting}
+          className="theme-button theme-button--compact theme-button--black"
+        >
+          <span className="theme-button__label">Back</span>
+        </button>
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="theme-button"
+          data-testid="login-submit"
+        >
+          <span className="theme-button__label">
+            {isSubmitting ? "Signing in..." : "Sign in"}
+          </span>
+        </button>
+      </div>
     </form>
   );
 }
