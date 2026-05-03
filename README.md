@@ -1,7 +1,7 @@
 <div align="center">
 
 <img src="./images/logo.png" alt="MPhil/PhD Lifecycle Management System Logo" width="120" />
-
+<br/>
 <img src="https://img.shields.io/badge/Status-Active%20Development-orange?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Platform-Next.js%2014-black?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Database-PostgreSQL-blue?style=for-the-badge" />
