@@ -181,7 +181,7 @@ export function ThesisFinalizationPanel({
 
                               {correction.description && (
                                 <p className="text-sm font-medium italic leading-relaxed text-black/70 transition-colors group-hover:text-white/80">
-                                  "{correction.description}"
+                                  &quot;{correction.description}&quot;
                                 </p>
                               )}
 
