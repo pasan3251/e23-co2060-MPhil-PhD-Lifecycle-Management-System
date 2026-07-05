@@ -83,14 +83,14 @@ export function ThesisFinalizationPanel({
       </div>
 
       {error && (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
-          <p>{error}</p>
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground">
+          {error}
         </div>
       )}
 
       {message && (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
-          <p>{message}</p>
+        <div className="rounded-md border border-green-500/50 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+          {message}
         </div>
       )}
 

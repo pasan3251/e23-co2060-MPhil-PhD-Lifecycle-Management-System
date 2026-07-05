@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
+import { Loader } from "@/components/ui/loader";
 import {
   Card,
   CardContent,
@@ -54,20 +55,16 @@ export function ApplicationListPanel() {
 
   if (isLoading) {
     return (
-      <div className="flex animate-pulse flex-col space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <div
-            key={i}
-            className="h-24 w-full rounded-2xl border border-black bg-white"
-          ></div>
-        ))}
+      <div className="p-12 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+        <Loader />
+        <span>Loading applications...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+      <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground">
         {error}
       </div>
     );

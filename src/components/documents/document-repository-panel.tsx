@@ -345,10 +345,8 @@ export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-6 space-y-3">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="h-16 animate-pulse rounded-md bg-muted" />
-              ))}
+            <div className="p-12 text-center text-sm text-muted-foreground">
+              Loading Documents...
             </div>
           ) : documents.length === 0 ? (
             <div className="rounded-md border-dashed p-12 text-center">

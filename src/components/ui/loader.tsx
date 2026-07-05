@@ -8,13 +8,13 @@ interface LoaderProps {
 
 export function Loader({ className, colorClass = "border-primary" }: LoaderProps) {
   return (
-    <div className={cn("relative w-[80px] h-[80px]", className)}>
+    <div className={cn("relative w-[60px] h-[60px]", className)}>
       <div 
-        className={cn("absolute w-[75px] h-[75px] rounded-full border-[6px]", colorClass)} 
+        className={cn("absolute w-[55px] h-[55px] rounded-full border-[5px]", colorClass)} 
         style={{ animation: 'custom-load-1 1s linear infinite', borderLeftColor: 'transparent' }} 
       />
       <div 
-        className={cn("absolute w-[55px] h-[55px] rounded-full border-[6px] m-[10px]", colorClass)} 
+        className={cn("absolute w-[40px] h-[40px] rounded-full border-[5px] m-[7.5px]", colorClass)} 
         style={{ animation: 'custom-load-2 1.5s linear infinite', borderTopColor: 'transparent', borderRightColor: 'transparent' }} 
       />
     </div>
