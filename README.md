@@ -4,8 +4,9 @@
 <br/>
 <img src="https://img.shields.io/badge/Status-Active%20Development-orange?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Platform-Next.js%2014-black?style=for-the-badge" />
-<img src="https://img.shields.io/badge/Database-PostgreSQL-blue?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Database-Supabase%20Postgres-3ECF8E?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Auth-Firebase-yellow?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Storage-Supabase-3ECF8E?style=for-the-badge" />
 
 # 🎓 MPhil/PhD Lifecycle Management System
 
@@ -161,7 +162,7 @@ A typical lifecycle flow is:
 | **Frontend** | Next.js 14 App Router, React 18, TypeScript |
 | **Styling** | Tailwind CSS |
 | **Backend** | Next.js Route Handlers |
-| **Database** | PostgreSQL + Prisma ORM |
+| **Database** | Supabase Postgres + Prisma ORM |
 | **Authentication** | Firebase Auth + Firebase Admin SDK |
 | **File Storage** | Supabase Storage |
 | **Validation** | Zod |
@@ -179,7 +180,7 @@ The system combines:
 - public pages for admissions entry
 - role-based dashboards under `/dashboard`
 - Next.js route handlers under `src/app/api`
-- PostgreSQL for relational data
+- Supabase Postgres for relational data
 - Prisma for ORM access
 - Firebase for authentication and identity verification
 - Supabase Storage for document workflows
@@ -200,7 +201,7 @@ flowchart TD
     API --> Mail[Nodemailer]
     API --> Monitor[Sentry + Operational Logs]
 
-    Prisma --> DB[PostgreSQL]
+    Prisma --> DB[Supabase Postgres]
 ```
 
 Alternative layer view:
@@ -226,7 +227,7 @@ Alternative layer view:
                             │
 ┌───────────────────────────▼────────────────────────────────┐
 │                         DATA LAYER                         │
-│                    PostgreSQL + File Storage               │
+│              Supabase Postgres + Supabase Storage          │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -240,7 +241,7 @@ Make sure you have the following installed and configured:
 
 - Node.js `18.17.0` or higher
 - `npm`
-- PostgreSQL
+- Supabase project with a Postgres database
 - Firebase project credentials
 - Supabase project and storage bucket
 

@@ -29,7 +29,7 @@ The project is built with:
 - **TypeScript** for end-to-end type safety
 - **Tailwind CSS** for styling
 - **Prisma** as the ORM
-- **PostgreSQL** as the main relational database
+- **Supabase Postgres** as the main relational database
 - **Firebase Auth** for authentication and identity
 - **Firebase Admin SDK** for secure server-side auth verification
 - **Supabase Storage** for uploaded documents and file workflows
@@ -539,7 +539,7 @@ This is a **Node-backed full-stack application**, not a static site.
 
 It depends on:
 
-- a running PostgreSQL database
+- a running Supabase Postgres database
 - Firebase configuration
 - Supabase storage credentials
 - email credentials

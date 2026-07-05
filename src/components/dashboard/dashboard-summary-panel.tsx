@@ -79,7 +79,9 @@ export function DashboardEmptyState({ roleLabel }: { roleLabel: string }) {
       <p className="text-base font-bold uppercase tracking-[0.24em] text-black/40">
         {roleLabel}
       </p>
-      <h2 className="mt-6 text-4xl font-black text-black tracking-tight">No data yet</h2>
+      <h2 className="mt-6 text-4xl font-black text-black tracking-tight">
+        Nothing to show yet
+      </h2>
       <p className="mt-4 text-lg leading-relaxed text-black/60 max-w-lg mx-auto">
         This dashboard will populate when workflow data is available for your role.
       </p>

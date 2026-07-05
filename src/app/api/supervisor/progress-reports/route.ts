@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+import { DocumentType, UserRole } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { withAuth } from "@/lib/firebase/with-auth";
@@ -25,6 +25,7 @@ export const GET = withAuth(
             supervisorAssignments: {
               some: {
                 supervisorId: supervisor.id,
+                isPrimary: true,
               },
             },
           },
@@ -33,6 +34,21 @@ export const GET = withAuth(
           createdAt: "asc",
         },
         include: {
+          documents: {
+            where: {
+              isDeleted: false,
+              documentType: DocumentType.PROGRESS_REPORT,
+            },
+            select: {
+              id: true,
+              fileName: true,
+              storagePath: true,
+              mimeType: true,
+              version: true,
+              isCurrentVersion: true,
+              createdAt: true,
+            },
+          },
           student: {
             include: {
               user: {
@@ -53,6 +69,7 @@ export const GET = withAuth(
           periodLabel: r.periodLabel,
           narrative: r.narrative,
           createdAt: r.createdAt,
+          documents: r.documents,
           student: {
             id: r.student.id,
             displayName: r.student.user.displayName,

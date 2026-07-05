@@ -411,7 +411,6 @@ export function determineCurrentMilestone(input: {
   thesisStatus?: ThesisStatus | null;
   documents: StudentDocumentRecord[];
 }) {
-  // 1. Check if the entire lifecycle is complete
   if (
     input.thesisStatus === ThesisStatus.FINAL_ARCHIVE ||
     input.thesisStatus === ThesisStatus.CLOSED
@@ -419,28 +418,35 @@ export function determineCurrentMilestone(input: {
     return "examiner-feedback" as ProgressMilestoneId;
   }
 
-  // 2. Check Thesis submission
+  if (input.documents.some(isCorrectionDocumentReleased)) {
+    return "examiner-feedback" as ProgressMilestoneId;
+  }
+
+  const hasThesisDocument = input.documents.some(
+    (document) => document.documentType === DocumentType.THESIS,
+  );
+
   if (
-    input.thesisStatus === ThesisStatus.SUBMITTED ||
-    input.thesisStatus === ThesisStatus.UNDER_EXAMINATION ||
-    input.thesisStatus === ThesisStatus.CORRECTIONS_REQUIRED
+    hasThesisDocument &&
+    (input.thesisStatus === ThesisStatus.SUBMITTED ||
+      input.thesisStatus === ThesisStatus.UNDER_EXAMINATION ||
+      input.thesisStatus === ThesisStatus.CORRECTIONS_REQUIRED)
   ) {
     return "thesis-submission" as ProgressMilestoneId;
   }
 
-  // 3. Check Progress Reports / Data Collection / Ethics
   const approvedProgressReports = input.documents.filter(isProgressDocumentApproved);
-  
+
   if (approvedProgressReports.length >= 2) {
-    return "thesis-submission" as ProgressMilestoneId;
-  }
-  if (approvedProgressReports.length === 1) {
     return "data-collection" as ProgressMilestoneId;
   }
 
-  // 4. Check Proposal status
-  if (input.proposalStatus === ProposalStatus.APPROVED) {
+  if (approvedProgressReports.length === 1) {
     return "ethics-clearance" as ProgressMilestoneId;
+  }
+
+  if (input.proposalStatus === ProposalStatus.APPROVED) {
+    return "proposal-approval" as ProgressMilestoneId;
   }
 
   if (

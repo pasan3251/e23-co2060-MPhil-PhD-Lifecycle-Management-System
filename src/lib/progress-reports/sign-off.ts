@@ -181,6 +181,7 @@ export async function signOffProgressReport(
       isSupervisorSignedOff: true,
       supervisorSignedOffAt: signedOffAt,
       supervisorSignedOffById: supervisor.id,
+      isOverdue: false,
     },
     select: {
       id: true,

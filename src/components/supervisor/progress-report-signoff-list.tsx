@@ -9,6 +9,23 @@ async function fetcher(url: string) {
   return response.json();
 }
 
+type PendingProgressReport = {
+  id: string;
+  periodLabel: string;
+  narrative: string;
+  createdAt: string | Date;
+  documents: Array<{
+    id: string;
+    fileName: string;
+    storagePath: string;
+  }>;
+  student: {
+    id: string;
+    displayName: string;
+    email: string;
+  };
+};
+
 export function ProgressReportSignoffList() {
   const { data, error, mutate, isLoading } = useSWR("/api/supervisor/progress-reports", fetcher);
   const [signingId, setSigningId] = useState<string | null>(null);
@@ -49,7 +66,7 @@ export function ProgressReportSignoffList() {
     );
   }
 
-  const reports = data?.reports || [];
+  const reports = (data?.reports || []) as PendingProgressReport[];
 
   if (reports.length === 0) {
     return (
@@ -64,7 +81,7 @@ export function ProgressReportSignoffList() {
 
   return (
     <div className="mt-8 space-y-4">
-      {reports.map((report: any) => (
+      {reports.map((report) => (
         <article key={report.id} className="group rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex-1">
@@ -82,6 +99,11 @@ export function ProgressReportSignoffList() {
               <p className="mt-3 whitespace-pre-wrap text-base font-medium leading-6 text-black/70 transition-colors group-hover:text-white/80">
                 {report.narrative}
               </p>
+              {report.documents.length > 0 ? (
+                <p className="mt-3 break-all text-sm font-bold text-black/50 transition-colors group-hover:text-white/70">
+                  Attached PDF: {report.documents.map((document) => document.fileName).join(", ")}
+                </p>
+              ) : null}
             </div>
             <button
               onClick={() => handleSign(report.id)}

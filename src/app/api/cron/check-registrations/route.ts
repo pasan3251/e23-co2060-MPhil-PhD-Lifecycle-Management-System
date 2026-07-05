@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { markOverdueProgressReports } from "@/lib/progress-reports/maintenance";
 import { runRegistrationMaintenance } from "@/lib/registrations";
 
 function isAuthorizedCronRequest(request: Request) {
@@ -18,10 +19,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized cron request." }, { status: 401 });
   }
 
-  const result = await runRegistrationMaintenance();
+  const [registrationMaintenance, overdueProgressReports] = await Promise.all([
+    runRegistrationMaintenance(),
+    markOverdueProgressReports(),
+  ]);
 
   return NextResponse.json({
     ok: true,
-    ...result,
+    ...registrationMaintenance,
+    overdueProgressReports,
   });
 }

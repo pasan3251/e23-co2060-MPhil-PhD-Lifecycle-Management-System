@@ -2,13 +2,32 @@
 
 import useSWR from "swr";
 import Link from "next/link";
-import { ProgressReport } from "@prisma/client";
+
+type ProgressReportDocument = {
+  id: string;
+  fileName: string;
+  storagePath: string;
+  mimeType: string;
+  version: number;
+  isCurrentVersion: boolean;
+  createdAt: string | Date;
+};
+
+type ProgressReportSummary = {
+  id: string;
+  periodLabel: string;
+  narrative: string;
+  isSupervisorSignedOff: boolean;
+  isOverdue: boolean;
+  createdAt: string | Date;
+  documents: ProgressReportDocument[];
+};
 
 async function fetchReports(url: string) {
   const response = await fetch(url);
   if (!response.ok) throw new Error("Failed to load reports");
   const data = await response.json();
-  return data.reports as ProgressReport[];
+  return data.reports as ProgressReportSummary[];
 }
 
 export function ProgressReportList() {
@@ -72,8 +91,18 @@ export function ProgressReportList() {
               <p className="mt-3 line-clamp-2 text-base font-medium leading-6 text-black/70 transition-colors group-hover:text-white/80">
                 {report.narrative}
               </p>
+              {report.documents.length > 0 ? (
+                <p className="mt-3 break-all text-sm font-bold text-black/50 transition-colors group-hover:text-white/70">
+                  Attached PDF: {report.documents.map((document) => document.fileName).join(", ")}
+                </p>
+              ) : null}
             </div>
             <div className="flex flex-col items-end gap-2">
+              {report.isOverdue ? (
+                <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black group-hover:text-black">
+                  Overdue
+                </span>
+              ) : null}
               <span
                 className={`rounded-full border-2 px-3 py-1 text-[10px] font-black uppercase tracking-wider transition-colors group-hover:border-white ${
                   report.isSupervisorSignedOff

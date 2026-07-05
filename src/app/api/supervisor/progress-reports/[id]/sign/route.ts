@@ -2,66 +2,35 @@ import { UserRole } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { withAuth } from "@/lib/firebase/with-auth";
-import { prisma } from "@/lib/prisma/client";
+import {
+  ProgressReportSignOffError,
+  signOffProgressReport,
+} from "@/lib/progress-reports/sign-off";
 
 type Params = {
   id: string;
 };
 
-export const POST = withAuth(
-  async (_request: NextRequest, { params, auth }) => {
+export const POST = withAuth<Params>(
+  async (_request: NextRequest, context) => {
+    const progressReportId = context.params?.id;
+
+    if (!progressReportId) {
+      return NextResponse.json({ error: "Progress report id is required." }, { status: 400 });
+    }
+
     try {
-      if (!params?.id) {
-        return NextResponse.json({ error: "Progress report id is required." }, { status: 400 });
-      }
-
-      const supervisor = await prisma.supervisor.findUnique({
-        where: { userId: auth.userId },
-        select: { id: true },
-      });
-
-      if (!supervisor && auth.role !== UserRole.ADMINISTRATOR) {
-        return NextResponse.json({ error: "Supervisor profile not found." }, { status: 404 });
-      }
-
-      const report = await prisma.progressReport.findUnique({
-        where: { id: params.id },
-        include: {
-          student: {
-            include: {
-              supervisorAssignments: true,
-            },
-          },
-        },
-      });
-
-      if (!report) {
-        return NextResponse.json({ error: "Progress report not found." }, { status: 404 });
-      }
-
-      // Check if supervisor is assigned to this student (or is admin)
-      const isAssigned = report.student.supervisorAssignments.some(
-        (a) => a.supervisorId === supervisor?.id,
+      const result = await signOffProgressReport(
+        { id: progressReportId },
+        context.auth,
       );
 
-      if (!isAssigned && auth.role !== UserRole.ADMINISTRATOR) {
-        return NextResponse.json(
-          { error: "You are not authorized to sign off on this report." },
-          { status: 403 },
-        );
+      return NextResponse.json({ ok: true, ...result });
+    } catch (error) {
+      if (error instanceof ProgressReportSignOffError) {
+        return NextResponse.json({ error: error.message }, { status: error.status });
       }
 
-      const updatedReport = await prisma.progressReport.update({
-        where: { id: params.id },
-        data: {
-          isSupervisorSignedOff: true,
-          supervisorSignedOffAt: new Date(),
-          supervisorSignedOffById: supervisor?.id,
-        },
-      });
-
-      return NextResponse.json({ ok: true, report: updatedReport });
-    } catch (error) {
       return NextResponse.json(
         { error: "Unable to sign off on progress report." },
         { status: 500 },
