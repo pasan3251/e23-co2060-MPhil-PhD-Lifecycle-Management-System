@@ -60,9 +60,11 @@ export type DocumentListItem = {
 };
 
 const REPOSITORY_DOCUMENT_TYPES = [
+  DocumentType.APPLICATION_ATTACHMENT,
   DocumentType.PROPOSAL,
   DocumentType.THESIS,
   DocumentType.PROGRESS_REPORT,
+  DocumentType.CORRECTION,
 ] as const;
 
 const REPOSITORY_DOCUMENT_TYPE_SET = new Set<string>(REPOSITORY_DOCUMENT_TYPES);
@@ -96,7 +98,18 @@ async function buildAccessScope(
         throw new DocumentRepositoryError("Student profile not found.", 403);
       }
 
-      return { studentId: student.id };
+      return {
+        OR: [
+          { studentId: student.id },
+          {
+            application: {
+              is: {
+                studentId: student.id,
+              },
+            },
+          },
+        ],
+      };
     }
 
     case "SUPERVISOR": {
@@ -116,7 +129,20 @@ async function buildAccessScope(
 
       const assignedStudentIds = assignments.map((a) => a.studentId);
 
-      return { studentId: { in: assignedStudentIds } };
+      return {
+        OR: [
+          { studentId: { in: assignedStudentIds } },
+          {
+            application: {
+              is: {
+                studentId: {
+                  in: assignedStudentIds,
+                },
+              },
+            },
+          },
+        ],
+      };
     }
 
     case "EXAMINER": {
@@ -173,6 +199,14 @@ type RepositoryDocumentRecord = Prisma.DocumentGetPayload<{
         status: true;
       };
     };
+    application: {
+      select: {
+        applicantName: true;
+        researchArea: true;
+        statementOfPurpose: true;
+        status: true;
+      };
+    };
     progressReport: {
       select: {
         periodLabel: true;
@@ -186,6 +220,18 @@ type RepositoryDocumentRecord = Prisma.DocumentGetPayload<{
         title: true;
         abstract: true;
         status: true;
+      };
+    };
+    correctionDocument: {
+      select: {
+        correctionType: true;
+        description: true;
+        isApproved: true;
+        thesis: {
+          select: {
+            title: true;
+          };
+        };
       };
     };
   };
@@ -231,8 +277,16 @@ function buildTagFilter(tag?: string | null): Prisma.DocumentWhereInput {
     return { documentType: DocumentType.PROPOSAL };
   }
 
+  if (normalizedTag === "application" || normalizedTag === "applications") {
+    return { documentType: DocumentType.APPLICATION_ATTACHMENT };
+  }
+
   if (normalizedTag === "thesis" || normalizedTag === "theses") {
     return { documentType: DocumentType.THESIS };
+  }
+
+  if (normalizedTag === "correction" || normalizedTag === "corrections") {
+    return { documentType: DocumentType.CORRECTION };
   }
 
   if (
@@ -292,6 +346,32 @@ function buildTagFilter(tag?: string | null): Prisma.DocumentWhereInput {
   return {
     OR: [
       {
+        application: {
+          is: {
+            OR: [
+              {
+                applicantName: {
+                  contains: normalizedTag,
+                  mode: "insensitive",
+                },
+              },
+              {
+                researchArea: {
+                  contains: normalizedTag,
+                  mode: "insensitive",
+                },
+              },
+              {
+                statementOfPurpose: {
+                  contains: normalizedTag,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          },
+        },
+      },
+      {
         researchProposal: {
           is: {
             title: {
@@ -321,6 +401,30 @@ function buildTagFilter(tag?: string | null): Prisma.DocumentWhereInput {
           },
         },
       },
+      {
+        correctionDocument: {
+          is: {
+            OR: [
+              {
+                description: {
+                  contains: normalizedTag,
+                  mode: "insensitive",
+                },
+              },
+              {
+                thesis: {
+                  is: {
+                    title: {
+                      contains: normalizedTag,
+                      mode: "insensitive",
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
     ],
   };
 }
@@ -336,6 +440,32 @@ function buildTextFilter(q?: string | null): Prisma.DocumentWhereInput {
         fileName: {
           contains: q,
           mode: "insensitive",
+        },
+      },
+      {
+        application: {
+          is: {
+            OR: [
+              {
+                applicantName: {
+                  contains: q,
+                  mode: "insensitive",
+                },
+              },
+              {
+                researchArea: {
+                  contains: q,
+                  mode: "insensitive",
+                },
+              },
+              {
+                statementOfPurpose: {
+                  contains: q,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          },
         },
       },
       {
@@ -398,6 +528,30 @@ function buildTextFilter(q?: string | null): Prisma.DocumentWhereInput {
           },
         },
       },
+      {
+        correctionDocument: {
+          is: {
+            OR: [
+              {
+                description: {
+                  contains: q,
+                  mode: "insensitive",
+                },
+              },
+              {
+                thesis: {
+                  is: {
+                    title: {
+                      contains: q,
+                      mode: "insensitive",
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
     ],
   };
 }
@@ -413,6 +567,11 @@ function mapDocumentTags(document: RepositoryDocumentRecord) {
 
   if (document.researchProposal) {
     tags.add(document.researchProposal.status.toLowerCase().replace(/_/g, "-"));
+  }
+
+  if (document.application) {
+    tags.add("application");
+    tags.add(document.application.status.toLowerCase().replace(/_/g, "-"));
   }
 
   if (document.progressReport) {
@@ -431,26 +590,51 @@ function mapDocumentTags(document: RepositoryDocumentRecord) {
     tags.add(document.thesis.status.toLowerCase().replace(/_/g, "-"));
   }
 
+  if (document.correctionDocument) {
+    tags.add("correction");
+    tags.add(document.correctionDocument.correctionType.toLowerCase());
+
+    if (document.correctionDocument.isApproved) {
+      tags.add("approved");
+    }
+  }
+
   return [...tags];
 }
 
 function mapDocumentListItem(document: RepositoryDocumentRecord): DocumentListItem {
+  const applicationTitle = document.application
+    ? `Application Attachment - ${document.application.applicantName}`
+    : null;
   const proposalTitle = document.researchProposal?.title ?? null;
   const thesisTitle = document.thesis?.title ?? null;
   const progressTitle = document.progressReport
     ? `Progress Report ${document.progressReport.periodLabel}`
     : null;
+  const correctionTitle = document.correctionDocument
+    ? `Correction - ${document.correctionDocument.thesis.title}`
+    : null;
 
+  const applicationSummary =
+    document.application?.researchArea ??
+    document.application?.statementOfPurpose ??
+    null;
   const proposalSummary = document.researchProposal?.abstract ?? null;
   const thesisSummary = document.thesis?.abstract ?? null;
   const progressSummary = document.progressReport?.narrative ?? null;
+  const correctionSummary = document.correctionDocument?.description ?? null;
 
   return {
     id: document.id,
     documentType: document.documentType,
     fileName: document.fileName,
-    title: proposalTitle ?? thesisTitle ?? progressTitle,
-    summary: proposalSummary ?? thesisSummary ?? progressSummary,
+    title: applicationTitle ?? proposalTitle ?? thesisTitle ?? progressTitle ?? correctionTitle,
+    summary:
+      applicationSummary ??
+      proposalSummary ??
+      thesisSummary ??
+      progressSummary ??
+      correctionSummary,
     tags: mapDocumentTags(document),
     mimeType: document.mimeType,
     version: document.version,
@@ -577,6 +761,14 @@ export async function searchDocuments(
           status: true,
         },
       },
+      application: {
+        select: {
+          applicantName: true,
+          researchArea: true,
+          statementOfPurpose: true,
+          status: true,
+        },
+      },
       progressReport: {
         select: {
           periodLabel: true,
@@ -590,6 +782,18 @@ export async function searchDocuments(
           title: true,
           abstract: true,
           status: true,
+        },
+      },
+      correctionDocument: {
+        select: {
+          correctionType: true,
+          description: true,
+          isApproved: true,
+          thesis: {
+            select: {
+              title: true,
+            },
+          },
         },
       },
     },

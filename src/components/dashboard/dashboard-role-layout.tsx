@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Montserrat } from "next/font/google";
 
+import { DashboardNotificationsMenu } from "@/components/dashboard/dashboard-notifications-menu";
 import { buildDashboardPageMeta } from "@/lib/dashboard/page-meta";
 import type { DashboardRole } from "@/types/dashboard";
 
@@ -49,6 +50,8 @@ export function DashboardRoleLayout({
             {heading}
           </h1>
 
+          <DashboardNotificationsMenu />
+
           <div className="mt-10 flex flex-col gap-3 flex-1">
             <nav className="contents">
               <Link
@@ -63,6 +66,7 @@ export function DashboardRoleLayout({
                   <Link href="/dashboard/student/proposals" className={getNavItemClassName("/dashboard/student/proposals")}>Proposals</Link>
                   <Link href="/dashboard/student/progress-reports" className={getNavItemClassName("/dashboard/student/progress-reports")}>Progress Reports</Link>
                   <Link href="/dashboard/student/progress" className={getNavItemClassName("/dashboard/student/progress")}>Milestones</Link>
+                  <Link href="/dashboard/student/documents" className={getNavItemClassName("/dashboard/student/documents")}>Documents</Link>
                   <Link href="/dashboard/student/theses/submit" className={getNavItemClassName("/dashboard/student/theses/submit")}>Thesis Submission</Link>
                   <Link href="/dashboard/student/theses/corrections" className={getNavItemClassName("/dashboard/student/theses/corrections")}>Corrections</Link>
                 </>
@@ -73,6 +77,7 @@ export function DashboardRoleLayout({
                   <Link href="/dashboard/supervisor/students" className={getNavItemClassName("/dashboard/supervisor/students")}>Student Roster</Link>
                   <Link href="/dashboard/supervisor/proposals/evaluate" className={getNavItemClassName("/dashboard/supervisor/proposals/evaluate")}>Review Proposals</Link>
                   <Link href="/dashboard/supervisor/progress-reports/sign" className={getNavItemClassName("/dashboard/supervisor/progress-reports/sign")}>Sign Progress Reports</Link>
+                  <Link href="/dashboard/supervisor/documents" className={getNavItemClassName("/dashboard/supervisor/documents")}>Documents</Link>
                 </>
               ) : null}
 
@@ -85,12 +90,14 @@ export function DashboardRoleLayout({
                   <Link href="/dashboard/admin/assignments/examiners" className={getNavItemClassName("/dashboard/admin/assignments/examiners")}>Examiner Assignments</Link>
                   <Link href="/dashboard/admin/vivas/schedule" className={getNavItemClassName("/dashboard/admin/vivas/schedule")}>Schedule Vivas</Link>
                   <Link href="/dashboard/admin/theses" className={getNavItemClassName("/dashboard/admin/theses")}>Finalize Theses</Link>
+                  <Link href="/dashboard/admin/documents" className={getNavItemClassName("/dashboard/admin/documents")}>Documents</Link>
                 </>
               ) : null}
 
               {role === "examiner" ? (
                 <>
                   <Link href="/dashboard/examiner/vivas" className={getNavItemClassName("/dashboard/examiner/vivas")}>Assigned Vivas</Link>
+                  <Link href="/dashboard/examiner/documents" className={getNavItemClassName("/dashboard/examiner/documents")}>Documents</Link>
                 </>
               ) : null}
             </nav>

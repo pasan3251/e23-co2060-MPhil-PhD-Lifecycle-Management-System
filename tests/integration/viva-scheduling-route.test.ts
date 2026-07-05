@@ -24,13 +24,13 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
-vi.mock("@/lib/email", () => ({
-  notifyVivaScheduled: vi.fn(),
+vi.mock("@/lib/notifications", () => ({
+  notify: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { POST } from "@/app/api/vivas/route";
-import { notifyVivaScheduled } from "@/lib/email";
 import { authenticateBearerRequest } from "@/lib/firebase/auth";
+import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
 
 describe("viva scheduling integration", () => {
@@ -103,15 +103,17 @@ describe("viva scheduling integration", () => {
       }),
     );
 
-    expect(notifyVivaScheduled).toHaveBeenCalledTimes(2);
-    expect(notifyVivaScheduled).toHaveBeenCalledWith(
+    expect(notify).toHaveBeenCalledTimes(2);
+    expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({
+        event: "VIVA_SCHEDULED",
         to: "student@example.com",
         venue: "Main Hall",
       }),
     );
-    expect(notifyVivaScheduled).toHaveBeenCalledWith(
+    expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({
+        event: "VIVA_SCHEDULED",
         to: "examiner@example.com",
         venue: "Main Hall",
       }),

@@ -11,6 +11,10 @@ vi.mock("@/lib/email", () => ({
   notifyProgressReportSubmitted: vi.fn().mockResolvedValue({ success: true }),
   notifyRegistrationExpiry: vi.fn().mockResolvedValue({ success: true }),
   notifyThesisArchived: vi.fn().mockResolvedValue({ success: true }),
+  notifyVivaScheduled: vi.fn().mockResolvedValue({ success: true }),
+  notifyCorrectionSubmittedToAdministrator: vi.fn().mockResolvedValue({
+    success: true,
+  }),
 }));
 
 vi.mock("@/lib/prisma/client", () => ({
@@ -32,6 +36,8 @@ import {
   notifyProposalStatusChange,
   notifyRegistrationExpiry,
   notifyThesisArchived,
+  notifyVivaScheduled,
+  notifyCorrectionSubmittedToAdministrator,
 } from "@/lib/email";
 import { prisma } from "@/lib/prisma/client";
 
@@ -123,6 +129,66 @@ describe("NotificationService — event-to-template mapping", () => {
     expect(notifyThesisArchived).toHaveBeenCalledOnce();
     expect(notifyThesisArchived).toHaveBeenCalledWith(
       expect.objectContaining({ thesisTitle: "AI Governance in Sri Lanka" }),
+    );
+  });
+
+  it("dispatches VIVA_SCHEDULED to the central email and in-app paths", async () => {
+    const scheduledDate = new Date("2026-10-10T10:00:00.000Z");
+
+    await notify({
+      event: "VIVA_SCHEDULED",
+      recipientUserId: "examiner-user-1",
+      to: "examiner@example.com",
+      recipientName: "Examiner One",
+      thesisTitle: "AI Governance in Sri Lanka",
+      venue: "Main Hall",
+      scheduledDate,
+    });
+
+    expect(notifyVivaScheduled).toHaveBeenCalledOnce();
+    expect(notifyVivaScheduled).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientName: "Examiner One",
+        venue: "Main Hall",
+        scheduledDate,
+      }),
+    );
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipientId: "examiner-user-1",
+          event: NotificationEvent.VIVA_SCHEDULED,
+        }),
+      }),
+    );
+  });
+
+  it("dispatches CORRECTIONS_REQUIRED to the central email and in-app paths", async () => {
+    await notify({
+      event: "CORRECTIONS_REQUIRED",
+      recipientUserId: "admin-user-1",
+      to: "admin@example.com",
+      administratorName: "Admin One",
+      studentName: "Alice",
+      thesisTitle: "AI Governance in Sri Lanka",
+      correctionTypeLabel: "Minor",
+    });
+
+    expect(notifyCorrectionSubmittedToAdministrator).toHaveBeenCalledOnce();
+    expect(notifyCorrectionSubmittedToAdministrator).toHaveBeenCalledWith(
+      expect.objectContaining({
+        administratorName: "Admin One",
+        studentName: "Alice",
+        correctionTypeLabel: "Minor",
+      }),
+    );
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipientId: "admin-user-1",
+          event: NotificationEvent.CORRECTIONS_REQUIRED,
+        }),
+      }),
     );
   });
 

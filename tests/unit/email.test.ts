@@ -95,4 +95,33 @@ describe("sendEmail", () => {
     expect(result.success).toBe(false);
     expect(result.error).toBe("SMTP unavailable");
   });
+
+  it("writes FAILED to NotificationLog when SMTP configuration is missing", async () => {
+    delete process.env.SMTP_HOST;
+    vi.mocked(prisma.notificationLog.create).mockResolvedValue({} as never);
+
+    const result = await sendEmail({
+      to: "student@example.com",
+      subject: "Registration expiry reminder",
+      html: "<p>Hello</p>",
+      text: "Hello",
+      recipientUserId: "user-2",
+      event: "REGISTRATION_EXPIRY_APPROACHING",
+    });
+
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipientId: "user-2",
+          deliveryStatus: "FAILED",
+          failureReason:
+            "Missing SMTP configuration. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.",
+        }),
+      }),
+    );
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "Missing SMTP configuration. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.",
+    );
+  });
 });

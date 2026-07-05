@@ -50,6 +50,7 @@ vi.mock("@/lib/prisma/client", () => ({
           correctionDocumentId: null,
           createdAt: new Date(),
           updatedAt: new Date(),
+          application: null,
           researchProposal: null,
           progressReport: null,
           thesis: {
@@ -57,6 +58,7 @@ vi.mock("@/lib/prisma/client", () => ({
             abstract: "A searchable thesis abstract.",
             status: "UNDER_EXAMINATION",
           },
+          correctionDocument: null,
         },
       ]),
       findUnique: vi.fn().mockResolvedValue({
@@ -122,7 +124,17 @@ describe("searchDocuments", () => {
     expect(callArgs?.where).toMatchObject({
       AND: expect.arrayContaining([
         { isDeleted: false },
-        { documentType: { in: ["PROPOSAL", "THESIS", "PROGRESS_REPORT"] } },
+        {
+          documentType: {
+            in: [
+              "APPLICATION_ATTACHMENT",
+              "PROPOSAL",
+              "THESIS",
+              "PROGRESS_REPORT",
+              "CORRECTION",
+            ],
+          },
+        },
       ]),
     });
   });

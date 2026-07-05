@@ -11,6 +11,11 @@ vi.mock("@/lib/email", () => ({
   }),
 }));
 
+vi.mock("@/lib/notifications", () => ({
+  notify: vi.fn().mockResolvedValue(undefined),
+  notifyInBackground: vi.fn(),
+}));
+
 vi.mock("@/lib/prisma/client", () => ({
   prisma: {
     student: {

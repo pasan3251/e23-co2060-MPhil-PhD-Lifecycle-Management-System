@@ -6,8 +6,7 @@ import {
   UserRole,
 } from "@prisma/client";
 
-import { notifyCorrectionSubmittedToAdministrator } from "@/lib/email";
-import { notifyInBackground } from "@/lib/notifications";
+import { notify, notifyInBackground } from "@/lib/notifications";
 import { assertValidThesisStatusTransition } from "@/lib/prisma/thesis-status";
 import { prisma } from "@/lib/prisma/client";
 import {
@@ -233,7 +232,8 @@ async function notifyAdministratorsOfCorrectionSubmission(input: {
     administrators
       .filter((administrator) => administrator.email)
       .map((administrator) =>
-        notifyCorrectionSubmittedToAdministrator({
+        notify({
+          event: "CORRECTIONS_REQUIRED",
           recipientUserId: administrator.id,
           to: administrator.email,
           administratorName: administrator.displayName,

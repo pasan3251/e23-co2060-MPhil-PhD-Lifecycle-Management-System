@@ -22,6 +22,14 @@ type ExaminerViva = {
   };
 };
 
+type ThesisDownloadResponse = {
+  error?: string;
+  downloadUrl?: string;
+  document?: {
+    fileName: string;
+  };
+};
+
 interface CustomSelectProps<T extends string> {
   value: T;
   onChange: (value: T) => void;
@@ -60,7 +68,7 @@ function CustomSelect<T extends string>({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between rounded-[24px] border-2 border-black bg-white px-5 py-4 text-base font-bold text-black outline-none transition hover:bg-gray-50 disabled:opacity-30"
+        className="flex w-full items-center justify-between rounded-2xl border-2 border-black bg-white px-6 py-3 text-base font-black text-black outline-none transition-all hover:bg-gray-50 focus:ring-4 focus:ring-black/5 disabled:cursor-not-allowed disabled:opacity-30"
       >
         <span className="truncate">{value ? labelMap[value] : placeholder}</span>
         <svg className={`h-5 w-5 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -68,7 +76,7 @@ function CustomSelect<T extends string>({
         </svg>
       </button>
       {isOpen && (
-        <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-[24px] border border-gray-300 bg-white shadow-[10px_10px_30px_rgba(0,0,0,0.12)]">
+        <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-2xl border-2 border-black bg-white shadow-none">
           {options.map((option) => (
             <button
               key={option}
@@ -88,6 +96,7 @@ function CustomSelect<T extends string>({
 export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [downloadingThesisId, setDownloadingThesisId] = useState<string | null>(null);
   const [selectedOutcome, setSelectedOutcome] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -117,9 +126,16 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
         credentials: "include",
         body: JSON.stringify({ outcome }),
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json()) as {
+        error?: string;
+        requiresAdministrativeApproval?: boolean;
+      };
       if (!response.ok) throw new Error(payload.error ?? "Unable to record viva outcome.");
-      setMessage("Viva outcome recorded successfully.");
+      setMessage(
+        payload.requiresAdministrativeApproval
+          ? "Viva outcome recorded. Final archive is waiting for administrator approval."
+          : "Viva outcome recorded successfully.",
+      );
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to record viva outcome.");
@@ -128,19 +144,49 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
     }
   }
 
+  async function downloadThesis(thesisId: string) {
+    setDownloadingThesisId(thesisId);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/theses/${thesisId}/download`, {
+        credentials: "include",
+      });
+      const payload = (await response.json()) as ThesisDownloadResponse;
+
+      if (!response.ok || !payload.downloadUrl) {
+        throw new Error(payload.error ?? "Unable to prepare the thesis download.");
+      }
+
+      window.open(payload.downloadUrl, "_blank", "noopener,noreferrer");
+      setMessage(
+        payload.document?.fileName
+          ? `Secure download opened for ${payload.document.fileName}.`
+          : "Secure thesis download opened.",
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to open thesis download.");
+    } finally {
+      setDownloadingThesisId(null);
+    }
+  }
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
       <header className="border-b-2 border-gray-200 pb-10">
-        <div className="space-y-4">
-          <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-            Vivas
-          </p>
-          <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-            Assigned Vivas
-          </h1>
-          <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-            Review assigned vivas and record final outcomes.
-          </p>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-4">
+            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
+              Vivas
+            </p>
+            <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
+              Assigned Vivas
+            </h1>
+            <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
+              Review thesis documents and record final examination outcomes.
+            </p>
+          </div>
         </div>
       </header>
 
@@ -172,22 +218,22 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
             return (
               <article
                 key={viva.id}
-                className="rounded-[24px] border border-gray-300 bg-white p-6"
+                className="group rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black"
               >
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-black">
+                      <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
                         {new Date(viva.scheduledDate).toLocaleDateString()}
                       </span>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-black/40">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/60">
                         {viva.venue}
                       </span>
                     </div>
-                    <h2 className="text-3xl font-black tracking-tight text-black">
+                    <h2 className="text-3xl font-black tracking-tight text-black transition-colors group-hover:text-white">
                       {viva.thesis.title}
                     </h2>
-                    <p className="text-lg font-medium text-black/70">
+                    <p className="text-lg font-medium text-black/70 transition-colors group-hover:text-white/80">
                       Candidate: {viva.thesis.student.user.displayName}
                     </p>
                   </div>
@@ -202,17 +248,29 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                   )}
                 </div>
 
-                <div className="mt-8 rounded-[24px] border border-gray-300 bg-white p-6">
-                  <p className="mb-3 text-xs font-black uppercase tracking-widest text-black/40">Thesis Abstract</p>
-                  <p className="text-base font-medium leading-relaxed text-black/70">
+                <div className="mt-8 rounded-[24px] border border-gray-300 bg-white p-6 transition-colors group-hover:border-white/30 group-hover:bg-transparent">
+                  <p className="mb-3 text-xs font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/60">Thesis Abstract</p>
+                  <p className="text-base font-medium leading-relaxed text-black/70 transition-colors group-hover:text-white/80">
                     {viva.thesis.abstract}
                   </p>
                 </div>
 
-                {!isRecorded && (
-                  <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-end">
+                <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-end">
+                  <button
+                    type="button"
+                    onClick={() => void downloadThesis(viva.thesis.id)}
+                    disabled={downloadingThesisId === viva.thesis.id}
+                    className="rounded-xl border-2 border-black bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-black transition group-hover:border-white group-hover:bg-transparent group-hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {downloadingThesisId === viva.thesis.id
+                      ? "Opening..."
+                      : "Download Thesis"}
+                  </button>
+
+                  {!isRecorded ? (
+                    <>
                     <div className="flex-1 space-y-2">
-                      <span className="ml-1 text-[10px] font-black uppercase tracking-widest text-black/40">Final Outcome</span>
+                      <span className="ml-1 text-[10px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/60">Final Outcome</span>
                       <CustomSelect
                         value={selectedOutcome[viva.id] ?? ""}
                         onChange={(val) => setSelectedOutcome(c => ({...c, [viva.id]: val}))}
@@ -231,8 +289,9 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                         {busyId === viva.id ? "Recording..." : "Record Outcome"}
                       </span>
                     </button>
-                  </div>
-                )}
+                    </>
+                  ) : null}
+                </div>
               </article>
             );
           })

@@ -52,6 +52,10 @@ vi.mock("@/lib/email", () => ({
   notifyProposalStatusChange: vi.fn().mockResolvedValue({ success: true }),
   notifyRegistrationExpiry: vi.fn().mockResolvedValue({ success: true }),
   notifyThesisArchived: vi.fn().mockResolvedValue({ success: true }),
+  notifyVivaScheduled: vi.fn().mockResolvedValue({ success: true }),
+  notifyCorrectionSubmittedToAdministrator: vi.fn().mockResolvedValue({
+    success: true,
+  }),
   sendEmail: vi.fn().mockResolvedValue({ success: true }),
 }));
 

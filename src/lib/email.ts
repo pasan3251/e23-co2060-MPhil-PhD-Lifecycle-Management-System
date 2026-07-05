@@ -100,10 +100,10 @@ async function writeNotificationLog(
 }
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
-  const transporter = getEmailTransporter();
-  const fromAddress = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "";
-
   try {
+    const transporter = getEmailTransporter();
+    const fromAddress = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "";
+
     const result = await transporter.sendMail({
       from: fromAddress,
       to: input.to,

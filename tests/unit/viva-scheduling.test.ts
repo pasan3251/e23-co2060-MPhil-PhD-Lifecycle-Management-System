@@ -12,11 +12,10 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
-vi.mock("@/lib/email", () => ({
-  notifyVivaScheduled: vi.fn(),
+vi.mock("@/lib/notifications", () => ({
+  notify: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { notifyVivaScheduled } from "@/lib/email";
 import { prisma } from "@/lib/prisma/client";
 import { scheduleViva, VivaWorkflowError } from "@/lib/vivas";
 

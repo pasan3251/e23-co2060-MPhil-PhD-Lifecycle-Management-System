@@ -14,6 +14,8 @@
  *  PROPOSAL_STATUS_CHANGED
  *  PROGRESS_REPORT_SUBMITTED   ← SLA: supervisor notified within 1 h (REQ-FN-019)
  *  REGISTRATION_EXPIRY_APPROACHING ← 14-day advance (REQ-FN-018)
+ *  VIVA_SCHEDULED
+ *  CORRECTIONS_REQUIRED
  *  THESIS_ARCHIVED
  */
 
@@ -21,10 +23,12 @@ import { NotificationEvent } from "@prisma/client";
 
 import {
   notifyApplicationStatusChanged,
+  notifyCorrectionSubmittedToAdministrator,
   notifyProgressReportSubmitted,
   notifyProposalStatusChange,
   notifyRegistrationExpiry,
   notifyThesisArchived,
+  notifyVivaScheduled,
 } from "@/lib/email";
 import { prisma } from "@/lib/prisma/client";
 
@@ -78,12 +82,34 @@ export type ThesisArchivedPayload = {
   thesisTitle: string;
 };
 
+export type VivaScheduledPayload = {
+  event: "VIVA_SCHEDULED";
+  recipientUserId: string;
+  to: string;
+  recipientName: string;
+  thesisTitle: string;
+  venue: string;
+  scheduledDate: Date;
+};
+
+export type CorrectionsRequiredPayload = {
+  event: "CORRECTIONS_REQUIRED";
+  recipientUserId: string;
+  to: string;
+  administratorName: string;
+  studentName: string;
+  thesisTitle: string;
+  correctionTypeLabel: string;
+};
+
 export type NotificationPayload =
   | ApplicationStatusChangedPayload
   | ProposalStatusChangedPayload
   | ProgressReportSubmittedPayload
   | RegistrationExpiryPayload
-  | ThesisArchivedPayload;
+  | ThesisArchivedPayload
+  | VivaScheduledPayload
+  | CorrectionsRequiredPayload;
 
 // ---------------------------------------------------------------------------
 // In-app Notification record helpers
@@ -209,6 +235,46 @@ export async function notify(payload: NotificationPayload): Promise<void> {
         NotificationEvent.THESIS_ARCHIVED,
         `Thesis archived`,
         `Your thesis "${payload.thesisTitle}" has been archived in the system.`,
+      );
+      break;
+    }
+
+    case "VIVA_SCHEDULED": {
+      await notifyVivaScheduled({
+        recipientUserId: payload.recipientUserId,
+        to: payload.to,
+        recipientName: payload.recipientName,
+        thesisTitle: payload.thesisTitle,
+        venue: payload.venue,
+        scheduledDate: payload.scheduledDate,
+      });
+
+      await writeInAppNotification(
+        payload.recipientUserId,
+        null,
+        NotificationEvent.VIVA_SCHEDULED,
+        `Viva scheduled: ${payload.thesisTitle}`,
+        `A viva has been scheduled at ${payload.venue} on ${payload.scheduledDate.toLocaleString()}.`,
+      );
+      break;
+    }
+
+    case "CORRECTIONS_REQUIRED": {
+      await notifyCorrectionSubmittedToAdministrator({
+        recipientUserId: payload.recipientUserId,
+        to: payload.to,
+        administratorName: payload.administratorName,
+        studentName: payload.studentName,
+        thesisTitle: payload.thesisTitle,
+        correctionTypeLabel: payload.correctionTypeLabel,
+      });
+
+      await writeInAppNotification(
+        payload.recipientUserId,
+        null,
+        NotificationEvent.CORRECTIONS_REQUIRED,
+        `Correction submitted: ${payload.thesisTitle}`,
+        `${payload.studentName} submitted a ${payload.correctionTypeLabel.toLowerCase()} correction package for review.`,
       );
       break;
     }

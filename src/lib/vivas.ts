@@ -1,6 +1,6 @@
 import { ThesisStatus, VivaOutcome } from "@prisma/client";
 
-import { notifyVivaScheduled } from "@/lib/email";
+import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
 import { getCurrentThesisDownloadUrl, ThesisVersionError } from "@/lib/theses/versions";
 import {
@@ -318,7 +318,8 @@ export async function scheduleViva(
   });
 
   // Notify Student
-  await notifyVivaScheduled({
+  await notify({
+    event: "VIVA_SCHEDULED",
     recipientUserId: thesis.student.userId,
     to: thesis.student.user.email,
     recipientName: thesis.student.user.displayName,
@@ -329,7 +330,8 @@ export async function scheduleViva(
 
   // Notify Examiners
   for (const assignment of thesis.examinerAssignments) {
-    await notifyVivaScheduled({
+    await notify({
+      event: "VIVA_SCHEDULED",
       recipientUserId: assignment.examiner.userId,
       to: assignment.examiner.user.email,
       recipientName: assignment.examiner.user.displayName,
