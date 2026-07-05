@@ -9,6 +9,19 @@ import {
   applicationProgramTypes,
   applicationSubmissionSchema,
 } from "@/lib/applications/schemas";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 type UploadedSupportingDocument = {
   fileName: string;
@@ -353,20 +366,21 @@ export function ApplicationForm() {
   }
 
   return (
-    <div className="mx-auto max-h-full w-full max-w-5xl space-y-6 overflow-y-auto rounded-[30px] bg-[#e0e0e0] px-6 pt-6 pb-8 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:px-8 sm:pt-8 sm:pb-10">
+    <div className="flex-1 space-y-6 p-4 pt-6 md:p-8 max-w-5xl mx-auto w-full">
       <section className="border-b border-gray-300 pb-5">
-        <p className="text-base font-semibold uppercase tracking-[0.26em] text-black">
+        <p className="text-sm font-semibold uppercase tracking-[0.26em] text-muted-foreground">
           Postgraduate Admissions
         </p>
-        <h1 className="mt-2 text-3xl font-semibold text-black sm:text-4xl">
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Apply for your research programme
         </h1>
-        <p className="mt-2 max-w-2xl text-base leading-6 text-black">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
           Complete the public application form, upload one supporting PDF, and
           submit your research interest for review.
         </p>
       </section>
 
+      {/* Step Navigator */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {stepLabels.map((label, index) => {
           const isCurrent = index === step;
@@ -385,23 +399,23 @@ export function ApplicationForm() {
                   ? `Go to ${label} step`
                   : `${label} step locked until previous sections are completed`
               }
-              className={`rounded-2xl border px-4 py-3 text-left text-base transition-all ${
+              className={`rounded-xl border px-4 py-3 text-left text-sm transition-all ${
                 isCurrent
-                  ? "border-black bg-black/5 font-bold text-black"
+                  ? "border-primary bg-primary/5 font-semibold text-primary"
                   : isCompleted
-                    ? "border-gray-400 bg-transparent text-black"
-                    : "border-gray-300 bg-transparent text-gray-500"
+                    ? "border-blue-400 bg-blue-50 text-blue-800"
+                    : "border-border/50 bg-transparent text-muted-foreground"
               } ${
                 isStepAccessible
-                  ? "cursor-pointer hover:-translate-y-0.5 hover:border-black/70"
-                  : "cursor-not-allowed opacity-70"
+                  ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/70"
+                  : "cursor-not-allowed opacity-60"
               }`}
             >
-              <p className="text-base uppercase tracking-[0.2em]">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">
                 Step {index + 1}
               </p>
-              <p className="mt-2 font-semibold">{label}</p>
-              <p className="mt-2 text-sm uppercase tracking-[0.14em]">
+              <p className="mt-1.5 font-semibold text-foreground">{label}</p>
+              <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground">
                 {isCurrent
                   ? "Current step"
                   : isStepAccessible
@@ -414,260 +428,263 @@ export function ApplicationForm() {
       </section>
 
       <form className="space-y-5 pt-1" onSubmit={handleSubmit}>
-        <div className="space-y-2">
-          <p className="text-base font-semibold uppercase tracking-[0.24em] text-black">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Current step
           </p>
-          <h2 className="text-2xl font-semibold text-black">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">
             {currentStepLabel}
           </h2>
         </div>
 
-        {errorMessage ? (
-          <div className="rounded-2xl border border-red-500 bg-red-50 px-4 py-3 text-base font-medium text-red-700">
+        {errorMessage && (
+          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
             {errorMessage}
           </div>
-        ) : null}
+        )}
 
-        {step === 0 ? (
-          <div className="grid gap-3.5 sm:grid-cols-2">
-            <label className="space-y-2 text-base text-black">
-              <span>Full name</span>
-              <input
+        {/* Step 1: Applicant */}
+        {step === 0 && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="applicantName">Full name</Label>
+              <Input
+                id="applicantName"
                 value={formValues.applicantName}
                 onChange={(event) =>
                   updateField("applicantName", event.target.value)
                 }
-                className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="Applicant full name"
+                className="border-zinc-400 focus-visible:ring-zinc-900"
               />
-            </label>
-            <label className="space-y-2 text-base text-black">
-              <span>Email</span>
-              <input
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="applicantEmail">Email</Label>
+              <Input
+                id="applicantEmail"
                 value={formValues.applicantEmail}
                 onChange={(event) =>
                   updateField("applicantEmail", event.target.value)
                 }
-                className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="name@example.com"
                 type="email"
+                className="border-zinc-400 focus-visible:ring-zinc-900"
               />
-            </label>
-            <label className="space-y-2 text-base text-black sm:col-span-2">
-              <span>Phone</span>
-              <input
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="applicantPhone">Phone</Label>
+              <Input
+                id="applicantPhone"
                 value={formValues.applicantPhone}
                 onChange={(event) =>
                   updateField("applicantPhone", event.target.value)
                 }
-                className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="+94 7X XXX XXXX"
                 type="tel"
+                className="border-zinc-400 focus-visible:ring-zinc-900"
               />
-            </label>
+            </div>
           </div>
-        ) : null}
+        )}
 
-        {step === 1 ? (
-          <div className="grid gap-3.5">
-            <label className="space-y-2 text-base text-black">
-              <span>Programme</span>
-              <select
+        {/* Step 2: Research */}
+        {step === 1 && (
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label>Programme</Label>
+              <Select
                 value={formValues.programType}
-                onChange={(event) =>
-                  updateField("programType", event.target.value)
-                }
-                className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
+                onValueChange={(value) => updateField("programType", value)}
               >
-                {applicationProgramTypes.map((programType) => (
-                  <option key={programType} value={programType}>
-                    {programType}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-2 text-base text-black">
-              <span>Research area</span>
-              <input
+                <SelectTrigger className="border-zinc-400 focus-visible:ring-zinc-900">
+                  <SelectValue placeholder="Select programme" />
+                </SelectTrigger>
+                <SelectContent>
+                  {applicationProgramTypes.map((programType) => (
+                    <SelectItem key={programType} value={programType}>
+                      {programType}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="researchArea">Research area</Label>
+              <Input
+                id="researchArea"
                 value={formValues.researchArea}
                 onChange={(event) =>
                   updateField("researchArea", event.target.value)
                 }
-                className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="Machine Learning for Education"
+                className="border-zinc-400 focus-visible:ring-zinc-900"
               />
-            </label>
-            <label className="space-y-2 text-base text-black">
-              <span>Statement of purpose</span>
-              <textarea
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="statementOfPurpose">Statement of purpose</Label>
+              <Textarea
+                id="statementOfPurpose"
                 value={formValues.statementOfPurpose}
                 onChange={(event) =>
                   updateField("statementOfPurpose", event.target.value)
                 }
-                className="min-h-40 w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
+                className="min-h-40 border-zinc-400 focus-visible:ring-zinc-900"
                 placeholder="Describe your motivation, proposed area, and fit for the programme."
               />
-            </label>
-          </div>
-        ) : null}
-
-        {step === 2 ? (
-          <div className="space-y-3.5">
-            <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
-              <p className="text-base font-medium text-black">
-                Upload supporting document
-              </p>
-              <p className="mt-2 text-base text-black">
-                PDF only. Maximum file size: 10MB. Only one file can be
-                uploaded.
-              </p>
-              {hasUploadedDocument ? (
-                <p className="mt-2 text-base text-black">
-                  Remove the current file before selecting another PDF.
-                </p>
-              ) : null}
-              <input
-                className="mt-4 block w-full cursor-pointer text-base text-black file:mr-4 file:cursor-pointer file:rounded-full file:border file:border-black/10 file:bg-[linear-gradient(135deg,#fff8f5_0%,#f7f4ee_55%,#eef4ff_100%)] file:px-4 file:py-3 file:font-semibold file:text-black file:transition-all file:duration-200 hover:file:-translate-y-0.5 hover:file:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
-                type="file"
-                accept="application/pdf"
-                onChange={handleDocumentUpload}
-                disabled={hasUploadedDocument || isUploadingDocument || isRemovingDocument}
-              />
-              {isUploadingDocument ? (
-                <p className="mt-3 text-base text-black">Uploading PDF...</p>
-              ) : null}
             </div>
+          </div>
+        )}
 
-            <div className="space-y-2.5">
+        {/* Step 3: Documents */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="pt-5 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Upload supporting document</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    PDF only. Maximum file size: 10MB. Only one file can be uploaded.
+                  </p>
+                  {hasUploadedDocument && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Remove the current file before selecting another PDF.
+                    </p>
+                  )}
+                </div>
+                <input
+                  className="block w-full cursor-pointer text-sm text-foreground file:mr-4 file:cursor-pointer file:rounded-md file:border file:border-border file:bg-background file:px-4 file:py-2 file:text-sm file:font-medium file:text-foreground file:transition-all hover:file:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleDocumentUpload}
+                  disabled={hasUploadedDocument || isUploadingDocument || isRemovingDocument}
+                />
+                {isUploadingDocument && (
+                  <p className="text-sm text-muted-foreground">Uploading PDF...</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="space-y-2">
               {documents.length === 0 ? (
-                <div className="rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-5 text-base text-black">
+                <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                   No supporting document uploaded yet.
                 </div>
               ) : (
                 documents.map((document) => (
-                  <div
-                    key={document.storagePath}
-                    className="rounded-[1.5rem] border border-gray-200 bg-transparent px-4 py-4"
-                  >
-                    <p className="font-medium text-black">{document.fileName}</p>
-                    <p className="mt-1 text-base uppercase tracking-[0.18em] text-black">
-                      {(document.sizeBytes / (1024 * 1024)).toFixed(2)} MB | PDF
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleDocumentRemoval}
-                      disabled={isRemovingDocument}
-                      className="mt-3 rounded-full border border-black px-4 py-2 text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {isRemovingDocument ? "Removing..." : "Remove uploaded file"}
-                    </button>
-                  </div>
+                  <Card key={document.storagePath}>
+                    <CardContent className="flex items-center justify-between pt-4 pb-4">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{document.fileName}</p>
+                        <p className="mt-0.5 text-xs uppercase tracking-wider text-muted-foreground">
+                          {(document.sizeBytes / (1024 * 1024)).toFixed(2)} MB · PDF
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDocumentRemoval}
+                        disabled={isRemovingDocument}
+                      >
+                        {isRemovingDocument ? "Removing..." : "Remove"}
+                      </Button>
+                    </CardContent>
+                  </Card>
                 ))
               )}
             </div>
           </div>
-        ) : null}
+        )}
 
-        {step === 3 ? (
-          <div className="space-y-3.5 rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
-            <div className="rounded-2xl border border-gray-300 bg-white/40 px-4 py-3 text-base text-black">
-              Review the application details below carefully. If anything is
-              incorrect, use the step boxes above or the Back button to update
-              it before submitting.
-            </div>
-            <div>
-              <p className="text-base font-medium text-black">
-                {formValues.applicantName}
-              </p>
-              <p className="text-base text-black">
-                {formValues.applicantEmail}
-              </p>
-              <p className="text-base text-black">
-                {formValues.applicantPhone}
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <p className="text-base uppercase tracking-[0.18em] text-black">
-                  Programme
-                </p>
-                <p className="mt-1 text-base text-black">
-                  {formValues.programType}
+        {/* Step 4: Review */}
+        {step === 3 && (
+          <Card>
+            <CardContent className="pt-5 space-y-4">
+              <div className="rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+                Review the application details below carefully. If anything is
+                incorrect, use the step boxes above or the Back button to update
+                it before submitting.
+              </div>
+
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-foreground">{formValues.applicantName}</p>
+                <p className="text-sm text-muted-foreground">{formValues.applicantEmail}</p>
+                <p className="text-sm text-muted-foreground">{formValues.applicantPhone}</p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Programme</p>
+                  <p className="mt-1 text-sm text-foreground break-words">{formValues.programType}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Research area</p>
+                  <p className="mt-1 text-sm text-foreground break-all">{formValues.researchArea}</p>
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Statement</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-foreground break-all">
+                  {formValues.statementOfPurpose}
                 </p>
               </div>
-              <div>
-                <p className="text-base uppercase tracking-[0.18em] text-black">
-                  Research area
-                </p>
-                <p className="mt-1 text-base text-black">
-                  {formValues.researchArea}
-                </p>
-              </div>
-            </div>
-            <div>
-              <p className="text-base uppercase tracking-[0.18em] text-black">
-                Statement
-              </p>
-              <p className="mt-1 whitespace-pre-wrap text-base leading-6 text-black">
-                {formValues.statementOfPurpose}
-              </p>
-            </div>
-            <div>
-              <p className="text-base uppercase tracking-[0.18em] text-black">
-                Supporting PDF
-              </p>
-              <ul className="mt-2 space-y-1.5 text-base text-black">
-                {documents.map((document) => (
-                  <li key={document.storagePath}>{document.fileName}</li>
-                ))}
-              </ul>
-            </div>
-            <label className="flex items-start gap-3 rounded-2xl border border-black/15 bg-white/40 px-4 py-3 text-base text-black">
-              <input
-                type="checkbox"
-                checked={isReviewConfirmed}
-                onChange={(event) => setIsReviewConfirmed(event.target.checked)}
-                className="mt-1 h-4 w-4 accent-black"
-              />
-              <span>
-                I have reviewed the application details and confirm they are
-                correct before submission.
-              </span>
-            </label>
-          </div>
-        ) : null}
 
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Supporting PDF</p>
+                <ul className="mt-1 space-y-1">
+                  {documents.map((document) => (
+                    <li key={document.storagePath} className="text-sm text-foreground flex items-center gap-2">
+                      <Badge variant="secondary" className="text-[10px]">PDF</Badge>
+                      {document.fileName}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <label className="flex items-start gap-3 rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isReviewConfirmed}
+                  onChange={(event) => setIsReviewConfirmed(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-primary"
+                />
+                <span>
+                  I have reviewed the application details and confirm they are
+                  correct before submission.
+                </span>
+              </label>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Navigation Buttons */}
         <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={previousStep}
             disabled={isNavigationBusy}
-            className="theme-button theme-button--compact theme-button--black"
           >
-            <span className="theme-button__label">Back</span>
-          </button>
+            Back
+          </Button>
 
           <div className="flex flex-col gap-3 sm:flex-row">
             {step < stepLabels.length - 1 ? (
-              <button
+              <Button
                 type="button"
                 onClick={nextStep}
                 disabled={isNavigationBusy}
-                className="theme-button theme-button--compact"
               >
-                <span className="theme-button__label">Continue</span>
-              </button>
+                Continue
+              </Button>
             ) : (
-              <button
+              <Button
                 type="submit"
                 disabled={isSubmitting || !isReviewConfirmed}
-                className="theme-button theme-button--compact"
               >
-                <span className="theme-button__label">
-                  {isSubmitting ? "Submitting..." : "Submit application"}
-                </span>
-              </button>
+                {isSubmitting ? "Submitting..." : "Submit application"}
+              </Button>
             )}
           </div>
         </div>

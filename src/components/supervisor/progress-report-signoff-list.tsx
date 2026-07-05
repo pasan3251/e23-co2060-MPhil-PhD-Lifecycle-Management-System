@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 async function fetcher(url: string) {
   const response = await fetch(url);
@@ -52,15 +60,15 @@ export function ProgressReportSignoffList() {
   if (isLoading) {
     return (
       <div className="mt-8 space-y-4">
-        <div className="h-28 animate-pulse rounded-[24px] border border-gray-300 bg-white" />
-        <div className="h-28 animate-pulse rounded-[24px] border border-gray-300 bg-white" />
+        <div className="h-32 animate-pulse rounded-md border bg-muted" />
+        <div className="h-32 animate-pulse rounded-md border bg-muted" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="mt-8 rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+      <div className="mt-8 rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive text-sm font-medium">
         Error loading reports.
       </div>
     );
@@ -70,10 +78,10 @@ export function ProgressReportSignoffList() {
 
   if (reports.length === 0) {
     return (
-      <div className="mt-8 rounded-[24px] border border-dashed border-gray-300 bg-white p-12 text-center">
-        <p className="text-2xl font-black tracking-tight text-black">No reports pending</p>
-        <p className="mt-2 text-base font-medium text-black/70">
-        No progress reports need your sign-off.
+      <div className="mt-8 rounded-md border border-dashed p-12 text-center">
+        <p className="text-lg font-bold">No reports pending</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          No progress reports need your sign-off.
         </p>
       </div>
     );
@@ -82,38 +90,39 @@ export function ProgressReportSignoffList() {
   return (
     <div className="mt-8 space-y-4">
       {reports.map((report) => (
-        <article key={report.id} className="group rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <span className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
+        <Card key={report.id}>
+          <CardHeader className="flex flex-row items-start justify-between space-y-0">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <Badge variant="outline" className="uppercase text-[10px] tracking-wider">
                   {report.periodLabel}
-                </span>
-                <span className="text-[10px] font-black uppercase tracking-wider text-black/40 transition-colors group-hover:text-white/60">
+                </Badge>
+                <span className="text-xs text-muted-foreground">
                   Submitted {new Date(report.createdAt).toLocaleDateString()}
                 </span>
               </div>
-              <h4 className="mt-2 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-                {report.student.displayName}
-              </h4>
-              <p className="mt-3 whitespace-pre-wrap text-base font-medium leading-6 text-black/70 transition-colors group-hover:text-white/80">
-                {report.narrative}
-              </p>
-              {report.documents.length > 0 ? (
-                <p className="mt-3 break-all text-sm font-bold text-black/50 transition-colors group-hover:text-white/70">
-                  Attached PDF: {report.documents.map((document) => document.fileName).join(", ")}
-                </p>
-              ) : null}
+              <CardTitle>{report.student.displayName}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">{report.student.email}</p>
             </div>
-            <button
+            <Button
               onClick={() => handleSign(report.id)}
               disabled={signingId === report.id}
-              className="shrink-0 rounded-xl border-2 border-black bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-black transition group-hover:border-white group-hover:bg-transparent group-hover:text-white disabled:opacity-50"
+              className="shrink-0"
             >
               {signingId === report.id ? "Signing..." : "Sign Off"}
-            </button>
-          </div>
-        </article>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">
+              {report.narrative}
+            </p>
+            {report.documents.length > 0 && (
+              <p className="mt-3 break-all text-xs text-muted-foreground">
+                Attached PDF: {report.documents.map((document) => document.fileName).join(", ")}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       ))}
     </div>
   );

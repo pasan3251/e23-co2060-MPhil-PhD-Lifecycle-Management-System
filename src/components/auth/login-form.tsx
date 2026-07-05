@@ -10,6 +10,10 @@ import {
   signOutUser,
 } from "@/lib/firebase/client";
 import { isAppUserRole, type AppUserRole } from "@/types/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 
 const roleRedirectMap: Record<AppUserRole, string> = {
   STUDENT: "/dashboard/student",
@@ -127,88 +131,93 @@ export function LoginForm() {
   }
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-      {timeoutMessage ? (
-        <div className="rounded-2xl border border-red-500 bg-red-50 px-4 py-3 text-base font-medium text-red-700">
-          {timeoutMessage}
+    <Card>
+      <CardContent className="pt-6">
+        <div className="space-y-2 text-center mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Sign In
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Use your assigned institutional account to sign in.
+          </p>
         </div>
-      ) : null}
+        <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+          {timeoutMessage && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+              {timeoutMessage}
+            </div>
+          )}
 
-      {errorMessage ? (
-        <div
-          className="rounded-2xl border border-red-500 bg-red-50 px-4 py-3 text-base font-medium text-red-700"
-          role="alert"
-        >
-          {errorMessage}
-        </div>
-      ) : null}
+          {errorMessage && (
+            <div
+              className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
+              role="alert"
+            >
+              {errorMessage}
+            </div>
+          )}
 
-      <div className="space-y-2">
-        <label className="text-base font-bold text-black" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="w-full rounded-2xl border border-gray-300 bg-gray-50/80 px-4 py-3 text-black outline-none transition focus:border-gray-300"
-          placeholder="name@eng.pdn.ac.lk"
-          data-testid="login-email"
-        />
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="name@eng.pdn.ac.lk"
+              className="border-zinc-400 focus-visible:ring-zinc-900"
+              data-testid="login-email"
+            />
+          </div>
 
-      <div className="space-y-2">
-        <label className="text-base font-bold text-black" htmlFor="password">
-          Password
-        </label>
-        <div className="flex items-center gap-2 rounded-2xl border border-gray-300 bg-gray-50/80 px-4 py-1.5 focus-within:border-gray-300">
-          <input
-            id="password"
-            name="password"
-            type={isPasswordVisible ? "text" : "password"}
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full bg-transparent py-1.5 text-black outline-none"
-            placeholder="Enter your password"
-            data-testid="login-password"
-          />
-          <button
-            type="button"
-            onClick={() => setIsPasswordVisible((current) => !current)}
-            className="shrink-0 text-sm font-semibold text-black transition hover:opacity-70"
-            aria-label={isPasswordVisible ? "Hide password" : "Show password"}
-            aria-pressed={isPasswordVisible}
-          >
-            {isPasswordVisible ? "Hide" : "Show"}
-          </button>
-        </div>
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center gap-2 rounded-md border border-zinc-400 bg-transparent px-3 py-1 focus-within:ring-1 focus-within:ring-zinc-900 transition-shadow">
+              <input
+                id="password"
+                name="password"
+                type={isPasswordVisible ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="h-8 w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                placeholder="Enter your password"
+                data-testid="login-password"
+              />
+              <button
+                type="button"
+                onClick={() => setIsPasswordVisible((current) => !current)}
+                className="shrink-0 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                aria-pressed={isPasswordVisible}
+              >
+                {isPasswordVisible ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
 
-      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          disabled={isSubmitting}
-          className="theme-button theme-button--compact theme-button--black"
-        >
-          <span className="theme-button__label">Back</span>
-        </button>
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/")}
+              disabled={isSubmitting}
+            >
+              Back
+            </Button>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="theme-button"
-          data-testid="login-submit"
-        >
-          <span className="theme-button__label">
-            {isSubmitting ? "Signing in..." : "Sign in"}
-          </span>
-        </button>
-      </div>
-    </form>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              data-testid="login-submit"
+            >
+              {isSubmitting ? "Signing in..." : "Sign in"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
