@@ -25,10 +25,10 @@ export default function LogoutPage() {
   }, [router]);
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-[#e0e0e0]">
-      <div className="text-center space-y-4">
-        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-black border-t-transparent" />
-        <p className="text-xl font-black uppercase tracking-widest text-black/40">
+    <div className="flex min-h-screen w-full items-center justify-center bg-background">
+      <div className="text-center space-y-4 flex flex-col items-center">
+        <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-lg font-medium text-muted-foreground">
           Signing you out...
         </p>
       </div>

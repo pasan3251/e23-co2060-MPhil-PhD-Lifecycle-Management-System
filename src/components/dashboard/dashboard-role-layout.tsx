@@ -3,10 +3,26 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { 
+  LogOut, 
+  Bell,
+  LayoutDashboard,
+  FileText,
+  TrendingUp,
+  Milestone,
+  FolderOpen,
+  GraduationCap,
+  FileEdit,
+  Users,
+  UserCog,
+  Inbox,
+  UserCheck,
+  UserSearch,
+  CalendarDays,
+  ClipboardCheck
+} from "lucide-react";
 
 import { DashboardNotificationsMenu } from "@/components/dashboard/dashboard-notifications-menu";
-import { Bell } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ProfileDropdown } from "@/components/profile-dropdown";
@@ -65,13 +81,19 @@ export function DashboardRoleLayout({
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive(`/dashboard/${role}`)}>
-                    <Link href={`/dashboard/${role}`}>Overview</Link>
+                    <Link href={`/dashboard/${role}`}>
+                      <LayoutDashboard />
+                      <span>Overview</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 {navItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild isActive={isActive(item.href)}>
-                      <Link href={item.href}>{item.label}</Link>
+                      <Link href={item.href}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -124,35 +146,35 @@ function getNavItems(role: DashboardRole) {
   switch (role) {
     case "student":
       return [
-        { href: "/dashboard/student/proposals", label: "Proposals" },
-        { href: "/dashboard/student/progress-reports", label: "Progress Reports" },
-        { href: "/dashboard/student/progress", label: "Milestones" },
-        { href: "/dashboard/student/documents", label: "Documents" },
-        { href: "/dashboard/student/theses/submit", label: "Thesis Submission" },
-        { href: "/dashboard/student/theses/corrections", label: "Corrections" },
+        { href: "/dashboard/student/proposals", label: "Proposals", icon: FileText },
+        { href: "/dashboard/student/progress-reports", label: "Progress Reports", icon: TrendingUp },
+        { href: "/dashboard/student/progress", label: "Milestones", icon: Milestone },
+        { href: "/dashboard/student/documents", label: "Documents", icon: FolderOpen },
+        { href: "/dashboard/student/theses/submit", label: "Thesis Submission", icon: GraduationCap },
+        { href: "/dashboard/student/theses/corrections", label: "Corrections", icon: FileEdit },
       ];
     case "supervisor":
       return [
-        { href: "/dashboard/supervisor/students", label: "Student Roster" },
-        { href: "/dashboard/supervisor/proposals/evaluate", label: "Review Proposals" },
-        { href: "/dashboard/supervisor/progress-reports/sign", label: "Sign Progress Reports" },
-        { href: "/dashboard/supervisor/documents", label: "Documents" },
+        { href: "/dashboard/supervisor/students", label: "Student Roster", icon: Users },
+        { href: "/dashboard/supervisor/proposals/evaluate", label: "Review Proposals", icon: ClipboardCheck },
+        { href: "/dashboard/supervisor/progress-reports/sign", label: "Sign Progress Reports", icon: TrendingUp },
+        { href: "/dashboard/supervisor/documents", label: "Documents", icon: FolderOpen },
       ];
     case "admin":
       return [
-        { href: "/dashboard/admin/users", label: "Manage Users" },
-        { href: "/dashboard/admin/applications", label: "Applications" },
-        { href: "/dashboard/admin/proposals/evaluate", label: "Approve Proposals" },
-        { href: "/dashboard/admin/assignments/supervisors", label: "Supervisor Assignments" },
-        { href: "/dashboard/admin/assignments/examiners", label: "Examiner Assignments" },
-        { href: "/dashboard/admin/vivas/schedule", label: "Schedule Vivas" },
-        { href: "/dashboard/admin/theses", label: "Finalize Theses" },
-        { href: "/dashboard/admin/documents", label: "Documents" },
+        { href: "/dashboard/admin/users", label: "Manage Users", icon: UserCog },
+        { href: "/dashboard/admin/applications", label: "Applications", icon: Inbox },
+        { href: "/dashboard/admin/proposals/evaluate", label: "Approve Proposals", icon: ClipboardCheck },
+        { href: "/dashboard/admin/assignments/supervisors", label: "Supervisor Assignments", icon: UserCheck },
+        { href: "/dashboard/admin/assignments/examiners", label: "Examiner Assignments", icon: UserSearch },
+        { href: "/dashboard/admin/vivas/schedule", label: "Schedule Vivas", icon: CalendarDays },
+        { href: "/dashboard/admin/theses", label: "Finalize Theses", icon: GraduationCap },
+        { href: "/dashboard/admin/documents", label: "Documents", icon: FolderOpen },
       ];
     case "examiner":
       return [
-        { href: "/dashboard/examiner/vivas", label: "Assigned Vivas" },
-        { href: "/dashboard/examiner/documents", label: "Documents" },
+        { href: "/dashboard/examiner/vivas", label: "Assigned Vivas", icon: CalendarDays },
+        { href: "/dashboard/examiner/documents", label: "Documents", icon: FolderOpen },
       ];
     default:
       return [];

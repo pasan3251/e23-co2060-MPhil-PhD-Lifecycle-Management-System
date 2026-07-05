@@ -153,14 +153,14 @@ export function LoginForm() {
         </div>
         <form className="space-y-5" onSubmit={handleSubmit} noValidate>
           {timeoutMessage && (
-            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground">
               {timeoutMessage}
             </div>
           )}
 
           {errorMessage && (
             <div
-              className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
+              className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground"
               role="alert"
             >
               {errorMessage}

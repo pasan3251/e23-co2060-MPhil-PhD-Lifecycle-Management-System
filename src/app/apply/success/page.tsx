@@ -2,25 +2,25 @@ import Link from "next/link";
 
 export default function ApplicationSuccessPage() {
   return (
-    <main className="box-border flex h-[100dvh] items-center justify-center overflow-hidden bg-[#e0e0e0] px-4 py-6 text-black sm:px-6 sm:py-8">
-      <div className="w-full max-w-lg rounded-[30px] border border-green-500 bg-[#e0e0e0] px-6 py-6 text-center shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:px-8 sm:py-8">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-2xl text-green-700">
+    <main className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-lg rounded-xl border bg-card text-card-foreground shadow-sm p-8 text-center space-y-6">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl text-green-700">
           {"\u2713"}
         </div>
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-green-700">
-          Submission Complete
-        </p>
-        <br/>
-        <h1 className="mt-4 text-2xl font-semibold text-green-800">
-          Application Submitted successfully.
-        </h1>
-        <br/>
-        <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-green-700">
+        <div>
+          <p className="text-sm font-medium text-green-700 mb-2">
+            Submission Complete
+          </p>
+          <h1 className="text-2xl font-semibold text-foreground">
+            Application Submitted Successfully
+          </h1>
+        </div>
+        <p className="mx-auto text-base text-muted-foreground">
           Your application has been received and is now ready for review by the postgraduate admissions team.
         </p>
-        <div className="mt-6 flex justify-center">
-          <Link href="/" className="theme-button">
-            <span className="theme-button__label">Back to Home</span>
+        <div className="pt-4 flex justify-center">
+          <Link href="/" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+            Back to Home
           </Link>
         </div>
       </div>

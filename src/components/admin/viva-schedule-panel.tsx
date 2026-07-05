@@ -206,7 +206,7 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
 
         <div className="space-y-6">
           <div className="flex items-center gap-4">
-            <p className="text-sm font-black uppercase tracking-widest text-black/40">
+            <p className="text-sm font-medium text-muted-foreground">
               Upcoming Vivas
             </p>
             <div className="h-px flex-1 bg-gray-200" />

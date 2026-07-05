@@ -68,7 +68,7 @@ export function ProgressReportSignoffList() {
 
   if (error) {
     return (
-      <div className="mt-8 rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive text-sm font-medium">
+      <div className="mt-8 rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive-foreground text-sm font-medium">
         Error loading reports.
       </div>
     );

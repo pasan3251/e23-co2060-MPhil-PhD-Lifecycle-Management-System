@@ -107,7 +107,7 @@ export function SupervisorStudentProfile({
   if (errorMessage || !student) {
     return (
       <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive-foreground">
           {errorMessage ?? "Student profile could not be loaded."}
         </div>
       </div>

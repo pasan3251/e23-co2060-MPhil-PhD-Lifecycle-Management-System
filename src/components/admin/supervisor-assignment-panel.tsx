@@ -188,7 +188,7 @@ export function SupervisorAssignmentPanel() {
   );
 
   if (isLoading)
-    return <div className="p-12 text-center font-black uppercase tracking-[0.3em] text-black/40">Loading assignments...</div>;
+    return <div className="p-12 text-center text-muted-foreground">Loading assignments...</div>;
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
@@ -258,7 +258,7 @@ export function SupervisorAssignmentPanel() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className={`h-8 w-8 ${a.isPrimary ? "hover:bg-primary-foreground/20 text-primary-foreground" : "hover:text-destructive hover:bg-destructive/10"}`}
+                                  className={`h-8 w-8 ${a.isPrimary ? "hover:bg-primary-foreground/20 text-primary-foreground" : "hover:text-destructive-foreground hover:bg-destructive/10"}`}
                                   onClick={() => handleRemove(a.id)}
                                 >
                                   <Trash2 className="h-4 w-4" />

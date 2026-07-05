@@ -150,7 +150,7 @@ export function DashboardNotificationsMenu({ trigger }: { trigger?: React.ReactN
         </SheetHeader>
 
         {error ? (
-          <div className="mt-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+          <div className="mt-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive-foreground">
             {error}
           </div>
         ) : null}
