@@ -133,11 +133,21 @@ export function LoginForm() {
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="space-y-2 text-center mb-6">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Sign In
-          </h1>
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col items-center justify-center space-y-4 mb-8 pt-4">
+          <div className="flex items-center justify-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/uni-logo.png"
+              alt="University of Peradeniya"
+              width={75}
+              height={75}
+              className="object-contain"
+            />
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">
+              Sign In
+            </h1>
+          </div>
+          <p className="text-lg text-muted-foreground text-center">
             Use your assigned institutional account to sign in.
           </p>
         </div>
@@ -158,7 +168,7 @@ export function LoginForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-xl">Email</Label>
             <Input
               id="email"
               name="email"
@@ -167,14 +177,14 @@ export function LoginForm() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="name@eng.pdn.ac.lk"
-              className="border-zinc-400 focus-visible:ring-zinc-900"
+              className="h-12 text-lg md:text-lg border-zinc-400 focus-visible:ring-zinc-900"
               data-testid="login-email"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="flex items-center gap-2 rounded-md border border-zinc-400 bg-transparent px-3 py-1 focus-within:ring-1 focus-within:ring-zinc-900 transition-shadow">
+            <Label htmlFor="password" className="text-xl">Password</Label>
+            <div className="flex items-center gap-2 rounded-md border border-zinc-400 bg-transparent px-3 py-2 focus-within:ring-1 focus-within:ring-zinc-900 transition-shadow">
               <input
                 id="password"
                 name="password"
@@ -182,14 +192,14 @@ export function LoginForm() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="h-8 w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                className="h-10 w-full bg-transparent text-lg md:text-lg text-foreground placeholder:text-muted-foreground outline-none"
                 placeholder="Enter your password"
                 data-testid="login-password"
               />
               <button
                 type="button"
                 onClick={() => setIsPasswordVisible((current) => !current)}
-                className="shrink-0 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                className="shrink-0 text-base font-semibold text-muted-foreground hover:text-foreground transition-colors"
                 aria-label={isPasswordVisible ? "Hide password" : "Show password"}
                 aria-pressed={isPasswordVisible}
               >
@@ -198,12 +208,13 @@ export function LoginForm() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push("/")}
               disabled={isSubmitting}
+              className="h-12 text-lg px-8"
             >
               Back
             </Button>
@@ -212,6 +223,7 @@ export function LoginForm() {
               type="submit"
               disabled={isSubmitting}
               data-testid="login-submit"
+              className="h-12 text-lg px-10"
             >
               {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
