@@ -28,7 +28,7 @@ export default function HomePage() {
           </Link>
         </nav>
       </header>
-      <main className="relative flex h-screen flex-col items-center justify-center overflow-hidden bg-[#e0e0e0] px-5 py-20 text-black sm:px-6 sm:py-24">
+      <main className="relative flex h-screen flex-col items-center justify-center overflow-hidden bg-white px-5 py-20 text-black sm:px-6 sm:py-24">
         <div className="absolute inset-0">
           <div className="absolute inset-0 opacity-90">
             <DotField
@@ -67,17 +67,15 @@ export default function HomePage() {
               priority
             />
           </div>
-          <h1 className={`${montserrat.className} relative -top-4 mx-auto max-w-5xl text-balance text-center text-[2.1rem] font-normal leading-[0.92] tracking-[-0.06em] text-[#111318] sm:-top-5 sm:text-[3.7rem] lg:-top-6 lg:text-[4.8rem]`}>
+          <h1 className={`${montserrat.className} relative -top-4 mx-auto max-w-5xl text-balance text-center text-[2.1rem] font-normal leading-[1.1] tracking-[-0.06em] text-[#111318] sm:-top-5 sm:text-[3.7rem] lg:-top-6 lg:text-[4.8rem]`}>
             Postgraduate Lifecycle Platform
           </h1>
 
           <Link
             href="/apply"
-            className={styles.applyButton}
+            className={`inline-flex items-center justify-center border-2 border-black rounded-full bg-black px-8 py-3 text-center text-white transition-all duration-200 hover:bg-white hover:text-black ${montserrat.className}`}
           >
-            <span className={`${styles.applyButtonLabel} ${montserrat.className}`}>
-              Apply Now
-            </span>
+            <span className="font-semibold tracking-wide text-lg">Apply Now</span>
           </Link>
         </div>
       </main>
