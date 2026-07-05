@@ -3,6 +3,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { Loader } from "@/components/ui/loader";
 import { loginCredentialsSchema } from "@/lib/auth/schemas";
 import {
   getUserIdTokenResult,
@@ -95,6 +96,7 @@ export function LoginForm() {
       if (!isAppUserRole(roleClaim)) {
         await signOutUser();
         setErrorMessage("Your account is missing a valid role claim.");
+        setIsSubmitting(false);
         return;
       }
 
@@ -118,6 +120,7 @@ export function LoginForm() {
           sessionPayload.error ??
             "Unable to create a secure session. Please try again.",
         );
+        setIsSubmitting(false);
         return;
       }
 
@@ -125,9 +128,21 @@ export function LoginForm() {
       router.refresh();
     } catch (error) {
       setErrorMessage(mapFirebaseErrorMessage(error));
-    } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (isSubmitting) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex min-h-screen w-full items-center justify-center bg-background">
+        <div className="text-center space-y-6 flex flex-col items-center">
+          <Loader />
+          <p className="text-2xl font-medium text-muted-foreground">
+            Signing in...
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

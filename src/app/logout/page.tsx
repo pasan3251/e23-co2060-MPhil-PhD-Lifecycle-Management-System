@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Loader } from "@/components/ui/loader";
 
 export default function LogoutPage() {
   const router = useRouter();
@@ -26,9 +27,9 @@ export default function LogoutPage() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background">
-      <div className="text-center space-y-4 flex flex-col items-center">
-        <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-lg font-medium text-muted-foreground">
+      <div className="text-center space-y-6 flex flex-col items-center">
+        <Loader />
+        <p className="text-2xl font-medium text-muted-foreground">
           Signing you out...
         </p>
       </div>

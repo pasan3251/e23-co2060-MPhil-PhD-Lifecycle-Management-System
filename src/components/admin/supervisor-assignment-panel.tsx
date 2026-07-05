@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Loader } from "@/components/ui/loader";
 import {
   Select,
   SelectContent,
@@ -188,7 +189,12 @@ export function SupervisorAssignmentPanel() {
   );
 
   if (isLoading)
-    return <div className="p-12 text-center text-muted-foreground">Loading assignments...</div>;
+    return (
+      <div className="p-12 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+        <Loader />
+        <span>Loading assignments...</span>
+      </div>
+    );
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 

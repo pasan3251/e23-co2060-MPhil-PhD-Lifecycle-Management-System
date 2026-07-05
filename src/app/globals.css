@@ -225,3 +225,13 @@ textarea {
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes custom-load-1 {
+  0% { transform: rotate(0); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes custom-load-2 {
+  0% { transform: rotate(0); }
+  100% { transform: rotate(-360deg); }
+}
