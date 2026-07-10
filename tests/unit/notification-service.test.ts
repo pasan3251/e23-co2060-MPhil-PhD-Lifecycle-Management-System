@@ -11,7 +11,7 @@ vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({
     success: true,
   }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
+  notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
   notifyProgressReportSubmitted: vi.fn().mockResolvedValue({ success: true }),
   notifyRegistrationExpiry: vi.fn().mockResolvedValue({ success: true }),
   notifyThesisArchived: vi.fn().mockResolvedValue({ success: true }),
@@ -37,8 +37,8 @@ import { notify } from "@/lib/notifications";
 import {
   notifyApplicationStatusChanged,
   notifyProgressReportSubmitted,
+  notifyProposalEvaluationSubmittedToAdministrator,
   notifyProposalStatusChange,
-  notifyEthicsApprovalStatusChanged,
   notifyEthicsApprovalSubmittedToAdministrator,
   notifyRegistrationExpiry,
   notifyThesisArchived,
@@ -137,31 +137,34 @@ describe("NotificationService — event-to-template mapping", () => {
     );
   });
 
-  it("dispatches ETHICS_APPROVAL_STATUS_CHANGED to students", async () => {
+  it("dispatches EXAMINER_REVIEW_SUBMITTED to administrators", async () => {
     await notify({
-      event: "ETHICS_APPROVAL_STATUS_CHANGED",
-      recipientUserId: "user-student-1",
-      to: "student@example.com",
+      event: "EXAMINER_REVIEW_SUBMITTED",
+      recipientUserId: "admin-user-1",
+      to: "admin@example.com",
+      administratorName: "Admin One",
+      examinerName: "Examiner One",
       studentName: "Alice",
       studentId: "student-1",
-      applicationTitle: "Interview ethics",
-      statusLabel: "APPROVED",
-      reviewNotes: "Approved by committee.",
+      subjectTitle: "AI Ethics",
+      reviewKind: "proposal",
+      feedback: "Text review is available.",
     });
 
-    expect(notifyEthicsApprovalStatusChanged).toHaveBeenCalledOnce();
-    expect(notifyEthicsApprovalStatusChanged).toHaveBeenCalledWith(
+    expect(notifyProposalEvaluationSubmittedToAdministrator).toHaveBeenCalledOnce();
+    expect(notifyProposalEvaluationSubmittedToAdministrator).toHaveBeenCalledWith(
       expect.objectContaining({
-        applicationTitle: "Interview ethics",
-        statusLabel: "APPROVED",
+        administratorName: "Admin One",
+        supervisorName: "Examiner One",
+        proposalTitle: "AI Ethics",
       }),
     );
     expect(prisma.notification.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          recipientId: "user-student-1",
+          recipientId: "admin-user-1",
           studentId: "student-1",
-          event: NotificationEvent.ETHICS_APPROVAL_STATUS_CHANGED,
+          event: NotificationEvent.EXAMINER_REVIEW_SUBMITTED,
         }),
       }),
     );

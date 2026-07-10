@@ -1,13 +1,12 @@
 import {
   DocumentType,
-  EthicsApprovalStatus,
   ProposalStatus,
   RegistrationStatus,
   UserRole,
   type Prisma,
 } from "@prisma/client";
 
-import { notify, notifyInBackground } from "@/lib/notifications";
+import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
 import {
   assertFileUploadConstraints,
@@ -19,24 +18,24 @@ import {
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 import {
-  ethicsApprovalDecisionSchema,
   ethicsApprovalSubmissionSchema,
   ethicsApprovalUploadRequestSchema,
-  type EthicsApprovalDecisionInput,
   type EthicsApprovalSubmissionInput,
   type EthicsApprovalUploadRequest,
 } from "@/lib/ethics/schemas";
 
 export {
-  ethicsApprovalDecisionSchema,
   ethicsApprovalSubmissionSchema,
   ethicsApprovalUploadRequestSchema,
 };
 
 export class EthicsApprovalError extends Error {
-  status: 400 | 403 | 404 | 409 | 413 | 500;
+  status: 400 | 403 | 404 | 409 | 410 | 413 | 500;
 
-  constructor(message: string, status: 400 | 403 | 404 | 409 | 413 | 500 = 400) {
+  constructor(
+    message: string,
+    status: 400 | 403 | 404 | 409 | 410 | 413 | 500 = 400,
+  ) {
     super(message);
     this.name = "EthicsApprovalError";
     this.status = status;
@@ -48,10 +47,6 @@ const ethicsApprovalSelect = {
   studentId: true,
   title: true,
   summary: true,
-  status: true,
-  reviewNotes: true,
-  reviewedAt: true,
-  reviewedById: true,
   isArchived: true,
   createdAt: true,
   updatedAt: true,
@@ -85,16 +80,6 @@ const ethicsApprovalSelect = {
       programType: true,
     },
   },
-  reviewedBy: {
-    select: {
-      user: {
-        select: {
-          displayName: true,
-          email: true,
-        },
-      },
-    },
-  },
 } satisfies Prisma.EthicsApprovalSelect;
 
 type EthicsApprovalRecord = Prisma.EthicsApprovalGetPayload<{
@@ -119,11 +104,6 @@ function mapEthicsApproval(record: EthicsApprovalRecord) {
     studentId: record.studentId,
     title: record.title,
     summary: record.summary,
-    status: record.status,
-    reviewNotes: record.reviewNotes,
-    reviewedAt: record.reviewedAt,
-    reviewedById: record.reviewedById,
-    reviewedByName: record.reviewedBy?.user.displayName ?? null,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     student: {
@@ -144,15 +124,11 @@ function mapEthicsApproval(record: EthicsApprovalRecord) {
   };
 }
 
-function assertEthicsPdfUpload(input: {
+function assertEthicsDocumentUpload(input: {
   contentType: string;
   fileSizeBytes: number;
   path: string;
 }) {
-  if (input.contentType !== "application/pdf") {
-    throw new EthicsApprovalError("Only PDF documents are allowed.", 400);
-  }
-
   try {
     assertFileUploadConstraints(input);
   } catch (error) {
@@ -167,7 +143,7 @@ function assertEthicsPdfUpload(input: {
 
   if (!normalizedPath.startsWith("ethics-approvals/")) {
     throw new EthicsApprovalError(
-      "Ethics approval documents must be uploaded to the ethics-approvals directory.",
+      "Ethics documents must be uploaded to the ethics-approvals directory.",
       400,
     );
   }
@@ -238,28 +214,15 @@ async function findStudentEthicsContext(
 
 function getEthicsSubmissionBlockedReason(student: StudentEthicsContext) {
   if (!student.hasActiveRegistration) {
-    return "An active registration is required before submitting ethics approval.";
+    return "An active registration is required before submitting ethics documents.";
   }
 
   if (!student.hasApprovedProposal) {
-    return "Your proposal must be approved before submitting ethics approval.";
+    return "Your proposal must be approved before submitting ethics documents.";
   }
 
-  const latestApproval = student.approvals[0] ?? null;
-
-  if (!latestApproval) {
-    return null;
-  }
-
-  if (latestApproval.status === EthicsApprovalStatus.APPROVED) {
-    return "Your ethics approval has already been approved.";
-  }
-
-  if (
-    latestApproval.status === EthicsApprovalStatus.SUBMITTED ||
-    latestApproval.status === EthicsApprovalStatus.UNDER_REVIEW
-  ) {
-    return "An ethics approval submission is already waiting for review.";
+  if (student.approvals.length > 0) {
+    return "Ethics documents have already been submitted for this student.";
   }
 
   return null;
@@ -267,7 +230,7 @@ function getEthicsSubmissionBlockedReason(student: StudentEthicsContext) {
 
 async function requireStudentEthicsContext(auth: AuthenticatedUserContext) {
   if (auth.role !== UserRole.STUDENT) {
-    throw new EthicsApprovalError("Only students can submit ethics approval.", 403);
+    throw new EthicsApprovalError("Only students can submit ethics documents.", 403);
   }
 
   const student = await findStudentEthicsContext(auth);
@@ -285,7 +248,7 @@ function resolveApprovalIdFromStoragePath(studentId: string, storagePath: string
 
   if (root !== "ethics-approvals" || ownerId !== studentId || !approvalId) {
     throw new EthicsApprovalError(
-      "The uploaded ethics approval file does not match the expected storage path.",
+      "The uploaded ethics document does not match the expected storage path.",
       409,
     );
   }
@@ -293,30 +256,10 @@ function resolveApprovalIdFromStoragePath(studentId: string, storagePath: string
   return approvalId;
 }
 
-function assertValidEthicsDecisionTransition(
-  currentStatus: EthicsApprovalStatus,
-  nextStatus: EthicsApprovalStatus,
-) {
-  if (currentStatus === EthicsApprovalStatus.APPROVED) {
-    throw new EthicsApprovalError("Approved ethics records are immutable.", 409);
-  }
-
-  if (currentStatus === EthicsApprovalStatus.REJECTED) {
-    throw new EthicsApprovalError(
-      "Rejected ethics records are final. Ask the student to submit a new application.",
-      409,
-    );
-  }
-
-  if (nextStatus === EthicsApprovalStatus.SUBMITTED) {
-    throw new EthicsApprovalError("Ethics approval cannot be moved back to submitted.", 400);
-  }
-}
-
 async function notifyAdministratorsOfEthicsSubmission(input: {
   studentId: string;
   studentName: string;
-  applicationTitle: string;
+  documentTitle: string;
 }) {
   const administrators = await prisma.user.findMany({
     where: {
@@ -341,7 +284,7 @@ async function notifyAdministratorsOfEthicsSubmission(input: {
           administratorName: administrator.displayName,
           studentName: input.studentName,
           studentId: input.studentId,
-          applicationTitle: input.applicationTitle,
+          applicationTitle: input.documentTitle,
         }),
       ),
   );
@@ -367,14 +310,14 @@ export async function createEthicsApprovalUploadUrl(
     throw new EthicsApprovalError(blockedReason, 409);
   }
 
-  const approvalId = crypto.randomUUID();
+  const approvalId = parsed.data.approvalId ?? crypto.randomUUID();
   const storagePath = buildEthicsApprovalStoragePath(
     student.id,
     approvalId,
     parsed.data.fileName,
   );
 
-  assertEthicsPdfUpload({
+  assertEthicsDocumentUpload({
     contentType: parsed.data.contentType,
     fileSizeBytes: parsed.data.fileSizeBytes,
     path: storagePath,
@@ -401,7 +344,7 @@ export async function submitEthicsApproval(
 
   if (!parsed.success) {
     throw new EthicsApprovalError(
-      parsed.error.issues[0]?.message ?? "Invalid ethics approval submission.",
+      parsed.error.issues[0]?.message ?? "Invalid ethics document submission.",
       400,
     );
   }
@@ -415,25 +358,32 @@ export async function submitEthicsApproval(
 
   const approvalId = resolveApprovalIdFromStoragePath(
     student.id,
-    parsed.data.document.storagePath,
-  );
-  const expectedStoragePath = buildEthicsApprovalStoragePath(
-    student.id,
-    approvalId,
-    parsed.data.document.fileName,
+    parsed.data.documents[0].storagePath,
   );
 
-  assertEthicsPdfUpload({
-    contentType: parsed.data.document.mimeType,
-    fileSizeBytes: parsed.data.document.sizeBytes,
-    path: expectedStoragePath,
-  });
-
-  if (parsed.data.document.storagePath !== expectedStoragePath) {
-    throw new EthicsApprovalError(
-      "The uploaded ethics approval file does not match the expected storage path.",
-      409,
+  for (const document of parsed.data.documents) {
+    const documentApprovalId = resolveApprovalIdFromStoragePath(
+      student.id,
+      document.storagePath,
     );
+    const expectedStoragePath = buildEthicsApprovalStoragePath(
+      student.id,
+      approvalId,
+      document.fileName,
+    );
+
+    if (documentApprovalId !== approvalId || document.storagePath !== expectedStoragePath) {
+      throw new EthicsApprovalError(
+        "All uploaded ethics documents must belong to the same submission package.",
+        409,
+      );
+    }
+
+    assertEthicsDocumentUpload({
+      contentType: document.mimeType,
+      fileSizeBytes: document.sizeBytes,
+      path: expectedStoragePath,
+    });
   }
 
   const approval = await prisma.ethicsApproval.create({
@@ -442,17 +392,16 @@ export async function submitEthicsApproval(
       studentId: student.id,
       title: parsed.data.title,
       summary: parsed.data.summary,
-      status: EthicsApprovalStatus.SUBMITTED,
       documents: {
-        create: {
+        create: parsed.data.documents.map((document) => ({
           documentType: DocumentType.ETHICS_APPROVAL,
           studentId: student.id,
-          fileName: parsed.data.document.fileName,
-          storagePath: parsed.data.document.storagePath,
-          mimeType: parsed.data.document.mimeType,
+          fileName: document.fileName,
+          storagePath: document.storagePath,
+          mimeType: document.mimeType,
           version: 1,
           isCurrentVersion: true,
-        },
+        })),
       },
     },
     select: ethicsApprovalSelect,
@@ -461,7 +410,7 @@ export async function submitEthicsApproval(
   await notifyAdministratorsOfEthicsSubmission({
     studentId: student.id,
     studentName: student.user.displayName,
-    applicationTitle: approval.title,
+    documentTitle: approval.title,
   });
 
   return mapEthicsApproval(approval);
@@ -485,34 +434,10 @@ export async function getStudentEthicsApprovalOverview(
   };
 }
 
-async function requireAdministratorContext(auth: AuthenticatedUserContext) {
-  if (auth.role !== UserRole.ADMINISTRATOR) {
-    throw new EthicsApprovalError("Only administrators can review ethics approval.", 403);
-  }
-
-  const administrator = await prisma.administrator.findUnique({
-    where: {
-      userId: auth.userId,
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!administrator) {
-    throw new EthicsApprovalError("Administrator profile not found.", 404);
-  }
-
-  return administrator;
-}
-
-export async function listEthicsApprovals(input: {
-  status?: EthicsApprovalStatus;
-} = {}) {
+export async function listEthicsApprovals() {
   const approvals = await prisma.ethicsApproval.findMany({
     where: {
       isArchived: false,
-      ...(input.status ? { status: input.status } : {}),
     },
     orderBy: {
       createdAt: "desc",
@@ -523,59 +448,9 @@ export async function listEthicsApprovals(input: {
   return approvals.map(mapEthicsApproval);
 }
 
-export async function updateEthicsApprovalDecision(
-  approvalId: string,
-  input: EthicsApprovalDecisionInput,
-  auth: AuthenticatedUserContext,
-) {
-  const parsed = ethicsApprovalDecisionSchema.safeParse(input);
-
-  if (!parsed.success) {
-    throw new EthicsApprovalError(
-      parsed.error.issues[0]?.message ?? "Invalid ethics approval decision.",
-      400,
-    );
-  }
-
-  const administrator = await requireAdministratorContext(auth);
-  const existingApproval = await prisma.ethicsApproval.findUnique({
-    where: {
-      id: approvalId,
-    },
-    select: ethicsApprovalSelect,
-  });
-
-  if (!existingApproval || existingApproval.isArchived) {
-    throw new EthicsApprovalError("Ethics approval record not found.", 404);
-  }
-
-  assertValidEthicsDecisionTransition(existingApproval.status, parsed.data.status);
-
-  const updatedApproval = await prisma.ethicsApproval.update({
-    where: {
-      id: existingApproval.id,
-    },
-    data: {
-      status: parsed.data.status,
-      reviewNotes: parsed.data.reviewNotes,
-      reviewedAt: new Date(),
-      reviewedById: administrator.id,
-    },
-    select: ethicsApprovalSelect,
-  });
-
-  if (updatedApproval.student.user.email) {
-    notifyInBackground({
-      event: "ETHICS_APPROVAL_STATUS_CHANGED",
-      recipientUserId: updatedApproval.student.user.id,
-      to: updatedApproval.student.user.email,
-      studentName: updatedApproval.student.user.displayName,
-      studentId: updatedApproval.student.id,
-      applicationTitle: updatedApproval.title,
-      statusLabel: updatedApproval.status,
-      reviewNotes: updatedApproval.reviewNotes ?? undefined,
-    });
-  }
-
-  return mapEthicsApproval(updatedApproval);
+export async function updateEthicsApprovalDecision(..._args: unknown[]) {
+  throw new EthicsApprovalError(
+    "Ethics is document-only. Approval or rejection decisions are not supported.",
+    410,
+  );
 }

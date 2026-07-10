@@ -43,29 +43,27 @@ describe("review panel workflow rules", () => {
     } as never);
   });
 
-  it("detects two consecutive panel evaluations below the failing threshold", () => {
+  it("does not calculate retired supervisor panel outcomes", () => {
     expect(
       hasTwoConsecutiveFailingEvaluations([
-        { score: 72 },
-        { score: 41 },
-        { score: 38 },
+        { result: "needs revision" },
+        { result: "still needs revision" },
       ]),
-    ).toBe(true);
+    ).toBe(false);
 
     expect(
       hasTwoConsecutiveFailingEvaluations([
-        { score: 45 },
-        { score: 67 },
+        { result: "needs revision" },
+        { result: "satisfactory" },
       ]),
     ).toBe(false);
   });
 
-  it("blocks panel evaluation submission when the report is not signed off", async () => {
+  it("rejects panel evaluation submission because supervisor panels are retired", async () => {
     vi.mocked(prisma.panelEvaluation.findFirst).mockResolvedValue({
       id: "evaluation-1",
       reviewPanelId: "panel-1",
       progressReportId: "report-1",
-      score: null,
       progressReport: {
         id: "report-1",
         isSupervisorSignedOff: false,
@@ -77,8 +75,6 @@ describe("review panel workflow rules", () => {
       submitPanelEvaluation(
         {
           progressReportId: "report-1",
-          numericalScore: 42,
-          outcome: "FAIL",
           notes: "Serious concerns remain.",
         },
         {
@@ -90,8 +86,9 @@ describe("review panel workflow rules", () => {
         },
       ),
     ).rejects.toMatchObject<ReviewPanelError>({
-      status: 409,
-      message: "Panel evaluations are only allowed after supervisor sign-off.",
+      status: 410,
+      message:
+        "Supervisor review panels have been replaced by examiner review assignments.",
     });
   });
 });

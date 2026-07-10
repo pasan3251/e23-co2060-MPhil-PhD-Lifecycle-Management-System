@@ -48,15 +48,11 @@ type StudentProgressReportContext = {
   }>;
 };
 
-function assertProgressReportPdfUpload(input: {
+function assertProgressReportDocumentUpload(input: {
   contentType: string;
   fileSizeBytes: number;
   path: string;
 }) {
-  if (input.contentType !== "application/pdf") {
-    throw new ProgressReportSubmissionError("Only PDF documents are allowed.", 400);
-  }
-
   try {
     assertFileUploadConstraints(input);
   } catch (error) {
@@ -112,10 +108,6 @@ async function requireStudentProgressReportContext(
         take: 1,
       },
       supervisorAssignments: {
-        where: {
-          isPrimary: true,
-        },
-        take: 1,
         select: {
           supervisor: {
             select: {
@@ -159,7 +151,7 @@ function buildDocumentCreateInput(input: {
     input.document.fileName,
   );
 
-  assertProgressReportPdfUpload({
+  assertProgressReportDocumentUpload({
     contentType: input.document.mimeType,
     fileSizeBytes: input.document.sizeBytes,
     path: storagePath,
@@ -177,25 +169,27 @@ function buildDocumentCreateInput(input: {
   };
 }
 
-function notifyPrimarySupervisor(input: {
+function notifyAssignedSupervisors(input: {
   student: StudentProgressReportContext;
   periodLabel: string;
 }) {
-  const primarySupervisor = input.student.supervisorAssignments[0]?.supervisor.user;
+  for (const assignment of input.student.supervisorAssignments) {
+    const supervisor = assignment.supervisor.user;
 
-  if (!primarySupervisor?.isActive || !primarySupervisor.email) {
-    return;
+    if (!supervisor.isActive || !supervisor.email) {
+      continue;
+    }
+
+    notifyInBackground({
+      event: "PROGRESS_REPORT_SUBMITTED",
+      recipientUserId: supervisor.id,
+      to: supervisor.email,
+      supervisorName: supervisor.displayName,
+      studentName: input.student.user.displayName,
+      studentId: input.student.id,
+      periodLabel: input.periodLabel,
+    });
   }
-
-  notifyInBackground({
-    event: "PROGRESS_REPORT_SUBMITTED",
-    recipientUserId: primarySupervisor.id,
-    to: primarySupervisor.email,
-    supervisorName: primarySupervisor.displayName,
-    studentName: input.student.user.displayName,
-    studentId: input.student.id,
-    periodLabel: input.periodLabel,
-  });
 }
 
 export async function submitProgressReport(
@@ -234,50 +228,52 @@ export async function submitProgressReport(
         },
       });
 
-      if (!parsed.data.document) {
+      if (parsed.data.documents.length === 0) {
         return {
           report,
-          document: null,
+          documents: [],
         };
       }
 
-      const documentCreateInput = buildDocumentCreateInput({
-        studentId: student.id,
-        progressReportId: report.id,
-        document: parsed.data.document,
-      });
-
-      const document = await tx.document.create({
-        data: documentCreateInput,
-        select: {
-          id: true,
-          fileName: true,
-          storagePath: true,
-          mimeType: true,
-          version: true,
-          isCurrentVersion: true,
-          createdAt: true,
-        },
-      });
+      const documents = await Promise.all(
+        parsed.data.documents.map((document) =>
+          tx.document.create({
+            data: buildDocumentCreateInput({
+              studentId: student.id,
+              progressReportId: report.id,
+              document,
+            }),
+            select: {
+              id: true,
+              fileName: true,
+              storagePath: true,
+              mimeType: true,
+              version: true,
+              isCurrentVersion: true,
+              createdAt: true,
+            },
+          }),
+        ),
+      );
 
       return {
         report,
-        document,
+        documents,
       };
     });
 
-    const upload = result.document
-      ? {
-          signedUrl: await generateUploadSignedUrl(
-            result.document.storagePath,
-            result.document.mimeType,
-          ),
-          storagePath: result.document.storagePath,
-          expiresInMinutes: STORAGE_URL_EXPIRATION_MS / (60 * 1000),
-        }
-      : null;
+    const uploads = await Promise.all(
+      result.documents.map(async (document) => ({
+        signedUrl: await generateUploadSignedUrl(
+          document.storagePath,
+          document.mimeType,
+        ),
+        storagePath: document.storagePath,
+        expiresInMinutes: STORAGE_URL_EXPIRATION_MS / (60 * 1000),
+      })),
+    );
 
-    notifyPrimarySupervisor({
+    notifyAssignedSupervisors({
       student,
       periodLabel: result.report.periodLabel,
     });
@@ -285,9 +281,10 @@ export async function submitProgressReport(
     return {
       report: {
         ...result.report,
-        documents: result.document ? [result.document] : [],
+        documents: result.documents,
       },
-      upload,
+      upload: uploads[0] ?? null,
+      uploads,
     };
   } catch (error) {
     if (error instanceof ProgressReportSubmissionError) {

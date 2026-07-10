@@ -216,36 +216,6 @@ export function buildEthicsApprovalSubmittedTemplate(input: {
   return { subject, html, text };
 }
 
-export function buildEthicsApprovalStatusChangedTemplate(input: {
-  studentName: string;
-  applicationTitle: string;
-  statusLabel: string;
-  reviewNotes?: string;
-}): EmailTemplate {
-  const subject = `Ethics approval status updated: ${input.statusLabel}`;
-  const notesText = input.reviewNotes
-    ? `\n\nReview notes:\n${input.reviewNotes}`
-    : "";
-  const notesHtml = input.reviewNotes
-    ? `<p><strong>Review notes:</strong><br />${input.reviewNotes}</p>`
-    : "";
-  const text = [
-    `Dear ${input.studentName},`,
-    "",
-    `Your ethics approval application "${input.applicationTitle}" is now ${input.statusLabel}.`,
-    notesText.trim(),
-  ]
-    .filter(Boolean)
-    .join("\n");
-  const html = `
-    <p>Dear ${input.studentName},</p>
-    <p>Your ethics approval application "<strong>${input.applicationTitle}</strong>" is now <strong>${input.statusLabel}</strong>.</p>
-    ${notesHtml}
-  `;
-
-  return { subject, html, text };
-}
-
 export function buildProgressReportSubmittedTemplate(input: {
   supervisorName: string;
   studentName: string;
@@ -256,12 +226,12 @@ export function buildProgressReportSubmittedTemplate(input: {
     `Dear ${input.supervisorName},`,
     "",
     `${input.studentName} has submitted a progress report for ${input.periodLabel}.`,
-    "Please review and sign off the report in the system.",
+    "Please sign in to view and monitor the submitted report.",
   ].join("\n");
   const html = `
     <p>Dear ${input.supervisorName},</p>
     <p><strong>${input.studentName}</strong> has submitted a progress report for <strong>${input.periodLabel}</strong>.</p>
-    <p>Please review and sign off the report in the system.</p>
+    <p>Please sign in to view and monitor the submitted report.</p>
   `;
 
   return { subject, html, text };
@@ -325,48 +295,23 @@ export function buildProposalEvaluationSubmittedTemplate(input: {
   supervisorName: string;
   studentName: string;
   proposalTitle: string;
-  numericalScore: number;
+  feedback?: string;
 }): EmailTemplate {
-  const subject = `Proposal evaluation received: ${input.proposalTitle}`;
+  const subject = `Proposal review received: ${input.proposalTitle}`;
   const text = [
     `Dear ${input.administratorName},`,
     "",
-    `${input.supervisorName} has submitted a proposal evaluation for ${input.studentName}.`,
+    `${input.supervisorName} has submitted a proposal review for ${input.studentName}.`,
     `Proposal title: ${input.proposalTitle}`,
-    `Score: ${input.numericalScore}/100`,
-    "You can review the submitted evaluation and aggregate score in the proposal workflow.",
+    input.feedback ? `Feedback: ${input.feedback}` : "",
+    "You can review the submitted text feedback in the proposal workflow.",
   ].join("\n");
   const html = `
     <p>Dear ${input.administratorName},</p>
-    <p><strong>${input.supervisorName}</strong> has submitted a proposal evaluation for <strong>${input.studentName}</strong>.</p>
+    <p><strong>${input.supervisorName}</strong> has submitted a proposal review for <strong>${input.studentName}</strong>.</p>
     <p><strong>Proposal title:</strong> ${input.proposalTitle}</p>
-    <p><strong>Score:</strong> ${input.numericalScore}/100</p>
-    <p>You can review the submitted evaluation and aggregate score in the proposal workflow.</p>
-  `;
-
-  return { subject, html, text };
-}
-
-export function buildProgressReportSignedOffTemplate(input: {
-  panelMemberName: string;
-  studentName: string;
-  periodLabel: string;
-  supervisorName: string;
-  reviewPanelName: string;
-}): EmailTemplate {
-  const subject = `Progress report ready for panel review: ${input.periodLabel}`;
-  const text = [
-    `Dear ${input.panelMemberName},`,
-    "",
-    `${input.supervisorName} has signed off ${input.studentName}'s progress report for ${input.periodLabel}.`,
-    `Assigned review panel: ${input.reviewPanelName}`,
-    "The report is now ready for review in the system.",
-  ].join("\n");
-  const html = `
-    <p>Dear ${input.panelMemberName},</p>
-    <p><strong>${input.supervisorName}</strong> has signed off <strong>${input.studentName}</strong>'s progress report for <strong>${input.periodLabel}</strong>.</p>
-    <p><strong>Assigned review panel:</strong> ${input.reviewPanelName}</p>
-    <p>The report is now ready for review in the system.</p>
+    ${input.feedback ? `<p><strong>Feedback:</strong><br />${input.feedback}</p>` : ""}
+    <p>You can review the submitted text feedback in the proposal workflow.</p>
   `;
 
   return { subject, html, text };
@@ -520,24 +465,6 @@ export async function notifyEthicsApprovalSubmittedToAdministrator(input: {
   });
 }
 
-export async function notifyEthicsApprovalStatusChanged(input: {
-  recipientUserId: string;
-  to: string;
-  studentName: string;
-  applicationTitle: string;
-  statusLabel: string;
-  reviewNotes?: string;
-}) {
-  const template = buildEthicsApprovalStatusChangedTemplate(input);
-
-  return sendEmail({
-    to: input.to,
-    recipientUserId: input.recipientUserId,
-    event: NotificationEvent.ETHICS_APPROVAL_STATUS_CHANGED,
-    ...template,
-  });
-}
-
 export async function notifyProgressReportSubmitted(input: {
   recipientUserId: string;
   to: string;
@@ -551,25 +478,6 @@ export async function notifyProgressReportSubmitted(input: {
     to: input.to,
     recipientUserId: input.recipientUserId,
     event: NotificationEvent.PROGRESS_REPORT_SUBMITTED,
-    ...template,
-  });
-}
-
-export async function notifyProgressReportSignedOff(input: {
-  recipientUserId: string;
-  to: string;
-  panelMemberName: string;
-  studentName: string;
-  periodLabel: string;
-  supervisorName: string;
-  reviewPanelName: string;
-}) {
-  const template = buildProgressReportSignedOffTemplate(input);
-
-  return sendEmail({
-    to: input.to,
-    recipientUserId: input.recipientUserId,
-    event: NotificationEvent.PROGRESS_REPORT_SIGNED_OFF,
     ...template,
   });
 }
@@ -618,7 +526,7 @@ export async function notifyProposalEvaluationSubmittedToAdministrator(input: {
   supervisorName: string;
   studentName: string;
   proposalTitle: string;
-  numericalScore: number;
+  feedback?: string;
 }) {
   const template = buildProposalEvaluationSubmittedTemplate(input);
 

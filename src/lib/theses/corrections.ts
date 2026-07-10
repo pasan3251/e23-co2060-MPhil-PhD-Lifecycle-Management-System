@@ -178,15 +178,11 @@ async function requireCorrectionSubmissionContext(
   return student as ThesisCorrectionSubmissionContext;
 }
 
-function assertCorrectionPdfUpload(input: {
+function assertCorrectionDocumentUpload(input: {
   contentType: string;
   fileSizeBytes: number;
   path: string;
 }) {
-  if (input.contentType !== "application/pdf") {
-    throw new ThesisCorrectionError("Only PDF documents are allowed.", 400);
-  }
-
   try {
     assertFileUploadConstraints(input);
   } catch (error) {
@@ -271,43 +267,48 @@ export async function submitCorrectionDocument(
       },
       select: {
         id: true,
-      },
-    });
-
-    const storagePath = buildCorrectionStoragePath(
-      student.id,
-      student.thesis.id,
-      `${createdCorrection.id}-${parsed.data.document.fileName}`,
-    );
-
-    assertCorrectionPdfUpload({
-      contentType: parsed.data.document.mimeType,
-      fileSizeBytes: parsed.data.document.sizeBytes,
-      path: storagePath,
-    });
-
-    const createdDocument = await tx.document.create({
-      data: {
-        studentId: student.id,
-        thesisId: student.thesis.id,
-        correctionDocumentId: createdCorrection.id,
-        documentType: DocumentType.CORRECTION,
-        fileName: parsed.data.document.fileName,
-        storagePath,
-        mimeType: parsed.data.document.mimeType,
-        version: 1,
-        isCurrentVersion: true,
-      },
-      select: {
-        id: true,
-        fileName: true,
-        storagePath: true,
-        mimeType: true,
-        version: true,
-        isCurrentVersion: true,
         createdAt: true,
       },
     });
+
+    const documents = await Promise.all(
+      parsed.data.documents.map((document) => {
+        const storagePath = buildCorrectionStoragePath(
+          student.id,
+          student.thesis.id,
+          `${createdCorrection.id}-${document.fileName}`,
+        );
+
+        assertCorrectionDocumentUpload({
+          contentType: document.mimeType,
+          fileSizeBytes: document.sizeBytes,
+          path: storagePath,
+        });
+
+        return tx.document.create({
+          data: {
+            studentId: student.id,
+            thesisId: student.thesis.id,
+            correctionDocumentId: createdCorrection.id,
+            documentType: DocumentType.CORRECTION,
+            fileName: document.fileName,
+            storagePath,
+            mimeType: document.mimeType,
+            version: 1,
+            isCurrentVersion: true,
+          },
+          select: {
+            id: true,
+            fileName: true,
+            storagePath: true,
+            mimeType: true,
+            version: true,
+            isCurrentVersion: true,
+            createdAt: true,
+          },
+        });
+      }),
+    );
 
     return {
       correction: {
@@ -317,16 +318,23 @@ export async function submitCorrectionDocument(
         isApproved: false,
         approvedAt: null,
         approvedById: null,
-        createdAt: createdDocument.createdAt,
-        document: createdDocument,
+        createdAt: createdCorrection.createdAt,
+        documents,
+        document: documents[0] ?? null,
       },
-      storagePath,
+      documents,
     };
   });
 
-  const signedUrl = await generateUploadSignedUrl(
-    correction.storagePath,
-    parsed.data.document.mimeType,
+  const uploads = await Promise.all(
+    correction.documents.map(async (document) => ({
+      signedUrl: await generateUploadSignedUrl(
+        document.storagePath,
+        document.mimeType,
+      ),
+      storagePath: document.storagePath,
+      expiresInMinutes: 15,
+    })),
   );
 
   await notifyAdministratorsOfCorrectionSubmission({
@@ -337,11 +345,8 @@ export async function submitCorrectionDocument(
 
   return {
     correction: correction.correction,
-    upload: {
-      signedUrl,
-      storagePath: correction.storagePath,
-      expiresInMinutes: 15,
-    },
+    upload: uploads[0] ?? null,
+    uploads,
   };
 }
 

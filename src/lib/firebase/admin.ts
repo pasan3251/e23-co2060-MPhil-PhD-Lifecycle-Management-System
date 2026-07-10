@@ -14,9 +14,9 @@ import {
 } from "@/lib/security/session";
 import { isAppUserRole, type AppUserRole } from "@/types/auth";
 
-const FIREBASE_ADMIN_APP_NAME = "pgsms-firebase-admin";
+const FIREBASE_ADMIN_APP_NAME = "pglms-firebase-admin";
 export const SESSION_COOKIE_NAME =
-  process.env.SESSION_COOKIE_NAME ?? "pgsms_session";
+  process.env.SESSION_COOKIE_NAME ?? "pglms_session";
 export const SESSION_COOKIE_MAX_AGE_SECONDS = SESSION_ABSOLUTE_MAX_AGE_SECONDS;
 export const SESSION_COOKIE_MAX_AGE_MS = SESSION_COOKIE_MAX_AGE_SECONDS * 1000;
 

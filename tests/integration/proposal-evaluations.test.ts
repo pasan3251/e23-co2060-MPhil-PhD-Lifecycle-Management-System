@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
   notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({
     success: true,
   }),
@@ -11,7 +10,7 @@ vi.mock("@/lib/email", () => ({
 
 vi.mock("@/lib/prisma/client", () => ({
   prisma: {
-    supervisor: {
+    examiner: {
       findUnique: vi.fn(),
     },
     researchProposal: {
@@ -26,7 +25,11 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
-import { notifyProposalEvaluationSubmittedToAdministrator } from "@/lib/email";
+vi.mock("@/lib/notifications", () => ({
+  notify: vi.fn().mockResolvedValue(undefined),
+}));
+
+import { notify } from "@/lib/notifications";
 import {
   createProposalEvaluation,
   ProposalEvaluationError,
@@ -38,14 +41,14 @@ describe("proposal evaluation integration", () => {
     vi.clearAllMocks();
   });
 
-  it("blocks a supervisor from evaluating a student they are not assigned to", async () => {
-    vi.mocked(prisma.supervisor.findUnique).mockResolvedValue({
-      id: "supervisor-1",
+  it("blocks an examiner from reviewing a student they supervise", async () => {
+    vi.mocked(prisma.examiner.findUnique).mockResolvedValue({
+      id: "examiner-1",
       userId: "user-supervisor-1",
       user: {
         id: "user-supervisor-1",
-        displayName: "Supervisor One",
-        email: "supervisor1@example.com",
+        displayName: "Examiner One",
+        email: "examiner1@example.com",
       },
     } as never);
     vi.mocked(prisma.researchProposal.findUnique).mockResolvedValue({
@@ -63,7 +66,7 @@ describe("proposal evaluation integration", () => {
         supervisorAssignments: [
           {
             supervisorId: "supervisor-2",
-            supervisorUserId: "user-supervisor-2",
+            supervisorUserId: "user-supervisor-1",
           },
         ],
       },
@@ -74,32 +77,30 @@ describe("proposal evaluation integration", () => {
       createProposalEvaluation(
         "proposal-1",
         {
-          numericalScore: 82,
-          feedback:
-            "This proposal shows good potential, but the methodology still needs refinement and clearer milestones.",
+          feedback: "This proposal needs a clearer methodology.",
         },
         {
-          uid: "firebase-supervisor-1",
+          uid: "firebase-examiner-1",
           userId: "user-supervisor-1",
-          firebaseUid: "firebase-supervisor-1",
-          role: "SUPERVISOR",
-          email: "supervisor1@example.com",
+          firebaseUid: "firebase-examiner-1",
+          role: "EXAMINER",
+          email: "examiner1@example.com",
         },
       ),
     ).rejects.toMatchObject<ProposalEvaluationError>({
       status: 403,
-      message: "You can only evaluate proposals for students assigned to you.",
+      message: "Assigned supervisors cannot review the same student's proposal.",
     });
   });
 
-  it("notifies administrators after a supervisor submits an evaluation", async () => {
-    vi.mocked(prisma.supervisor.findUnique).mockResolvedValue({
-      id: "supervisor-1",
-      userId: "user-supervisor-1",
+  it("notifies administrators after an examiner submits a textual review", async () => {
+    vi.mocked(prisma.examiner.findUnique).mockResolvedValue({
+      id: "examiner-1",
+      userId: "user-examiner-1",
       user: {
-        id: "user-supervisor-1",
-        displayName: "Supervisor One",
-        email: "supervisor1@example.com",
+        id: "user-examiner-1",
+        displayName: "Examiner One",
+        email: "examiner1@example.com",
       },
     } as never);
     vi.mocked(prisma.researchProposal.findUnique).mockResolvedValue({
@@ -114,29 +115,26 @@ describe("proposal evaluation integration", () => {
           displayName: "Student One",
           email: "student1@example.com",
         },
-        supervisorAssignments: [
-          {
-            supervisorId: "supervisor-1",
-            supervisorUserId: "user-supervisor-1",
-          },
-        ],
+        supervisorAssignments: [],
       },
       evaluations: [],
     } as never);
     vi.mocked(prisma.evaluationForm.create).mockResolvedValue({
       id: "evaluation-1",
-      numericalScore: 88,
       feedback:
         "The problem definition is strong and the research plan is feasible, with only moderate clarification needed.",
+      adminComments: null,
+      releasedAt: null,
       submissionDate: new Date("2026-04-30T14:00:00.000Z"),
-      supervisor: {
-        id: "supervisor-1",
+      examiner: {
+        id: "examiner-1",
         user: {
-          id: "user-supervisor-1",
-          displayName: "Supervisor One",
-          email: "supervisor1@example.com",
+          id: "user-examiner-1",
+          displayName: "Examiner One",
+          email: "examiner1@example.com",
         },
       },
+      documents: [],
     } as never);
     vi.mocked(prisma.user.findMany).mockResolvedValue([
       {
@@ -149,31 +147,32 @@ describe("proposal evaluation integration", () => {
     const result = await createProposalEvaluation(
       "proposal-1",
       {
-        numericalScore: 88,
         feedback:
           "The problem definition is strong and the research plan is feasible, with only moderate clarification needed.",
       },
       {
-        uid: "firebase-supervisor-1",
-        userId: "user-supervisor-1",
-        firebaseUid: "firebase-supervisor-1",
-        role: "SUPERVISOR",
-        email: "supervisor1@example.com",
+        uid: "firebase-examiner-1",
+        userId: "user-examiner-1",
+        firebaseUid: "firebase-examiner-1",
+        role: "EXAMINER",
+        email: "examiner1@example.com",
       },
     );
 
     expect(result.aggregate).toMatchObject({
       evaluationCount: 1,
-      averageScore: 88,
+      reviewCount: 1,
+      averageScore: null,
     });
-    expect(notifyProposalEvaluationSubmittedToAdministrator).toHaveBeenCalledWith(
+    expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({
+        event: "EXAMINER_REVIEW_SUBMITTED",
         recipientUserId: "admin-1",
         administratorName: "Admin One",
-        supervisorName: "Supervisor One",
+        examinerName: "Examiner One",
         studentName: "Student One",
-        proposalTitle: "Proposal One",
-        numericalScore: 88,
+        subjectTitle: "Proposal One",
+        reviewKind: "proposal",
       }),
     );
   });

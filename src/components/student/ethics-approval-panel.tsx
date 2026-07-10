@@ -19,8 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-type EthicsStatus = "SUBMITTED" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
+import { SubmissionDocumentDownloadButton } from "@/components/student/submission-document-download-button";
 
 type EthicsDocument = {
   id: string;
@@ -36,10 +35,6 @@ type EthicsApproval = {
   id: string;
   title: string;
   summary: string;
-  status: EthicsStatus;
-  reviewNotes: string | null;
-  reviewedAt: string | null;
-  reviewedByName: string | null;
   createdAt: string;
   updatedAt: string;
   documents: EthicsDocument[];
@@ -58,7 +53,7 @@ type EthicsOverview = {
 type UploadedEthicsDocument = {
   fileName: string;
   storagePath: string;
-  mimeType: "application/pdf";
+  mimeType: string;
   sizeBytes: number;
 };
 
@@ -89,25 +84,11 @@ function formatDateLabel(value: string | null) {
   }).format(new Date(value));
 }
 
-function getStatusBadge(status: EthicsStatus) {
-  switch (status) {
-    case "APPROVED":
-      return "default";
-    case "REJECTED":
-      return "destructive";
-    case "UNDER_REVIEW":
-      return "secondary";
-    case "SUBMITTED":
-      return "outline";
-  }
-}
-
 export function EthicsApprovalPanel() {
   const [overview, setOverview] = useState<EthicsOverview | null>(null);
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
-  const [uploadedDocument, setUploadedDocument] =
-    useState<UploadedEthicsDocument | null>(null);
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedEthicsDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,25 +118,9 @@ export function EthicsApprovalPanel() {
   }, []);
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+    const selectedFiles = Array.from(event.target.files ?? []);
 
-    if (!file) {
-      return;
-    }
-
-    const parsedUploadRequest = ethicsApprovalUploadRequestSchema.safeParse({
-      fileName: file.name,
-      contentType: file.type,
-      fileSizeBytes: file.size,
-    });
-
-    if (!parsedUploadRequest.success) {
-      setErrorMessage(
-        parsedUploadRequest.error.issues[0]?.message ??
-          "Unable to upload the ethics approval PDF.",
-      );
-      setUploadedDocument(null);
-      event.target.value = "";
+    if (selectedFiles.length === 0) {
       return;
     }
 
@@ -164,55 +129,80 @@ export function EthicsApprovalPanel() {
     setIsUploading(true);
 
     try {
-      const uploadUrlResponse = await fetch("/api/ethics/upload-url", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(parsedUploadRequest.data),
-      });
-      const uploadUrlPayload = (await uploadUrlResponse.json()) as {
-        error?: string;
-        signedUrl?: string;
-        storagePath?: string;
-      };
+      const nextDocuments: UploadedEthicsDocument[] = [];
+      let approvalId: string | undefined;
 
-      if (
-        !uploadUrlResponse.ok ||
-        !uploadUrlPayload.signedUrl ||
-        !uploadUrlPayload.storagePath
-      ) {
-        throw new Error(
-          uploadUrlPayload.error ?? "Unable to prepare the ethics approval upload.",
-        );
+      for (const file of selectedFiles) {
+        const parsedUploadRequest = ethicsApprovalUploadRequestSchema.safeParse({
+          approvalId,
+          fileName: file.name,
+          contentType: file.type,
+          fileSizeBytes: file.size,
+        });
+
+        if (!parsedUploadRequest.success) {
+          throw new Error(
+            parsedUploadRequest.error.issues[0]?.message ??
+              "Unable to upload the ethics document.",
+          );
+        }
+
+        const uploadUrlResponse = await fetch("/api/ethics/upload-url", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(parsedUploadRequest.data),
+        });
+        const uploadUrlPayload = (await uploadUrlResponse.json()) as {
+          error?: string;
+          approvalId?: string;
+          signedUrl?: string;
+          storagePath?: string;
+        };
+
+        if (
+          !uploadUrlResponse.ok ||
+          !uploadUrlPayload.signedUrl ||
+          !uploadUrlPayload.storagePath ||
+          !uploadUrlPayload.approvalId
+        ) {
+          throw new Error(
+            uploadUrlPayload.error ?? "Unable to prepare the ethics document upload.",
+          );
+        }
+
+        approvalId = uploadUrlPayload.approvalId;
+
+        const uploadResponse = await fetch(uploadUrlPayload.signedUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type,
+          },
+          body: file,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Ethics document upload failed.");
+        }
+
+        nextDocuments.push({
+          fileName: file.name,
+          storagePath: uploadUrlPayload.storagePath,
+          mimeType: file.type,
+          sizeBytes: file.size,
+        });
       }
 
-      const uploadResponse = await fetch(uploadUrlPayload.signedUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-        },
-        body: file,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("Ethics approval file upload failed.");
-      }
-
-      setUploadedDocument({
-        fileName: file.name,
-        storagePath: uploadUrlPayload.storagePath,
-        mimeType: "application/pdf",
-        sizeBytes: file.size,
-      });
+      setUploadedDocuments(nextDocuments);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Unable to upload the ethics approval PDF.",
+          : "Unable to upload the ethics documents.",
       );
-      setUploadedDocument(null);
+      setUploadedDocuments([]);
     } finally {
       setIsUploading(false);
       event.target.value = "";
@@ -224,15 +214,15 @@ export function EthicsApprovalPanel() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (!uploadedDocument) {
-      setErrorMessage("Upload a PDF ethics approval document before submitting.");
+    if (uploadedDocuments.length === 0) {
+      setErrorMessage("Upload at least one PDF or ZIP ethics document before submitting.");
       return;
     }
 
     const parsedSubmission = ethicsApprovalSubmissionSchema.safeParse({
       title,
       summary,
-      document: uploadedDocument,
+      documents: uploadedDocuments,
     });
 
     if (!parsedSubmission.success) {
@@ -263,10 +253,10 @@ export function EthicsApprovalPanel() {
         throw new Error(payload.error ?? "Ethics approval submission failed.");
       }
 
-      setSuccessMessage("Ethics approval submitted for administrator review.");
+      setSuccessMessage("Ethics documents submitted.");
       setTitle("");
       setSummary("");
-      setUploadedDocument(null);
+      setUploadedDocuments([]);
       await refreshOverview();
     } catch (error) {
       setErrorMessage(
@@ -292,10 +282,10 @@ export function EthicsApprovalPanel() {
         </div>
         {latestApproval && (
           <Badge
-            variant={getStatusBadge(latestApproval.status)}
+            variant="secondary"
             className="uppercase"
           >
-            {latestApproval.status.replaceAll("_", " ")}
+            Submitted
           </Badge>
         )}
       </div>
@@ -317,7 +307,7 @@ export function EthicsApprovalPanel() {
           <CardHeader>
             <CardTitle>New Ethics Submission</CardTitle>
             <CardDescription>
-              Upload the ethics clearance or committee application package as a PDF.
+              Upload the ethics clearance or committee application package as PDF/ZIP documents.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -353,26 +343,31 @@ export function EthicsApprovalPanel() {
                     <div className="flex items-center gap-2 mb-2">
                       <FileUp className="h-4 w-4 text-muted-foreground" />
                       <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Evidence PDF
+                        Evidence Documents
                       </Label>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Upload a PDF ethics approval, committee form, or clearance document.
+                      Upload PDF or ZIP ethics approval, committee form, or clearance documents.
                     </p>
                     <Input
                       type="file"
-                      accept="application/pdf"
+                      accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
+                      multiple
                       onChange={handleFileUpload}
                       disabled={isLoading || isUploading}
                     />
-                    {uploadedDocument && (
-                      <div className="mt-4 rounded-md border bg-muted/30 p-2 text-sm font-medium">
-                        {uploadedDocument.fileName}
+                    {uploadedDocuments.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        {uploadedDocuments.map((document) => (
+                          <div key={document.storagePath} className="rounded-md border bg-muted/30 p-2 text-sm font-medium">
+                            {document.fileName}
+                          </div>
+                        ))}
                       </div>
                     )}
                     {isUploading && (
                       <p className="mt-2 text-sm text-muted-foreground">
-                        Uploading ethics approval PDF...
+                        Uploading ethics documents...
                       </p>
                     )}
                   </div>
@@ -382,7 +377,7 @@ export function EthicsApprovalPanel() {
                     disabled={isLoading || isSubmitting || isUploading}
                     className="w-full"
                   >
-                    {isSubmitting ? "Submitting..." : "Submit for Review"}
+                    {isSubmitting ? "Submitting..." : "Submit Documents"}
                   </Button>
                 </div>
               )}
@@ -395,7 +390,7 @@ export function EthicsApprovalPanel() {
             <div className="space-y-1">
               <CardTitle>Ethics History</CardTitle>
               <CardDescription>
-                Review submission status and administrator notes.
+                Review submitted ethics document packages.
               </CardDescription>
             </div>
             <Button
@@ -427,31 +422,31 @@ export function EthicsApprovalPanel() {
                         </p>
                         <h4 className="mt-1 font-semibold">{approval.title}</h4>
                       </div>
-                      <Badge variant={getStatusBadge(approval.status)} className="shrink-0">
-                        {approval.status.replaceAll("_", " ")}
-                      </Badge>
+                      <Badge variant="secondary" className="shrink-0">Submitted</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{approval.summary}</p>
-                    {approval.reviewNotes && (
-                      <div className="rounded-md border bg-muted/40 p-3 text-sm">
-                        <p className="font-semibold">Review notes</p>
-                        <p className="mt-1 text-muted-foreground">{approval.reviewNotes}</p>
-                      </div>
-                    )}
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {approval.documents.map((document) => (
-                        <p
+                        <div
                           key={document.id}
-                          className="break-all text-xs text-muted-foreground"
+                          className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between"
                         >
-                          {document.fileName}: {document.storagePath}
-                        </p>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {document.fileName}
+                            </p>
+                            <p className="break-all text-xs text-muted-foreground">
+                              {document.storagePath}
+                            </p>
+                          </div>
+                          <SubmissionDocumentDownloadButton
+                            documentId={document.id}
+                            fileName={document.fileName}
+                            className="shrink-0"
+                          />
+                        </div>
                       ))}
                     </div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Reviewed {formatDateLabel(approval.reviewedAt)}
-                      {approval.reviewedByName ? ` by ${approval.reviewedByName}` : ""}
-                    </p>
                   </div>
                 ))}
               </div>

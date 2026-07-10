@@ -20,7 +20,8 @@ vi.mock("@/lib/firebase/auth", () => ({
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
+  notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
+  notifyProgressReportSubmitted: vi.fn().mockResolvedValue({ success: true }),
   notifyThesisSubmittedToAdministrator: vi.fn().mockResolvedValue({
     success: true,
   }),
@@ -85,6 +86,7 @@ describe("thesis submission route", () => {
         email: "student1@example.com",
       },
       registrations: [{ id: "registration-1" }],
+      ethicsApprovals: [{ id: "ethics-1" }],
       researchProposals: [
         {
           id: "proposal-1",
@@ -92,6 +94,7 @@ describe("thesis submission route", () => {
         },
       ],
       theses: [],
+      supervisorAssignments: [],
     } as never);
     vi.mocked(prisma.user.findMany).mockResolvedValue([
       {
@@ -138,11 +141,13 @@ describe("thesis submission route", () => {
         body: JSON.stringify({
           title: "Adaptive Systems Thesis",
           abstract: "A thesis about adaptive systems.",
-          document: {
-            fileName: "thesis.pdf",
-            mimeType: "application/pdf",
-            sizeBytes: 1024 * 1024,
-          },
+          documents: [
+            {
+              fileName: "thesis.pdf",
+              mimeType: "application/pdf",
+              sizeBytes: 1024 * 1024,
+            },
+          ],
         }),
       }) as never,
       {},
@@ -184,6 +189,7 @@ describe("thesis submission route", () => {
         email: "student1@example.com",
       },
       registrations: [],
+      ethicsApprovals: [{ id: "ethics-1" }],
       researchProposals: [
         {
           id: "proposal-1",
@@ -191,6 +197,7 @@ describe("thesis submission route", () => {
         },
       ],
       theses: [],
+      supervisorAssignments: [],
     } as never);
 
     const response = await POST(
@@ -203,11 +210,13 @@ describe("thesis submission route", () => {
         body: JSON.stringify({
           title: "Adaptive Systems Thesis",
           abstract: "A thesis about adaptive systems.",
-          document: {
-            fileName: "thesis.pdf",
-            mimeType: "application/pdf",
-            sizeBytes: 1024 * 1024,
-          },
+          documents: [
+            {
+              fileName: "thesis.pdf",
+              mimeType: "application/pdf",
+              sizeBytes: 1024 * 1024,
+            },
+          ],
         }),
       }) as never,
       {},

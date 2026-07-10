@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("firebase-admin/app", () => ({
   cert: vi.fn(() => "mock-cert"),
-  getApps: vi.fn(() => [{ name: "pgsms-firebase-admin" }]),
+  getApps: vi.fn(() => [{ name: "pglms-firebase-admin" }]),
   initializeApp: vi.fn(),
 }));
 
@@ -71,6 +71,6 @@ describe("session inactivity helpers", () => {
         now,
       ),
     ).toBe(true);
-    expect(SESSION_ACTIVITY_COOKIE_NAME).toBe("pgsms_session_activity");
+    expect(SESSION_ACTIVITY_COOKIE_NAME).toBe("pglms_session_activity");
   });
 });

@@ -141,7 +141,7 @@ export async function uploadApplicationDocument(input: {
   const file = input.file;
 
   if (!(file instanceof File)) {
-    throw new ApplicationSubmissionError("A PDF document is required.", 400);
+    throw new ApplicationSubmissionError("A PDF or ZIP document is required.", 400);
   }
 
   const storagePath = assertValidApplicationUploadFile({
@@ -158,7 +158,7 @@ export async function uploadApplicationDocument(input: {
     return {
       storagePath,
       fileName: file.name,
-      mimeType: "application/pdf" as const,
+      mimeType: file.type,
       sizeBytes: file.size,
     };
   } catch (error) {
@@ -270,6 +270,7 @@ export async function createApplicationSubmission(
       applicantName: parsed.data.applicantName,
       applicantEmail: parsed.data.applicantEmail,
       applicantPhone: parsed.data.applicantPhone,
+      supervisor: parsed.data.supervisor,
       researchArea: parsed.data.researchArea,
       statementOfPurpose: parsed.data.statementOfPurpose,
       status: ApplicationStatus.SUBMITTED,

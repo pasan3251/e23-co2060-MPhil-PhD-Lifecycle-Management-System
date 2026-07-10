@@ -29,6 +29,7 @@ type ApplicationDetails = {
   applicantEmail: string;
   applicantPhone: string;
   researchArea: string;
+  supervisor: string | null;
   statementOfPurpose: string;
   programType: string;
   status: string;
@@ -189,6 +190,16 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
                 <div className="rounded-md border bg-muted/50 p-4 text-base">
                   {application.researchArea || "Not specified"}
                 </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Supervisor Hint</h3>
+                <div className="rounded-md border bg-muted/50 p-4 text-base">
+                  {application.supervisor || "No supervisor hint provided."}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Applicant hint only. Use supervisor assignments after admission to assign staff.
+                </p>
               </div>
 
               <div>

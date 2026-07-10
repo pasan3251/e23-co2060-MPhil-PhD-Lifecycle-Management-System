@@ -1,7 +1,6 @@
 import {
   AcademicStatus,
   ApplicationStatus,
-  EthicsApprovalStatus,
   NotificationDeliveryStatus,
   ProposalStatus,
   RegistrationStatus,
@@ -56,13 +55,13 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
         {
           id: "submit-progress-report",
           label: "Submit Progress Report",
-          description: "Send your latest update for supervisor sign-off.",
+          description: "Send your latest progress update to administration.",
           href: "/dashboard/student/progress-reports/submit",
         },
         {
           id: "view-progress-reports",
           label: "View Progress History",
-          description: "Review submitted reports and sign-off status.",
+          description: "Review submitted reports and released feedback.",
           href: "/dashboard/student/progress-reports",
         },
         {
@@ -94,14 +93,14 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
       return [
         {
           id: "review-proposals",
-          label: "Review Proposals",
-          description: "Open proposals waiting for your review.",
+          label: "Monitor Proposals",
+          description: "View proposals submitted by your assigned students.",
           href: "/dashboard/supervisor/proposals/evaluate",
         },
         {
           id: "sign-progress-reports",
-          label: "Sign Progress Reports",
-          description: "Sign reports waiting for your approval.",
+          label: "Monitor Progress Reports",
+          description: "View progress reports submitted by assigned students.",
           href: "/dashboard/supervisor/progress-reports/sign",
         },
         {
@@ -149,13 +148,13 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
         {
           id: "approve-proposals",
           label: "Review & Approve Proposals",
-          description: "Review supervisor evaluations and finalize proposals.",
+          description: "Review examiner feedback and finalize proposals.",
           href: "/dashboard/admin/proposals/evaluate",
         },
         {
           id: "review-ethics-approvals",
-          label: "Review Ethics Approvals",
-          description: "Approve or reject student ethics submissions.",
+          label: "View Ethics Documents",
+          description: "Open submitted ethics document packages.",
           href: "/dashboard/admin/ethics",
         },
         {
@@ -245,12 +244,6 @@ async function buildStudentSummary(
       where: {
         studentId: student.id,
         isArchived: false,
-        status: {
-          in: [
-            EthicsApprovalStatus.SUBMITTED,
-            EthicsApprovalStatus.UNDER_REVIEW,
-          ],
-        },
       },
     }),
     prisma.progressReport.count({
@@ -301,9 +294,9 @@ async function buildStudentSummary(
         "student-ethics-approvals",
         "Ethics Approvals",
         activeEthicsApprovals,
-        "Ethics submissions awaiting administrator decision.",
-        activeEthicsApprovals > 0 ? "In review" : "Clear",
-        activeEthicsApprovals > 0 ? "warning" : "success",
+        "Ethics document packages submitted for your record.",
+        activeEthicsApprovals > 0 ? "Submitted" : "Not submitted",
+        activeEthicsApprovals > 0 ? "success" : "neutral",
       ),
       buildCard(
         "student-overdue-reports",
@@ -347,7 +340,12 @@ async function buildSupervisorSummary(
     };
   }
 
-  const [assignedStudents, pendingProposalReviews, unsignedReports, panelMemberships] =
+  const [
+    assignedStudents,
+    monitoredProposals,
+    submittedProgressReports,
+    graduatedStudents,
+  ] =
     await Promise.all([
       prisma.supervisorAssignment.count({
         where: { supervisorId: supervisor.id },
@@ -376,11 +374,17 @@ async function buildSupervisorSummary(
             },
           },
           isArchived: false,
-          isSupervisorSignedOff: false,
         },
       }),
-      prisma.panelMembership.count({
-        where: { supervisorId: supervisor.id },
+      prisma.student.count({
+        where: {
+          academicStatus: AcademicStatus.GRADUATED,
+          supervisorAssignments: {
+            some: {
+              supervisorId: supervisor.id,
+            },
+          },
+        },
       }),
     ]);
 
@@ -388,7 +392,7 @@ async function buildSupervisorSummary(
     role: "supervisor",
     roleLabel: "Supervisor",
     title: "Supervisor Overview",
-    subtitle: "Review your students, proposals, and sign-offs.",
+    subtitle: "Monitor assigned students, submissions, and graduation status.",
     cards: [
       buildCard(
         "supervisor-assigned-students",
@@ -400,27 +404,27 @@ async function buildSupervisorSummary(
       ),
       buildCard(
         "supervisor-pending-proposals",
-        "Pending Proposal Reviews",
-        pendingProposalReviews,
-        "Assigned proposals still in review.",
-        pendingProposalReviews > 0 ? "Action needed" : "Clear",
-        pendingProposalReviews > 0 ? "warning" : "success",
+        "Submitted Proposals",
+        monitoredProposals,
+        "Assigned student proposals currently in review.",
+        monitoredProposals > 0 ? "Monitor" : "Clear",
+        monitoredProposals > 0 ? "info" : "success",
       ),
       buildCard(
         "supervisor-unsigned-reports",
-        "Unsigned Reports",
-        unsignedReports,
-        "Progress reports waiting for your sign-off.",
-        unsignedReports > 0 ? "Pending sign-off" : "Signed off",
-        unsignedReports > 0 ? "warning" : "success",
+        "Submitted Reports",
+        submittedProgressReports,
+        "Progress reports available for view/download.",
+        submittedProgressReports > 0 ? "Available" : "None",
+        submittedProgressReports > 0 ? "info" : "neutral",
       ),
       buildCard(
         "supervisor-panels",
-        "Panel Memberships",
-        panelMemberships,
-        "Review panels where you are a member.",
-        panelMemberships > 0 ? "Scheduled" : "None",
-        panelMemberships > 0 ? "info" : "neutral",
+        "Graduated Students",
+        graduatedStudents,
+        "Assigned students marked as graduated.",
+        graduatedStudents > 0 ? "Graduated" : "None",
+        graduatedStudents > 0 ? "success" : "neutral",
       ),
     ],
     quickActions: getQuickActions("supervisor"),
@@ -544,7 +548,7 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
     pendingApplications,
     archivedTheses,
     failedNotifications,
-    pendingEthicsApprovals,
+    ethicsDocumentSubmissions,
     overdueProgressReports,
     studentsUnderReview,
   ] =
@@ -586,12 +590,6 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
       prisma.ethicsApproval.count({
         where: {
           isArchived: false,
-          status: {
-            in: [
-              EthicsApprovalStatus.SUBMITTED,
-              EthicsApprovalStatus.UNDER_REVIEW,
-            ],
-          },
         },
       }),
       prisma.progressReport.count({
@@ -648,11 +646,11 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
       ),
       buildCard(
         "admin-pending-ethics-approvals",
-        "Pending Ethics Approvals",
-        pendingEthicsApprovals,
-        "Ethics submissions waiting for administrator decision.",
-        pendingEthicsApprovals > 0 ? "Review needed" : "Clear",
-        pendingEthicsApprovals > 0 ? "warning" : "success",
+        "Ethics Documents",
+        ethicsDocumentSubmissions,
+        "Ethics document packages submitted by students.",
+        ethicsDocumentSubmissions > 0 ? "Available" : "None",
+        ethicsDocumentSubmissions > 0 ? "info" : "neutral",
       ),
       buildCard(
         "admin-students-under-review",

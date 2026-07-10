@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   DocumentRepositoryError,
+  getDocumentDownloadUrl,
   searchDocuments,
   softDeleteDocument,
 } from "@/lib/documents";
@@ -133,6 +134,7 @@ describe("searchDocuments", () => {
               "THESIS",
               "PROGRESS_REPORT",
               "CORRECTION",
+              "REVIEW_ATTACHMENT",
             ],
           },
         },
@@ -223,6 +225,54 @@ describe("searchDocuments", () => {
         },
       ]),
     });
+  });
+});
+
+describe("getDocumentDownloadUrl", () => {
+  it("allows a student to download an older proposal document through the linked proposal", async () => {
+    const { prisma } = await import("@/lib/prisma/client");
+
+    vi.spyOn(prisma.document, "findUnique").mockResolvedValueOnce({
+      id: "doc-proposal-1",
+      documentType: "PROPOSAL",
+      fileName: "proposal-v1.pdf",
+      mimeType: "application/pdf",
+      version: 1,
+      isCurrentVersion: false,
+      isDeleted: false,
+      storagePath: "proposals/student-1/1/proposal-v1.pdf",
+      studentId: null,
+      applicationId: null,
+      researchProposalId: "proposal-1",
+      progressReportId: null,
+      thesisId: null,
+      correctionDocumentId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as never);
+    const findFirstSpy = vi.spyOn(prisma.document, "findFirst").mockResolvedValueOnce({
+      id: "doc-proposal-1",
+    } as never);
+
+    await expect(getDocumentDownloadUrl("doc-proposal-1", mockStudentAuth)).resolves.toBe(
+      "https://signed-url",
+    );
+
+    expect(findFirstSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            {
+              researchProposal: {
+                is: {
+                  studentId: "student-1",
+                },
+              },
+            },
+          ]),
+        }),
+      }),
+    );
   });
 });
 

@@ -20,19 +20,19 @@ export const POST = withAuth<Params>(
     }
 
     try {
-      const result = await signOffProgressReport(
+      await signOffProgressReport(
         { id: progressReportId },
         context.auth,
       );
 
-      return NextResponse.json({ ok: true, ...result });
+      return NextResponse.json({ ok: true });
     } catch (error) {
       if (error instanceof ProgressReportSignOffError) {
         return NextResponse.json({ error: error.message }, { status: error.status });
       }
 
       return NextResponse.json(
-        { error: "Unable to sign off on progress report." },
+        { error: "Progress-report sign-off is no longer available." },
         { status: 500 },
       );
     }

@@ -2,10 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
-  notifyProgressReportSignedOff: vi.fn().mockResolvedValue({
-    success: true,
-  }),
+  notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 vi.mock("@/lib/review-panels/workflow", () => ({
@@ -47,7 +44,7 @@ describe("progress report sign-off rules", () => {
     } as never);
   });
 
-  it("allows only the assigned primary supervisor to sign off", async () => {
+  it("rejects supervisor sign-off because supervisors can only monitor reports", async () => {
     vi.mocked(prisma.progressReport.findUnique).mockResolvedValue({
       id: "report-1",
       studentId: "student-1",
@@ -82,12 +79,13 @@ describe("progress report sign-off rules", () => {
         },
       ),
     ).rejects.toMatchObject<ProgressReportSignOffError>({
-      status: 403,
-      message: "Only the assigned primary supervisor can sign off this progress report.",
+      status: 410,
+      message:
+        "Supervisor progress-report sign-off has been removed. Supervisors can view and monitor submitted reports only.",
     });
   });
 
-  it("prevents forwarding to the panel before supervisor sign-off", async () => {
+  it("rejects forwarding progress reports to retired supervisor panels", async () => {
     await expect(
       forwardProgressReportToPanel({
         report: {
@@ -102,8 +100,9 @@ describe("progress report sign-off rules", () => {
         supervisorName: "Dr. Primary",
       }),
     ).rejects.toMatchObject<ProgressReportSignOffError>({
-      status: 409,
-      message: "Progress reports can only be forwarded after supervisor sign-off.",
+      status: 410,
+      message:
+        "Supervisor progress-report sign-off has been removed. Supervisors can view and monitor submitted reports only.",
     });
   });
 });

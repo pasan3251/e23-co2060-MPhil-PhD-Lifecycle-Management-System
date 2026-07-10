@@ -1,5 +1,4 @@
 import {
-  EthicsApprovalStatus,
   ProgramType,
   ProposalStatus,
   ThesisStatus,
@@ -51,16 +50,16 @@ describe("student progress utilities", () => {
     expect(milestone).toBe("proposal-approval");
   });
 
-  it("uses real ethics approval status for the ethics milestone", () => {
+  it("uses ethics document presence for the ethics milestone", () => {
     const progress = calculateStageCompletionPercentages({
       proposalStatus: ProposalStatus.APPROVED,
-      ethicsStatus: EthicsApprovalStatus.APPROVED,
+      ethicsSubmitted: true,
       thesisStatus: null,
       documents: [],
     });
     const milestone = determineCurrentMilestone({
       proposalStatus: ProposalStatus.APPROVED,
-      ethicsStatus: EthicsApprovalStatus.APPROVED,
+      ethicsSubmitted: true,
       documents: [],
     });
 
@@ -68,10 +67,10 @@ describe("student progress utilities", () => {
     expect(milestone).toBe("ethics-clearance");
   });
 
-  it("does not count progress reports as data collection until ethics is approved", () => {
+  it("does not count progress reports as data collection until ethics documents are submitted", () => {
     const progress = calculateStageCompletionPercentages({
       proposalStatus: ProposalStatus.APPROVED,
-      ethicsStatus: EthicsApprovalStatus.UNDER_REVIEW,
+      ethicsSubmitted: false,
       thesisStatus: null,
       documents: [
         {
@@ -91,7 +90,7 @@ describe("student progress utilities", () => {
       ],
     });
 
-    expect(progress.ethics.completionPercentage).toBe(50);
+    expect(progress.ethics.completionPercentage).toBe(0);
     expect(progress.dataCollection.completionPercentage).toBe(0);
   });
 

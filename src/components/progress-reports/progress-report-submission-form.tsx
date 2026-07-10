@@ -10,18 +10,18 @@ import {
 
 type ProgressReportSubmissionResponse = {
   error?: string;
-  upload?: {
+  uploads?: Array<{
     signedUrl: string;
     storagePath: string;
     expiresInMinutes: number;
-  } | null;
+  }>;
 };
 
 export function ProgressReportSubmissionForm() {
   const router = useRouter();
   const [periodLabel, setPeriodLabel] = useState("");
   const [narrative, setNarrative] = useState("");
-  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -29,42 +29,42 @@ export function ProgressReportSubmissionForm() {
     return {
       periodLabel,
       narrative,
-      document: documentFile
-        ? {
-            fileName: documentFile.name,
-            mimeType: documentFile.type,
-            sizeBytes: documentFile.size,
-          }
-        : undefined,
+      documents: documentFiles.map((documentFile) => ({
+        fileName: documentFile.name,
+        mimeType: documentFile.type,
+        sizeBytes: documentFile.size,
+      })),
     };
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const nextFile = event.target.files?.[0] ?? null;
+    const nextFiles = Array.from(event.target.files ?? []);
 
-    if (!nextFile) {
-      setDocumentFile(null);
+    if (nextFiles.length === 0) {
+      setDocumentFiles([]);
       return;
     }
 
-    const parsedDocument = progressReportDocumentSchema.safeParse({
-      fileName: nextFile.name,
-      mimeType: nextFile.type,
-      sizeBytes: nextFile.size,
-    });
+    for (const nextFile of nextFiles) {
+      const parsedDocument = progressReportDocumentSchema.safeParse({
+        fileName: nextFile.name,
+        mimeType: nextFile.type,
+        sizeBytes: nextFile.size,
+      });
 
-    if (!parsedDocument.success) {
-      setErrorMessage(
-        parsedDocument.error.issues[0]?.message ??
-          "Choose a valid PDF progress report document.",
-      );
-      setDocumentFile(null);
-      event.target.value = "";
-      return;
+      if (!parsedDocument.success) {
+        setErrorMessage(
+          parsedDocument.error.issues[0]?.message ??
+            "Choose valid PDF or ZIP progress report documents.",
+        );
+        setDocumentFiles([]);
+        event.target.value = "";
+        return;
+      }
     }
 
     setErrorMessage(null);
-    setDocumentFile(nextFile);
+    setDocumentFiles(nextFiles);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -98,27 +98,30 @@ export function ProgressReportSubmissionForm() {
         return;
       }
 
-      if (documentFile) {
-        if (!payload.upload?.signedUrl) {
+      if (documentFiles.length > 0) {
+        if (!payload.uploads || payload.uploads.length !== documentFiles.length) {
           setErrorMessage(
-            "The report was saved, but no document upload URL was returned.",
+            "The report was saved, but not all document upload URLs were returned.",
           );
           return;
         }
 
-        const uploadResponse = await fetch(payload.upload.signedUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/pdf",
-          },
-          body: documentFile,
-        });
+        for (const [index, documentFile] of documentFiles.entries()) {
+          const uploadTarget = payload.uploads[index];
+          const uploadResponse = await fetch(uploadTarget.signedUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": documentFile.type,
+            },
+            body: documentFile,
+          });
 
-        if (!uploadResponse.ok) {
-          setErrorMessage(
-            "The report was saved, but the PDF upload failed. Please try again.",
-          );
-          return;
+          if (!uploadResponse.ok) {
+            setErrorMessage(
+              "The report was saved, but a document upload failed. Please try again.",
+            );
+            return;
+          }
         }
       }
 
@@ -164,32 +167,37 @@ export function ProgressReportSubmissionForm() {
           rows={10}
           value={narrative}
           onChange={(e) => setNarrative(e.target.value)}
-          placeholder="Summarize your progress, challenges, and next steps (min 100 characters)..."
+          placeholder="Summarize your progress, challenges, and next steps..."
           className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none transition focus:bg-gray-50"
         />
         <p className="text-right text-base font-medium text-black/40">
-          {narrative.length} characters (min 100)
+          {narrative.length} characters
         </p>
       </div>
 
       <div className="space-y-2">
         <label htmlFor="document" className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
-          Supporting PDF
+          Supporting Documents
         </label>
         <input
           id="document"
           type="file"
-          accept="application/pdf"
+          accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
+          multiple
           onChange={handleFileChange}
           className="block w-full text-base font-bold text-black file:mr-4 file:rounded-[0.75em] file:border-2 file:border-black file:bg-black file:px-4 file:py-3 file:text-xs file:font-black file:uppercase file:tracking-widest file:text-white"
         />
-        {documentFile ? (
-          <p className="break-all text-base font-bold text-black/70">
-            Selected: {documentFile.name}
-          </p>
+        {documentFiles.length > 0 ? (
+          <ul className="space-y-1">
+            {documentFiles.map((documentFile) => (
+              <li key={`${documentFile.name}-${documentFile.size}`} className="break-all text-base font-bold text-black/70">
+                Selected: {documentFile.name}
+              </li>
+            ))}
+          </ul>
         ) : (
           <p className="text-base font-medium text-black/40">
-            Optional. Attach a PDF if the report has supporting material.
+            Optional. Attach PDF or ZIP supporting material.
           </p>
         )}
       </div>

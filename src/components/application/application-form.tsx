@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 type UploadedSupportingDocument = {
   fileName: string;
   storagePath: string;
-  mimeType: "application/pdf";
+  mimeType: string;
   sizeBytes: number;
 };
 
@@ -41,6 +41,7 @@ const applicantStepSchema = applicationSubmissionSchema.pick({
 const researchStepSchema = applicationSubmissionSchema.pick({
   programType: true,
   researchArea: true,
+  supervisor: true,
   statementOfPurpose: true,
 });
 
@@ -69,11 +70,11 @@ export function ApplicationForm() {
     applicantPhone: "",
     programType: "MPHIL" as (typeof applicationProgramTypes)[number],
     researchArea: "",
+    supervisor: "",
     statementOfPurpose: "",
   });
 
   const currentStepLabel = useMemo(() => stepLabels[step], [step]);
-  const hasUploadedDocument = documents.length > 0;
   const isNavigationBusy =
     isUploadingDocument || isRemovingDocument || isSubmitting;
 
@@ -106,6 +107,7 @@ export function ApplicationForm() {
       const parsed = researchStepSchema.safeParse({
         programType: formValues.programType,
         researchArea: formValues.researchArea,
+        supervisor: formValues.supervisor,
         statementOfPurpose: formValues.statementOfPurpose,
       });
 
@@ -141,15 +143,15 @@ export function ApplicationForm() {
   }
 
   async function handleDocumentUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+    const selectedFiles = Array.from(event.target.files ?? []);
 
-    if (!file) {
+    if (selectedFiles.length === 0) {
       return;
     }
 
-    if (documents.length > 0) {
+    if (documents.length + selectedFiles.length > 10) {
       setErrorMessage(
-        "Only one supporting document can be uploaded. Remove the current file to upload a new PDF.",
+        "A maximum of 10 supporting documents can be uploaded.",
       );
       event.target.value = "";
       return;
@@ -159,44 +161,55 @@ export function ApplicationForm() {
     setIsUploadingDocument(true);
 
     try {
-      const formData = new FormData();
-      formData.append("draftId", draftId);
-      formData.append("file", file);
+      const uploadedDocuments: UploadedSupportingDocument[] = [];
 
-      const uploadResponse = await fetch("/api/applications/upload", {
-        method: "POST",
-        body: formData,
-      });
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append("draftId", draftId);
+        formData.append("file", file);
 
-      const uploadPayload = (await uploadResponse.json()) as {
-        error?: string;
-        storagePath?: string;
-        fileName?: string;
-        mimeType?: "application/pdf";
-        sizeBytes?: number;
-      };
+        const uploadResponse = await fetch("/api/applications/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-      if (
-        !uploadResponse.ok ||
-        !uploadPayload.storagePath ||
-        !uploadPayload.fileName ||
-        !uploadPayload.mimeType ||
-        typeof uploadPayload.sizeBytes !== "number"
-      ) {
-        throw new Error(
-          uploadPayload.error ?? "Unable to upload the selected document.",
-        );
+        const uploadPayload = (await uploadResponse.json()) as {
+          error?: string;
+          storagePath?: string;
+          fileName?: string;
+          mimeType?: string;
+          sizeBytes?: number;
+        };
+
+        if (
+          !uploadResponse.ok ||
+          !uploadPayload.storagePath ||
+          !uploadPayload.fileName ||
+          !uploadPayload.mimeType ||
+          typeof uploadPayload.sizeBytes !== "number"
+        ) {
+          throw new Error(
+            uploadPayload.error ?? "Unable to upload the selected document.",
+          );
+        }
+
+        uploadedDocuments.push({
+          fileName: uploadPayload.fileName,
+          storagePath: uploadPayload.storagePath,
+          mimeType: uploadPayload.mimeType,
+          sizeBytes: uploadPayload.sizeBytes,
+        });
       }
 
-      const { storagePath, fileName, mimeType, sizeBytes } = uploadPayload;
-
-      setDocuments([
-        {
-          fileName,
-          storagePath,
-          mimeType,
-          sizeBytes,
-        },
+      setDocuments((current) => [
+        ...current,
+        ...uploadedDocuments.filter(
+          (nextDocument) =>
+            !current.some(
+              (currentDocument) =>
+                currentDocument.storagePath === nextDocument.storagePath,
+            ),
+        ),
       ]);
       setIsReviewConfirmed(false);
     } catch (error) {
@@ -213,8 +226,8 @@ export function ApplicationForm() {
     }
   }
 
-  async function handleDocumentRemoval() {
-    const document = documents[0];
+  async function handleDocumentRemoval(storagePath: string) {
+    const document = documents.find((candidate) => candidate.storagePath === storagePath);
 
     if (!document) {
       return;
@@ -245,7 +258,9 @@ export function ApplicationForm() {
         );
       }
 
-      setDocuments([]);
+      setDocuments((current) =>
+        current.filter((candidate) => candidate.storagePath !== storagePath),
+      );
       setIsReviewConfirmed(false);
     } catch (error) {
       setErrorMessage(
@@ -350,6 +365,7 @@ export function ApplicationForm() {
         applicantPhone: "",
         programType: "MPHIL",
         researchArea: "",
+        supervisor: "",
         statementOfPurpose: "",
       });
       setIsReviewConfirmed(false);
@@ -375,7 +391,7 @@ export function ApplicationForm() {
           Apply for your research programme
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Complete the public application form, upload one supporting PDF, and
+          Complete the public application form, upload supporting PDF/ZIP documents, and
           submit your research interest for review.
         </p>
       </section>
@@ -521,6 +537,21 @@ export function ApplicationForm() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="supervisor">Preferred supervisor hint</Label>
+              <Input
+                id="supervisor"
+                value={formValues.supervisor}
+                onChange={(event) =>
+                  updateField("supervisor", event.target.value)
+                }
+                placeholder="Optional name or research expertise"
+                className="border-zinc-400 focus-visible:ring-zinc-900"
+              />
+              <p className="text-xs text-muted-foreground">
+                This is only a hint for admins and does not assign a supervisor.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="statementOfPurpose">Statement of purpose</Label>
               <Textarea
                 id="statementOfPurpose"
@@ -541,25 +572,21 @@ export function ApplicationForm() {
             <Card>
               <CardContent className="pt-5 space-y-3">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Upload supporting document</p>
+                  <p className="text-sm font-semibold text-foreground">Upload supporting documents</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    PDF only. Maximum file size: 10MB. Only one file can be uploaded.
+                    PDF or ZIP only. Maximum file size: 10MB each. Up to 10 files can be uploaded.
                   </p>
-                  {hasUploadedDocument && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Remove the current file before selecting another PDF.
-                    </p>
-                  )}
                 </div>
                 <input
                   className="block w-full cursor-pointer text-sm text-foreground file:mr-4 file:cursor-pointer file:rounded-md file:border file:border-border file:bg-background file:px-4 file:py-2 file:text-sm file:font-medium file:text-foreground file:transition-all hover:file:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                   type="file"
-                  accept="application/pdf"
+                  accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
+                  multiple
                   onChange={handleDocumentUpload}
-                  disabled={hasUploadedDocument || isUploadingDocument || isRemovingDocument}
+                  disabled={isUploadingDocument || isRemovingDocument}
                 />
                 {isUploadingDocument && (
-                  <p className="text-sm text-muted-foreground">Uploading PDF...</p>
+                  <p className="text-sm text-muted-foreground">Uploading documents...</p>
                 )}
               </CardContent>
             </Card>
@@ -576,7 +603,7 @@ export function ApplicationForm() {
                       <div>
                         <p className="text-sm font-semibold text-foreground">{document.fileName}</p>
                         <p className="mt-0.5 text-xs uppercase tracking-wider text-muted-foreground">
-                          {(document.sizeBytes / (1024 * 1024)).toFixed(2)} MB · PDF
+                          {(document.sizeBytes / (1024 * 1024)).toFixed(2)} MB · {document.mimeType.includes("zip") ? "ZIP" : "PDF"}
                         </p>
                       </div>
                       <Button
@@ -584,7 +611,7 @@ export function ApplicationForm() {
                         variant="outline"
                         size="sm"
                         aria-label="Remove uploaded file"
-                        onClick={handleDocumentRemoval}
+                        onClick={() => handleDocumentRemoval(document.storagePath)}
                         disabled={isRemovingDocument}
                       >
                         {isRemovingDocument ? "Removing..." : "Remove"}
@@ -622,6 +649,10 @@ export function ApplicationForm() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Research area</p>
                   <p className="mt-1 text-sm text-foreground break-all">{formValues.researchArea}</p>
                 </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Supervisor hint</p>
+                  <p className="mt-1 text-sm text-foreground break-words">{formValues.supervisor || "Not provided"}</p>
+                </div>
               </div>
 
               <div className="min-w-0">
@@ -632,11 +663,13 @@ export function ApplicationForm() {
               </div>
 
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Supporting PDF</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Supporting Documents</p>
                 <ul className="mt-1 space-y-1">
                   {documents.map((document) => (
                     <li key={document.storagePath} className="text-sm text-foreground flex items-center gap-2">
-                      <Badge variant="secondary" className="text-[10px]">PDF</Badge>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {document.mimeType.includes("zip") ? "ZIP" : "PDF"}
+                      </Badge>
                       {document.fileName}
                     </li>
                   ))}

@@ -13,7 +13,7 @@ test.describe("PB-010 login flow", () => {
     await expect(page).toHaveURL(/\/dashboard\/student$/);
 
     const cookies = await page.context().cookies();
-    const sessionCookie = cookies.find((cookie) => cookie.name === "pgsms_session");
+    const sessionCookie = cookies.find((cookie) => cookie.name === "pglms_session");
 
     expect(sessionCookie).toBeDefined();
     expect(sessionCookie?.secure).toBe(true);

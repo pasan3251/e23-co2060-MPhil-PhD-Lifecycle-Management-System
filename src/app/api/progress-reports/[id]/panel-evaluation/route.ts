@@ -1,4 +1,4 @@
-import { PanelEvaluationOutcome, UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { withAuth } from "@/lib/firebase/with-auth";
@@ -8,9 +8,8 @@ type RouteParams = {
   id: string;
 };
 
-export const POST = withAuth<RouteParams>(async (request: NextRequest, context) => {
+export const POST = withAuth<RouteParams>(async (_request: NextRequest, context) => {
   const progressReportId = context.params?.id;
-  const body = await request.json();
 
   if (!progressReportId) {
     return NextResponse.json({ error: "Progress report id is required." }, { status: 400 });
@@ -20,9 +19,6 @@ export const POST = withAuth<RouteParams>(async (request: NextRequest, context) 
     const result = await submitPanelEvaluation(
       {
         progressReportId,
-        numericalScore: body.numericalScore,
-        outcome: body.outcome as PanelEvaluationOutcome,
-        notes: body.notes,
       },
       context.auth,
     );

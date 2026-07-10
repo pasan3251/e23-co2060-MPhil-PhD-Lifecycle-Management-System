@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
+  notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
   notifySupervisorAssigned: vi.fn().mockResolvedValue({
     success: true,
   }),
@@ -21,7 +21,10 @@ vi.mock("@/lib/prisma/client", () => ({
     },
     supervisorAssignment: {
       create: vi.fn(),
+      updateMany: vi.fn(),
+      update: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -32,6 +35,15 @@ import { prisma } from "@/lib/prisma/client";
 describe("supervisor assignment integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        supervisorAssignment: {
+          create: prisma.supervisorAssignment.create,
+          updateMany: prisma.supervisorAssignment.updateMany,
+          update: prisma.supervisorAssignment.update,
+        },
+      } as never),
+    );
   });
 
   it("records a successful primary assignment with the correct flag", async () => {
@@ -117,6 +129,7 @@ describe("supervisor assignment integration", () => {
       },
       supervisorAssignments: [
         {
+          id: "assignment-primary-1",
           supervisorId: "supervisor-primary-1",
           supervisorUserId: "user-supervisor-primary-1",
           isPrimary: true,

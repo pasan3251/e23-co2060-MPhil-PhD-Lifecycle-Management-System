@@ -14,10 +14,7 @@ vi.mock("@/lib/firebase/auth", () => ({
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
-  notifyProgressReportSignedOff: vi.fn().mockResolvedValue({
-    success: true,
-  }),
+  notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 vi.mock("@/lib/review-panels/workflow", () => ({
@@ -38,7 +35,6 @@ vi.mock("@/lib/prisma/client", () => ({
 
 import { PATCH } from "@/app/api/progress-reports/[id]/sign-off/route";
 import { authenticateBearerRequest } from "@/lib/firebase/auth";
-import { notifyProgressReportSignedOff } from "@/lib/email";
 import { prisma } from "@/lib/prisma/client";
 import { forwardSignedOffProgressReportToPanel } from "@/lib/review-panels/workflow";
 
@@ -65,7 +61,7 @@ describe("progress report sign-off route", () => {
     } as never);
   });
 
-  it("updates the sign-off flag and timestamp on a successful patch", async () => {
+  it("returns 410 because supervisor sign-off has been removed", async () => {
     const signedOffAt = new Date("2026-05-01T09:15:00.000Z");
 
     vi.mocked(prisma.progressReport.findUnique).mockResolvedValue({
@@ -110,31 +106,15 @@ describe("progress report sign-off route", () => {
       },
     );
 
-    expect(response.status).toBe(200);
-    expect(prisma.progressReport.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          id: "report-1",
-        },
-        data: expect.objectContaining({
-          isSupervisorSignedOff: true,
-          supervisorSignedOffById: "supervisor-1",
-          supervisorSignedOffAt: expect.any(Date),
-        }),
-      }),
-    );
+    expect(response.status).toBe(410);
+    expect(prisma.progressReport.update).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toMatchObject({
-      report: expect.objectContaining({
-        id: "report-1",
-        isSupervisorSignedOff: true,
-        supervisorSignedOffById: "supervisor-1",
-      }),
-      forwardedToPanel: false,
-      notifiedPanelMembers: 0,
+      error:
+        "Supervisor progress-report sign-off has been removed. Supervisors can view and monitor submitted reports only.",
     });
   });
 
-  it("notifies panel members only after sign-off is completed", async () => {
+  it("does not notify panel members from the retired sign-off route", async () => {
     vi.mocked(prisma.progressReport.findUnique).mockResolvedValue({
       id: "report-2",
       studentId: "student-2",
@@ -182,16 +162,11 @@ describe("progress report sign-off route", () => {
       },
     );
 
-    expect(response.status).toBe(200);
-    expect(forwardSignedOffProgressReportToPanel).toHaveBeenCalledWith(
-      expect.objectContaining({
-        progressReportId: "report-2",
-        supervisorName: "Dr. Primary",
-      }),
-    );
+    expect(response.status).toBe(410);
+    expect(forwardSignedOffProgressReportToPanel).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toMatchObject({
-      forwardedToPanel: true,
-      notifiedPanelMembers: 1,
+      error:
+        "Supervisor progress-report sign-off has been removed. Supervisors can view and monitor submitted reports only.",
     });
   });
 });

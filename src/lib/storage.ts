@@ -1,12 +1,19 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { AuthenticatedUserContext } from "@/types/auth";
 import {
+  ALLOWED_DOCUMENT_MIME_TYPES,
   MAX_APPLICATION_UPLOAD_SIZE_BYTES,
   MAX_STORAGE_FILE_SIZE_BYTES,
+  isAllowedDocumentMimeType,
 } from "@/lib/validation/uploads";
 
 export const STORAGE_URL_EXPIRATION_MS = 15 * 60 * 1000;
-export { MAX_APPLICATION_UPLOAD_SIZE_BYTES, MAX_STORAGE_FILE_SIZE_BYTES };
+export {
+  ALLOWED_DOCUMENT_MIME_TYPES,
+  MAX_APPLICATION_UPLOAD_SIZE_BYTES,
+  MAX_STORAGE_FILE_SIZE_BYTES,
+  isAllowedDocumentMimeType,
+};
 export const PROTECTED_STORAGE_ROOTS = [
   "applications",
   "proposals",
@@ -14,6 +21,7 @@ export const PROTECTED_STORAGE_ROOTS = [
   "theses",
   "progress-reports",
   "corrections",
+  "review-attachments",
 ] as const;
 
 type ProtectedStorageRoot = (typeof PROTECTED_STORAGE_ROOTS)[number];
@@ -176,6 +184,16 @@ export function buildCorrectionStoragePath(
   );
 }
 
+export function buildReviewAttachmentStoragePath(
+  ownerId: string,
+  reviewId: string,
+  fileName: string,
+) {
+  return normalizeStoragePath(
+    `review-attachments/${ownerId}/${reviewId}/${sanitizeFileName(fileName)}`,
+  );
+}
+
 export function assertFileUploadConstraints({
   contentType,
   fileSizeBytes,
@@ -183,6 +201,10 @@ export function assertFileUploadConstraints({
 }: UploadConstraintsInput): void {
   if (!contentType.trim()) {
     throw new StorageAccessError("A content type is required.", 400);
+  }
+
+  if (!isAllowedDocumentMimeType(contentType)) {
+    throw new StorageAccessError("Only PDF or ZIP documents are allowed.", 400);
   }
 
   if (fileSizeBytes <= 0) {
@@ -204,8 +226,8 @@ export function assertApplicationAttachmentConstraints({
   fileSizeBytes,
   path,
 }: UploadConstraintsInput): void {
-  if (contentType !== "application/pdf") {
-    throw new StorageAccessError("Only PDF documents are allowed.", 400);
+  if (!isAllowedDocumentMimeType(contentType)) {
+    throw new StorageAccessError("Only PDF or ZIP documents are allowed.", 400);
   }
 
   if (fileSizeBytes <= 0) {

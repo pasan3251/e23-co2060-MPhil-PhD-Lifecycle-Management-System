@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
+  notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
   notifySupervisorAssigned: vi.fn().mockResolvedValue({
     success: true,
   }),
@@ -21,7 +21,10 @@ vi.mock("@/lib/prisma/client", () => ({
     },
     supervisorAssignment: {
       create: vi.fn(),
+      updateMany: vi.fn(),
+      update: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -34,6 +37,15 @@ import { prisma } from "@/lib/prisma/client";
 describe("supervisor assignment rules", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        supervisorAssignment: {
+          create: prisma.supervisorAssignment.create,
+          updateMany: prisma.supervisorAssignment.updateMany,
+          update: prisma.supervisorAssignment.update,
+        },
+      } as never),
+    );
 
     vi.mocked(prisma.administrator.findUnique).mockResolvedValue({
       id: "admin-1",
@@ -53,7 +65,7 @@ describe("supervisor assignment rules", () => {
     } as never);
   });
 
-  it("returns a 400 error when a second primary supervisor is assigned", async () => {
+  it("allows changing the primary supervisor by demoting the existing primary", async () => {
     vi.mocked(prisma.student.findUnique).mockResolvedValue({
       id: "student-1",
       user: {
@@ -61,6 +73,7 @@ describe("supervisor assignment rules", () => {
       },
       supervisorAssignments: [
         {
+          id: "assignment-1",
           supervisorId: "supervisor-1",
           supervisorUserId: "user-supervisor-1",
           isPrimary: true,
@@ -68,25 +81,43 @@ describe("supervisor assignment rules", () => {
       ],
       examinerAssignments: [],
     } as never);
+    vi.mocked(prisma.supervisorAssignment.create).mockResolvedValue({
+      id: "assignment-2",
+      studentId: "student-1",
+      supervisorId: "supervisor-2",
+      supervisorUserId: "user-supervisor-2",
+      isPrimary: true,
+      assignedAt: new Date("2026-05-01T04:00:00.000Z"),
+      assignedBy: "admin-1",
+    } as never);
 
-    await expect(
-      assignSupervisorToStudent(
-        {
-          studentId: "student-1",
-          supervisorId: "supervisor-2",
-          isPrimary: true,
-        },
-        {
-          uid: "firebase-admin-1",
-          userId: "user-admin-1",
-          firebaseUid: "firebase-admin-1",
-          role: "ADMINISTRATOR",
-          email: "admin@example.com",
-        },
-      ),
-    ).rejects.toMatchObject<SupervisorAssignmentError>({
-      status: 400,
-      message: "A student can only have one primary supervisor.",
+    const result = await assignSupervisorToStudent(
+      {
+        studentId: "student-1",
+        supervisorId: "supervisor-2",
+        isPrimary: true,
+      },
+      {
+        uid: "firebase-admin-1",
+        userId: "user-admin-1",
+        firebaseUid: "firebase-admin-1",
+        role: "ADMINISTRATOR",
+        email: "admin@example.com",
+      },
+    );
+
+    expect(prisma.supervisorAssignment.updateMany).toHaveBeenCalledWith({
+      where: {
+        studentId: "student-1",
+        isPrimary: true,
+      },
+      data: {
+        isPrimary: false,
+      },
+    });
+    expect(result).toMatchObject({
+      id: "assignment-2",
+      isPrimary: true,
     });
   });
 
@@ -98,6 +129,7 @@ describe("supervisor assignment rules", () => {
       },
       supervisorAssignments: [
         {
+          id: "assignment-1",
           supervisorId: "supervisor-1",
           supervisorUserId: "user-supervisor-1",
           isPrimary: true,

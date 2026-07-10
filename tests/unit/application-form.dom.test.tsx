@@ -116,7 +116,7 @@ describe("ApplicationForm", () => {
     });
   });
 
-  it("removes the uploaded file so another PDF can be selected", async () => {
+  it("removes an uploaded file so another PDF can be selected", async () => {
     const user = userEvent.setup();
     vi.mocked(global.fetch as never)
       .mockResolvedValueOnce(
@@ -146,7 +146,7 @@ describe("ApplicationForm", () => {
       expect(screen.getByText("proposal.pdf")).toBeInTheDocument();
     });
 
-    expect(fileInput).toBeDisabled();
+    expect(fileInput).not.toBeDisabled();
 
     await user.click(
       screen.getByRole("button", { name: "Remove uploaded file" }),

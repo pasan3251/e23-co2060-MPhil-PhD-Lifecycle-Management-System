@@ -1,6 +1,5 @@
 import {
   DocumentType,
-  EthicsApprovalStatus,
   ProgramType,
   ProposalStatus,
   ThesisStatus,
@@ -62,8 +61,6 @@ type StudentProgressRecord = {
   }>;
   ethicsApprovals: Array<{
     id: string;
-    status: EthicsApprovalStatus;
-    reviewedAt: Date | null;
     updatedAt: Date;
   }>;
 };
@@ -167,8 +164,6 @@ async function findStudentProgressRecord(
         take: 1,
         select: {
           id: true,
-          status: true,
-          reviewedAt: true,
           updatedAt: true,
         },
       },
@@ -246,10 +241,7 @@ function isProposalDocumentApproved(document: StudentDocumentRecord) {
 }
 
 function isProgressDocumentApproved(document: StudentDocumentRecord) {
-  return (
-    document.documentType === DocumentType.PROGRESS_REPORT &&
-    document.progressReport?.isSupervisorSignedOff === true
-  );
+  return document.documentType === DocumentType.PROGRESS_REPORT;
 }
 
 function isThesisDocumentApproved(document: StudentDocumentRecord) {
@@ -296,14 +288,18 @@ export function getDocumentStageCounts(documents: StudentDocumentRecord[]) {
     isCorrectionDocumentReleased,
   );
 
+  const ethicsDocuments = documents.filter(
+    (document) => document.documentType === DocumentType.ETHICS_APPROVAL,
+  );
+
   return {
     proposal: {
       totalSubmittedVersions: proposalDocuments.length,
       approvedVersions: approvedProposalDocuments.length,
     },
     ethics: {
-      totalSubmittedVersions: 0,
-      approvedVersions: 0,
+      totalSubmittedVersions: ethicsDocuments.length,
+      approvedVersions: ethicsDocuments.length > 0 ? 1 : 0,
     },
     dataCollection: {
       totalSubmittedVersions: progressDocuments.length,
@@ -321,7 +317,7 @@ export function getDocumentStageCounts(documents: StudentDocumentRecord[]) {
 
 export function calculateStageCompletionPercentages(input: {
   proposalStatus: ProposalStatus | null;
-  ethicsStatus?: EthicsApprovalStatus | null;
+  ethicsSubmitted?: boolean;
   thesisStatus: ThesisStatus | null;
   documents: StudentDocumentRecord[];
 }) {
@@ -334,17 +330,11 @@ export function calculateStageCompletionPercentages(input: {
         ? 60
         : 0;
 
-  const ethicsSubmitted = input.ethicsStatus ? 1 : 0;
-  const ethicsApproved =
-    input.ethicsStatus === EthicsApprovalStatus.APPROVED ? 1 : 0;
+  const ethicsSubmitted =
+    input.ethicsSubmitted || counts.ethics.totalSubmittedVersions > 0 ? 1 : 0;
 
-  const ethicsCompletion =
-    ethicsApproved > 0
-      ? 100
-      : ethicsSubmitted > 0
-        ? 50
-        : 0;
-  const ethicsGateComplete = ethicsApproved > 0;
+  const ethicsCompletion = ethicsSubmitted > 0 ? 100 : 0;
+  const ethicsGateComplete = ethicsSubmitted > 0;
 
   const dataCollectionCompletion =
     input.thesisStatus !== null
@@ -377,7 +367,7 @@ export function calculateStageCompletionPercentages(input: {
     },
     ethics: {
       totalSubmittedVersions: ethicsSubmitted,
-      approvedVersions: ethicsApproved,
+      approvedVersions: ethicsSubmitted,
       completionPercentage: proposalCompletion < 100 ? 0 : ethicsCompletion,
     },
     dataCollection: {
@@ -438,7 +428,7 @@ function toApprovedDocumentSnapshot(
 
 export function determineCurrentMilestone(input: {
   proposalStatus: ProposalStatus | null;
-  ethicsStatus?: EthicsApprovalStatus | null;
+  ethicsSubmitted?: boolean;
   thesisStatus?: ThesisStatus | null;
   documents: StudentDocumentRecord[];
 }) {
@@ -466,21 +456,19 @@ export function determineCurrentMilestone(input: {
     return "thesis-submission" as ProgressMilestoneId;
   }
 
-  if (input.ethicsStatus === EthicsApprovalStatus.APPROVED) {
+  const hasEthicsSubmission =
+    input.ethicsSubmitted ||
+    input.documents.some(
+      (document) => document.documentType === DocumentType.ETHICS_APPROVAL,
+    );
+
+  if (hasEthicsSubmission) {
     const approvedProgressReports = input.documents.filter(isProgressDocumentApproved);
 
     if (approvedProgressReports.length > 0) {
       return "data-collection" as ProgressMilestoneId;
     }
 
-    return "ethics-clearance" as ProgressMilestoneId;
-  }
-
-  if (
-    input.ethicsStatus === EthicsApprovalStatus.SUBMITTED ||
-    input.ethicsStatus === EthicsApprovalStatus.UNDER_REVIEW ||
-    input.ethicsStatus === EthicsApprovalStatus.REJECTED
-  ) {
     return "ethics-clearance" as ProgressMilestoneId;
   }
 
@@ -620,13 +608,13 @@ export async function getStudentProgressById(
 
   const stageProgress = calculateStageCompletionPercentages({
     proposalStatus: latestProposal?.status ?? null,
-    ethicsStatus: latestEthicsApproval?.status ?? null,
+    ethicsSubmitted: latestEthicsApproval !== null,
     thesisStatus: latestThesis?.status ?? null,
     documents,
   });
   const currentMilestone = determineCurrentMilestone({
     proposalStatus: latestProposal?.status ?? null,
-    ethicsStatus: latestEthicsApproval?.status ?? null,
+    ethicsSubmitted: latestEthicsApproval !== null,
     thesisStatus: latestThesis?.status ?? null,
     documents,
   });
@@ -642,7 +630,7 @@ export async function getStudentProgressById(
     },
     latestStatuses: {
       proposal: latestProposal?.status ?? null,
-      ethics: latestEthicsApproval?.status ?? null,
+      ethics: latestEthicsApproval ? "SUBMITTED" : null,
       thesis: latestThesis?.status ?? null,
     },
     currentMilestone,

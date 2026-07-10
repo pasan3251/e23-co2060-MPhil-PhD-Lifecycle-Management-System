@@ -1,4 +1,4 @@
-# PGSMS Workflow Report
+# PGLMS Workflow Report
 
 Generated from the current repository state on 2026-07-05.
 

@@ -157,8 +157,8 @@ function getNavItems(role: DashboardRole) {
     case "supervisor":
       return [
         { href: "/dashboard/supervisor/students", label: "Student Roster", icon: Users },
-        { href: "/dashboard/supervisor/proposals/evaluate", label: "Review Proposals", icon: ClipboardCheck },
-        { href: "/dashboard/supervisor/progress-reports/sign", label: "Sign Progress Reports", icon: TrendingUp },
+        { href: "/dashboard/supervisor/proposals/evaluate", label: "Monitor Proposals", icon: ClipboardCheck },
+        { href: "/dashboard/supervisor/progress-reports/sign", label: "Monitor Reports", icon: TrendingUp },
         { href: "/dashboard/supervisor/documents", label: "Documents", icon: FolderOpen },
       ];
     case "admin":
@@ -166,7 +166,7 @@ function getNavItems(role: DashboardRole) {
         { href: "/dashboard/admin/users", label: "Manage Users", icon: UserCog },
         { href: "/dashboard/admin/applications", label: "Applications", icon: Inbox },
         { href: "/dashboard/admin/proposals/evaluate", label: "Approve Proposals", icon: ClipboardCheck },
-        { href: "/dashboard/admin/ethics", label: "Ethics Approvals", icon: ClipboardCheck },
+        { href: "/dashboard/admin/ethics", label: "Ethics Documents", icon: ClipboardCheck },
         { href: "/dashboard/admin/assignments/supervisors", label: "Supervisor Assignments", icon: UserCheck },
         { href: "/dashboard/admin/assignments/examiners", label: "Examiner Assignments", icon: UserSearch },
         { href: "/dashboard/admin/vivas/schedule", label: "Schedule Vivas", icon: CalendarDays },

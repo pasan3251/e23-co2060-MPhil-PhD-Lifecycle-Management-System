@@ -128,6 +128,7 @@ export function SupervisorStudentProfile({
           <h2 className="text-3xl font-bold tracking-tight">{student.user.displayName}</h2>
           <p className="text-muted-foreground">
             {student.user.email} · {student.programType} Researcher
+            {student.academicStatus === "GRADUATED" ? " · Graduated" : ""}
           </p>
         </div>
       </div>
@@ -173,7 +174,7 @@ export function SupervisorStudentProfile({
               Research Proposals
             </CardTitle>
             <CardDescription>
-              Review proposal submissions, evaluations, and approval history.
+              View proposal submissions and approval history.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -190,7 +191,7 @@ export function SupervisorStudentProfile({
               Progress Reports
             </CardTitle>
             <CardDescription>
-              Review submitted reports, sign-off status, and panel feedback.
+              Monitor submitted reports, documents, and released feedback.
             </CardDescription>
           </CardHeader>
           <CardContent>

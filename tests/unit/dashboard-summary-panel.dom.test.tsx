@@ -38,18 +38,18 @@ describe("DashboardSummaryPanel", () => {
       cards: [
         {
           id: "unsigned-reports",
-          title: "Unsigned Reports",
+          title: "Submitted Reports",
           value: "1",
-          description: "Reports waiting for sign-off.",
-          statusLabel: "Pending sign-off",
+          description: "Reports ready for supervisor monitoring.",
+          statusLabel: "Ready to monitor",
           statusTone: "warning",
         },
       ],
       quickActions: [
         {
-          id: "sign-progress-reports",
-          label: "Sign Progress Reports",
-          description: "Complete pending supervisor sign-offs for student reports.",
+          id: "monitor-progress-reports",
+          label: "Monitor Progress Reports",
+          description: "View submitted progress reports for assigned students.",
           href: "/dashboard/supervisor/progress-reports/sign",
         },
       ],
@@ -59,7 +59,7 @@ describe("DashboardSummaryPanel", () => {
     render(<DashboardSummaryPanel summary={summary} />);
 
     expect(
-      screen.getByRole("link", { name: /Sign Progress Reports/ }),
+      screen.getByRole("link", { name: /Monitor Progress Reports/ }),
     ).toHaveAttribute("href", "/dashboard/supervisor/progress-reports/sign");
   });
 });

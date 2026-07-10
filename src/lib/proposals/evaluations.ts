@@ -1,18 +1,27 @@
-import { ProposalStatus, UserRole } from "@prisma/client";
+import { DocumentType, ProposalStatus, UserRole } from "@prisma/client";
 
-import { notifyProposalEvaluationSubmittedToAdministrator } from "@/lib/email";
+import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
+import {
+  assertFileUploadConstraints,
+  normalizeStoragePath,
+  StorageAccessError,
+} from "@/lib/storage";
 import {
   proposalEvaluationSchema,
   type ProposalEvaluationInput,
 } from "@/lib/proposals/evaluation-schemas";
 import type { AuthenticatedUserContext } from "@/types/auth";
+
 export { proposalEvaluationSchema };
 
 export class ProposalEvaluationError extends Error {
-  status: 400 | 403 | 404 | 409 | 500;
+  status: 400 | 403 | 404 | 409 | 413 | 500;
 
-  constructor(message: string, status: 400 | 403 | 404 | 409 | 500 = 400) {
+  constructor(
+    message: string,
+    status: 400 | 403 | 404 | 409 | 413 | 500 = 400,
+  ) {
     super(message);
     this.name = "ProposalEvaluationError";
     this.status = status;
@@ -21,10 +30,11 @@ export class ProposalEvaluationError extends Error {
 
 type EvaluationRecord = {
   id: string;
-  numericalScore: number;
   feedback: string;
+  adminComments: string | null;
+  releasedAt: Date | null;
   submissionDate: Date;
-  supervisor: {
+  examiner: {
     id: string;
     user: {
       id: string;
@@ -32,6 +42,13 @@ type EvaluationRecord = {
       email: string;
     };
   };
+  documents: Array<{
+    id: string;
+    fileName: string;
+    storagePath: string;
+    mimeType: string;
+    createdAt: Date;
+  }>;
 };
 
 type ProposalEvaluationView = {
@@ -47,14 +64,13 @@ type ProposalEvaluationView = {
       email: string;
     };
     supervisorAssignments: Array<{
-      supervisorId: string;
       supervisorUserId: string;
     }>;
   };
   evaluations: EvaluationRecord[];
 };
 
-type SupervisorContext = {
+type ExaminerContext = {
   id: string;
   userId: string;
   user: {
@@ -64,45 +80,34 @@ type SupervisorContext = {
   };
 };
 
-type AdministratorRecipient = {
-  id: string;
-  displayName: string;
-  email: string;
-};
-
 function mapEvaluationRecord(record: EvaluationRecord) {
   return {
     id: record.id,
-    numericalScore: record.numericalScore,
     feedback: record.feedback,
+    adminComments: record.adminComments,
+    releasedAt: record.releasedAt,
     submissionDate: record.submissionDate,
     evaluator: {
-      supervisorId: record.supervisor.id,
-      userId: record.supervisor.user.id,
-      displayName: record.supervisor.user.displayName,
-      email: record.supervisor.user.email,
+      examinerId: record.examiner.id,
+      userId: record.examiner.user.id,
+      displayName: record.examiner.user.displayName,
+      email: record.examiner.user.email,
     },
+    documents: record.documents.map((document) => ({
+      id: document.id,
+      fileName: document.fileName,
+      storagePath: document.storagePath,
+      mimeType: document.mimeType,
+      createdAt: document.createdAt,
+    })),
   };
 }
 
-export function aggregateScores(evaluations: Array<Pick<EvaluationRecord, "numericalScore">>) {
-  const evaluationCount = evaluations.length;
-
-  if (evaluationCount === 0) {
-    return {
-      evaluationCount: 0,
-      averageScore: null as number | null,
-    };
-  }
-
-  const totalScore = evaluations.reduce(
-    (sum, evaluation) => sum + evaluation.numericalScore,
-    0,
-  );
-
+export function aggregateScores(evaluations: Array<unknown>) {
   return {
-    evaluationCount,
-    averageScore: Number((totalScore / evaluationCount).toFixed(2)),
+    evaluationCount: evaluations.length,
+    reviewCount: evaluations.length,
+    averageScore: null as number | null,
   };
 }
 
@@ -130,7 +135,6 @@ async function findProposalForEvaluation(
           },
           supervisorAssignments: {
             select: {
-              supervisorId: true,
               supervisorUserId: true,
             },
           },
@@ -142,10 +146,11 @@ async function findProposalForEvaluation(
         },
         select: {
           id: true,
-          numericalScore: true,
           feedback: true,
+          adminComments: true,
+          releasedAt: true,
           submissionDate: true,
-          supervisor: {
+          examiner: {
             select: {
               id: true,
               user: {
@@ -157,16 +162,35 @@ async function findProposalForEvaluation(
               },
             },
           },
+          documents: {
+            where: {
+              isDeleted: false,
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+            select: {
+              id: true,
+              fileName: true,
+              storagePath: true,
+              mimeType: true,
+              createdAt: true,
+            },
+          },
         },
       },
     },
   });
 }
 
-async function requireSupervisorContext(
+async function requireExaminerContext(
   auth: AuthenticatedUserContext,
-): Promise<SupervisorContext> {
-  const supervisor = await prisma.supervisor.findUnique({
+): Promise<ExaminerContext> {
+  if (auth.role !== UserRole.EXAMINER) {
+    throw new ProposalEvaluationError("Only examiners can submit proposal reviews.", 403);
+  }
+
+  const examiner = await prisma.examiner.findUnique({
     where: {
       userId: auth.userId,
     },
@@ -183,26 +207,24 @@ async function requireSupervisorContext(
     },
   });
 
-  if (!supervisor) {
-    throw new ProposalEvaluationError("Supervisor profile not found.", 404);
+  if (!examiner) {
+    throw new ProposalEvaluationError("Examiner profile not found.", 404);
   }
 
-  return supervisor;
+  return examiner;
 }
 
-function assertSupervisorAssignedToProposal(
+function assertExaminerNotAssignedSupervisor(
   proposal: ProposalEvaluationView,
-  supervisor: SupervisorContext,
+  examiner: ExaminerContext,
 ) {
-  const isAssigned = proposal.student.supervisorAssignments.some(
-    (assignment) =>
-      assignment.supervisorId === supervisor.id ||
-      assignment.supervisorUserId === supervisor.userId,
+  const hasSupervisorConflict = proposal.student.supervisorAssignments.some(
+    (assignment) => assignment.supervisorUserId === examiner.userId,
   );
 
-  if (!isAssigned) {
+  if (hasSupervisorConflict) {
     throw new ProposalEvaluationError(
-      "You can only evaluate proposals for students assigned to you.",
+      "Assigned supervisors cannot review the same student's proposal.",
       403,
     );
   }
@@ -215,20 +237,50 @@ function assertProposalUnderReview(proposal: ProposalEvaluationView) {
   ];
   if (!allowedStatuses.includes(proposal.status)) {
     throw new ProposalEvaluationError(
-      "Proposal evaluations are only allowed while the proposal is SUBMITTED or UNDER_REVIEW.",
+      "Proposal reviews are only allowed while the proposal is SUBMITTED or UNDER_REVIEW.",
       409,
     );
   }
 }
 
-async function findActiveAdministrators(): Promise<AdministratorRecipient[]> {
-  return prisma.user.findMany({
+function assertReviewAttachment(input: {
+  storagePath: string;
+  mimeType: string;
+  sizeBytes: number;
+}) {
+  const normalizedPath = normalizeStoragePath(input.storagePath);
+
+  if (!normalizedPath.startsWith("review-attachments/")) {
+    throw new ProposalEvaluationError(
+      "Review attachments must be uploaded to the review-attachments directory.",
+      400,
+    );
+  }
+
+  try {
+    assertFileUploadConstraints({
+      contentType: input.mimeType,
+      fileSizeBytes: input.sizeBytes,
+      path: normalizedPath,
+    });
+  } catch (error) {
+    if (error instanceof StorageAccessError) {
+      throw new ProposalEvaluationError(error.message, error.status);
+    }
+
+    throw error;
+  }
+}
+
+async function notifyAdministratorsOfProposalReview(input: {
+  proposal: ProposalEvaluationView;
+  examiner: ExaminerContext;
+  feedback: string;
+}) {
+  const administrators = await prisma.user.findMany({
     where: {
       role: UserRole.ADMINISTRATOR,
       isActive: true,
-      email: {
-        not: "",
-      },
     },
     select: {
       id: true,
@@ -236,6 +288,25 @@ async function findActiveAdministrators(): Promise<AdministratorRecipient[]> {
       email: true,
     },
   });
+
+  await Promise.all(
+    administrators
+      .filter((administrator) => administrator.email)
+      .map((administrator) =>
+        notify({
+          event: "EXAMINER_REVIEW_SUBMITTED",
+          recipientUserId: administrator.id,
+          to: administrator.email,
+          administratorName: administrator.displayName,
+          examinerName: input.examiner.user.displayName,
+          studentName: input.proposal.student.user.displayName,
+          studentId: input.proposal.student.id,
+          subjectTitle: input.proposal.title,
+          reviewKind: "proposal",
+          feedback: input.feedback,
+        }),
+      ),
+  );
 }
 
 export async function createProposalEvaluation(
@@ -247,48 +318,67 @@ export async function createProposalEvaluation(
 
   if (!parsed.success) {
     throw new ProposalEvaluationError(
-      parsed.error.issues[0]?.message ?? "Invalid proposal evaluation.",
+      parsed.error.issues[0]?.message ?? "Invalid proposal review.",
       400,
     );
   }
 
-  const [proposal, supervisor] = await Promise.all([
+  const [proposal, examiner] = await Promise.all([
     findProposalForEvaluation(proposalId),
-    requireSupervisorContext(auth),
+    requireExaminerContext(auth),
   ]);
 
   if (!proposal) {
     throw new ProposalEvaluationError("Research proposal not found.", 404);
   }
 
-  assertSupervisorAssignedToProposal(proposal, supervisor);
+  assertExaminerNotAssignedSupervisor(proposal, examiner);
   assertProposalUnderReview(proposal);
 
   const existingEvaluation = proposal.evaluations.find(
-    (evaluation) => evaluation.supervisor.id === supervisor.id,
+    (evaluation) => evaluation.examiner.id === examiner.id,
   );
 
   if (existingEvaluation) {
     throw new ProposalEvaluationError(
-      "You have already submitted an evaluation for this proposal.",
+      "You have already submitted a review for this proposal.",
       409,
     );
+  }
+
+  for (const document of parsed.data.documents) {
+    assertReviewAttachment({
+      storagePath: document.storagePath,
+      mimeType: document.mimeType,
+      sizeBytes: document.sizeBytes,
+    });
   }
 
   const evaluation = await prisma.evaluationForm.create({
     data: {
       researchProposalId: proposal.id,
-      supervisorId: supervisor.id,
-      numericalScore: parsed.data.numericalScore,
+      examinerId: examiner.id,
       feedback: parsed.data.feedback,
       submissionDate: new Date(),
+      documents: {
+        create: parsed.data.documents.map((document) => ({
+          documentType: DocumentType.REVIEW_ATTACHMENT,
+          studentId: proposal.studentId,
+          fileName: document.fileName,
+          storagePath: document.storagePath,
+          mimeType: document.mimeType,
+          version: 1,
+          isCurrentVersion: true,
+        })),
+      },
     },
     select: {
       id: true,
-      numericalScore: true,
       feedback: true,
+      adminComments: true,
+      releasedAt: true,
       submissionDate: true,
-      supervisor: {
+      examiner: {
         select: {
           id: true,
           user: {
@@ -300,26 +390,31 @@ export async function createProposalEvaluation(
           },
         },
       },
+      documents: {
+        where: {
+          isDeleted: false,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          fileName: true,
+          storagePath: true,
+          mimeType: true,
+          createdAt: true,
+        },
+      },
     },
   });
 
-  const administrators = await findActiveAdministrators();
-
-  await Promise.all(
-    administrators.map((administrator) =>
-      notifyProposalEvaluationSubmittedToAdministrator({
-        recipientUserId: administrator.id,
-        to: administrator.email,
-        administratorName: administrator.displayName,
-        supervisorName: supervisor.user.displayName,
-        studentName: proposal.student.user.displayName,
-        proposalTitle: proposal.title,
-        numericalScore: evaluation.numericalScore,
-      }),
-    ),
-  );
-
   const aggregate = aggregateScores([...proposal.evaluations, evaluation]);
+
+  await notifyAdministratorsOfProposalReview({
+    proposal,
+    examiner,
+    feedback: parsed.data.feedback,
+  });
 
   return {
     evaluation: mapEvaluationRecord(evaluation),
@@ -337,9 +432,9 @@ export async function getProposalEvaluations(
     throw new ProposalEvaluationError("Research proposal not found.", 404);
   }
 
-  if (auth.role === UserRole.SUPERVISOR) {
-    const supervisor = await requireSupervisorContext(auth);
-    assertSupervisorAssignedToProposal(proposal, supervisor);
+  if (auth.role === UserRole.EXAMINER) {
+    const examiner = await requireExaminerContext(auth);
+    assertExaminerNotAssignedSupervisor(proposal, examiner);
   } else if (auth.role !== UserRole.ADMINISTRATOR) {
     throw new ProposalEvaluationError("Forbidden.", 403);
   }

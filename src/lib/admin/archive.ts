@@ -243,7 +243,6 @@ export async function listArchivedRecords() {
         select: {
           id: true,
           title: true,
-          status: true,
           updatedAt: true,
           student: {
             select: {
@@ -294,7 +293,6 @@ export async function listArchivedRecords() {
     ethicsApprovals: ethicsApprovals.map((approval) => ({
       id: approval.id,
       title: approval.title,
-      status: approval.status,
       studentId: approval.student.id,
       studentName: approval.student.user.displayName,
       updatedAt: approval.updatedAt,

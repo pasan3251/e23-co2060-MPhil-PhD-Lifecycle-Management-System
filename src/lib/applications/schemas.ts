@@ -1,7 +1,10 @@
 import { ProgramType } from "@prisma/client";
 import { z } from "zod";
 
-import { MAX_APPLICATION_UPLOAD_SIZE_BYTES } from "@/lib/validation/uploads";
+import {
+  ALLOWED_DOCUMENT_MIME_TYPES,
+  MAX_APPLICATION_UPLOAD_SIZE_BYTES,
+} from "@/lib/validation/uploads";
 import {
   sanitizedEmail,
   sanitizedString,
@@ -20,7 +23,7 @@ export const applicationProgramTypes = [
 const uploadedApplicationDocumentSchema = z.object({
   fileName: sanitizedString.min(1, "A file name is required."),
   storagePath: sanitizedString.min(1, "A storage path is required."),
-  mimeType: z.literal("application/pdf"),
+  mimeType: z.enum(ALLOWED_DOCUMENT_MIME_TYPES),
   sizeBytes: z.number().int().positive().max(APPLICATION_ATTACHMENT_MAX_SIZE_BYTES),
 });
 
@@ -44,18 +47,19 @@ export const applicationSubmissionSchema = z.object({
     ProgramType.MSC,
     ProgramType.MENG,
   ]),
+  supervisor: sanitizedString.max(200).optional().nullable(),
   researchArea: sanitizedString.min(2, "Research area must be at least 2 characters long."),
   statementOfPurpose: sanitizedString.min(1, "Provide a short statement of purpose."),
   supportingDocuments: z
     .array(uploadedApplicationDocumentSchema)
     .min(1, "Upload a supporting document.")
-    .max(1, "Upload only one supporting document."),
+    .max(10, "Upload at most 10 supporting documents."),
 });
 
 export const applicationUploadRequestSchema = z.object({
   draftId: sanitizedString.min(1, "A draft id is required."),
   fileName: sanitizedString.min(1, "A file name is required."),
-  contentType: z.literal("application/pdf"),
+  contentType: z.enum(ALLOWED_DOCUMENT_MIME_TYPES),
   fileSizeBytes: z.number().int().positive().max(APPLICATION_ATTACHMENT_MAX_SIZE_BYTES),
 });
 

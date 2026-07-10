@@ -49,13 +49,6 @@ enum ThesisStatus {
   CLOSED
 }
 
-enum EthicsApprovalStatus {
-  SUBMITTED
-  UNDER_REVIEW
-  APPROVED
-  REJECTED
-}
-
 enum VivaOutcome {
   PASS
   MINOR_CORRECTIONS
@@ -77,6 +70,7 @@ enum DocumentType {
   THESIS
   PROGRESS_REPORT
   CORRECTION
+  REVIEW_ATTACHMENT
 }
 
 enum NotificationEvent {
@@ -86,6 +80,10 @@ enum NotificationEvent {
   ETHICS_APPROVAL_STATUS_CHANGED
   PROGRESS_REPORT_SUBMITTED
   PROGRESS_REPORT_SIGNED_OFF
+  SUPERVISOR_SUBMISSION_AVAILABLE
+  EXAMINER_REVIEW_ASSIGNED
+  EXAMINER_REVIEW_SUBMITTED
+  ADMIN_REVIEW_RELEASED
   THESIS_DOWNLOADED
   REGISTRATION_EXPIRY_APPROACHING
   VIVA_SCHEDULED
@@ -101,11 +99,6 @@ enum NotificationDeliveryStatus {
 enum CorrectionType {
   MINOR
   MAJOR
-}
-
-enum PanelEvaluationOutcome {
-  PASS
-  FAIL
 }
 
 model User {
@@ -128,14 +121,14 @@ model User {
 }
 
 model Student {
-  id                    String                 @id @default(cuid())
-  userId                String                 @unique
+  id                    String                        @id @default(cuid())
+  userId                String                        @unique
   programType           ProgramType
-  academicStatus        AcademicStatus         @default(ACTIVE)
+  academicStatus        AcademicStatus                @default(ACTIVE)
   enrollmentDate        DateTime
   updatedBy             String?
-  isArchived            Boolean                @default(false)
-  user                  User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  isArchived            Boolean                       @default(false)
+  user                  User                          @relation(fields: [userId], references: [id], onDelete: Restrict)
   application           Application?
   registrations         Registration[]
   researchProposals     ResearchProposal[]
@@ -147,73 +140,75 @@ model Student {
   reviewPanelAssignment ReviewPanelStudentAssignment?
   documents             Document[]
   notifications         Notification[]
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
 
   @@index([academicStatus])
   @@map("students")
 }
 
 model Supervisor {
-  id              String             @id @default(cuid())
-  userId          String             @unique
-  department      String?
-  specialization  String?
-  user            User               @relation(fields: [userId], references: [id], onDelete: Restrict)
-  assignments     SupervisorAssignment[]
-  evaluations     EvaluationForm[]
+  id               String                 @id @default(cuid())
+  userId           String                 @unique
+  department       String?
+  specialization   String?
+  user             User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  assignments      SupervisorAssignment[]
   panelMemberships PanelMembership[]
-  panelEvaluations PanelEvaluation[]
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 
   @@map("supervisors")
 }
 
 model Examiner {
-  id          String                    @id @default(cuid())
-  userId      String                    @unique
-  department  String?
-  specialization String?
-  user        User                      @relation(fields: [userId], references: [id], onDelete: Restrict)
-  assignments ThesisExaminerAssignment[]
-  createdAt   DateTime                  @default(now())
-  updatedAt   DateTime                  @updatedAt
+  id                    String                     @id @default(cuid())
+  userId                String                     @unique
+  department            String?
+  specialization        String?
+  user                  User                       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  assignments           ThesisExaminerAssignment[]
+  proposalEvaluations   EvaluationForm[]
+  progressReportReviews ProgressReportReview[]
+  panelEvaluations      PanelEvaluation[]
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
 
   @@map("examiners")
 }
 
 model Administrator {
-  id                    String                 @id @default(cuid())
-  userId                String                 @unique
-  department            String?
-  user                  User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  approvals             CorrectionDocument[]
-  ethicsReviews         EthicsApproval[]      @relation("EthicsApprovalsReviewedBy")
-  supervisorAssignments SupervisorAssignment[] @relation("SupervisorAssignmentsAssignedBy")
-  thesisExaminerAssignments ThesisExaminerAssignment[] @relation("ThesisExaminerAssignmentsAssignedBy")
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  id                              String                     @id @default(cuid())
+  userId                          String                     @unique
+  department                      String?
+  user                            User                       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  approvals                       CorrectionDocument[]
+  supervisorAssignments           SupervisorAssignment[]     @relation("SupervisorAssignmentsAssignedBy")
+  thesisExaminerAssignments       ThesisExaminerAssignment[] @relation("ThesisExaminerAssignmentsAssignedBy")
+  progressReportReviewAssignments ProgressReportReview[]     @relation("ProgressReportReviewAssignedBy")
+  createdAt                       DateTime                   @default(now())
+  updatedAt                       DateTime                   @updatedAt
 
   @@map("administrators")
 }
 
 model Application {
-  id               String            @id @default(cuid())
-  applicantName    String
-  applicantEmail   String
-  applicantPhone   String?
-  researchArea     String?
+  id                 String            @id @default(cuid())
+  applicantName      String
+  applicantEmail     String
+  applicantPhone     String?
+  supervisor         String?
+  researchArea       String?
   statementOfPurpose String?
-  status           ApplicationStatus @default(SUBMITTED)
-  programType      ProgramType
-  studentId        String?           @unique
-  isArchived       Boolean           @default(false)
-  student          Student?          @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  researchProposal ResearchProposal?
-  documents        Document[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  status             ApplicationStatus @default(SUBMITTED)
+  programType        ProgramType
+  studentId          String?           @unique
+  isArchived         Boolean           @default(false)
+  student            Student?          @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  researchProposal   ResearchProposal?
+  documents          Document[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 
   @@index([applicantEmail])
   @@index([status])
@@ -235,57 +230,53 @@ model Registration {
 }
 
 model ResearchProposal {
-  id              String           @id @default(cuid())
-  studentId       String
-  applicationId   String           @unique
-  title           String
-  abstract        String
-  status          ProposalStatus   @default(SUBMITTED)
-  currentVersion  Int              @default(1)
-  isArchived      Boolean          @default(false)
-  student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  application     Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  evaluations     EvaluationForm[]
-  documents       Document[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id             String           @id @default(cuid())
+  studentId      String
+  applicationId  String           @unique
+  title          String
+  abstract       String
+  status         ProposalStatus   @default(SUBMITTED)
+  currentVersion Int              @default(1)
+  isArchived     Boolean          @default(false)
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  evaluations    EvaluationForm[]
+  documents      Document[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@index([studentId, status])
   @@map("research_proposals")
 }
 
 model EvaluationForm {
-  id                String           @id @default(cuid())
+  id                 String           @id @default(cuid())
   researchProposalId String
-  supervisorId      String
-  numericalScore    Int
-  feedback          String
-  submissionDate    DateTime         @default(now())
-  researchProposal  ResearchProposal @relation(fields: [researchProposalId], references: [id], onDelete: Cascade)
-  supervisor        Supervisor       @relation(fields: [supervisorId], references: [id], onDelete: Restrict)
+  examinerId         String
+  feedback           String
+  adminComments      String?
+  releasedAt         DateTime?
+  submissionDate     DateTime         @default(now())
+  researchProposal   ResearchProposal @relation(fields: [researchProposalId], references: [id], onDelete: Cascade)
+  examiner           Examiner         @relation(fields: [examinerId], references: [id], onDelete: Restrict)
+  documents          Document[]
 
-  @@unique([researchProposalId, supervisorId])
+  @@unique([researchProposalId, examinerId])
   @@map("evaluation_forms")
 }
 
 model EthicsApproval {
-  id             String               @id @default(cuid())
-  studentId      String
-  title          String
-  summary        String
-  status         EthicsApprovalStatus @default(SUBMITTED)
-  reviewNotes    String?
-  reviewedAt     DateTime?
-  reviewedById   String?
-  isArchived     Boolean              @default(false)
-  student        Student              @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  reviewedBy     Administrator?       @relation("EthicsApprovalsReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
-  documents      Document[]
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id         String     @id @default(cuid())
+  studentId  String
+  title      String
+  summary    String
+  isArchived Boolean    @default(false)
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  documents  Document[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
-  @@index([studentId, status])
-  @@index([status, createdAt])
+  @@index([studentId, createdAt])
   @@map("ethics_approvals")
 }
 
@@ -311,20 +302,21 @@ model SupervisorAssignment {
 }
 
 model ProgressReport {
-  id                    String            @id @default(cuid())
-  studentId             String
-  periodLabel           String
-  narrative             String
-  isSupervisorSignedOff Boolean           @default(false)
-  supervisorSignedOffAt DateTime?
+  id                      String                 @id @default(cuid())
+  studentId               String
+  periodLabel             String
+  narrative               String
+  isSupervisorSignedOff   Boolean                @default(false)
+  supervisorSignedOffAt   DateTime?
   supervisorSignedOffById String?
-  isOverdue             Boolean           @default(false)
-  isArchived            Boolean           @default(false)
-  student               Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  panelEvaluations      PanelEvaluation[]
-  documents             Document[]
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
+  isOverdue               Boolean                @default(false)
+  isArchived              Boolean                @default(false)
+  student                 Student                @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  panelEvaluations        PanelEvaluation[]
+  examinerReviews         ProgressReportReview[]
+  documents               Document[]
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
 
   @@unique([studentId, periodLabel])
   @@index([studentId, isOverdue])
@@ -332,15 +324,15 @@ model ProgressReport {
 }
 
 model ReviewPanel {
-  id               String            @id @default(cuid())
-  name             String
-  description      String?
-  cohortProgramType ProgramType?
-  memberships      PanelMembership[]
+  id                 String                         @id @default(cuid())
+  name               String
+  description        String?
+  cohortProgramType  ProgramType?
+  memberships        PanelMembership[]
   studentAssignments ReviewPanelStudentAssignment[]
-  evaluations      PanelEvaluation[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  evaluations        PanelEvaluation[]
+  createdAt          DateTime                       @default(now())
+  updatedAt          DateTime                       @updatedAt
 
   @@map("review_panels")
 }
@@ -362,20 +354,43 @@ model PanelEvaluation {
   id               String         @id @default(cuid())
   reviewPanelId    String
   progressReportId String
-  supervisorId     String
-  score            Int?
-  outcome          PanelEvaluationOutcome?
+  examinerId       String
   notes            String?
   submittedAt      DateTime?
   reviewPanel      ReviewPanel    @relation(fields: [reviewPanelId], references: [id], onDelete: Cascade)
   progressReport   ProgressReport @relation(fields: [progressReportId], references: [id], onDelete: Cascade)
-  supervisor       Supervisor     @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
+  examiner         Examiner       @relation(fields: [examinerId], references: [id], onDelete: Cascade)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  @@unique([reviewPanelId, progressReportId, supervisorId])
-  @@index([progressReportId, supervisorId])
+  @@unique([reviewPanelId, progressReportId, examinerId])
+  @@index([progressReportId, examinerId])
   @@map("panel_evaluations")
+}
+
+model ProgressReportReview {
+  id               String         @id @default(cuid())
+  progressReportId String
+  examinerId       String
+  examinerUserId   String
+  assignedAt       DateTime       @default(now())
+  assignedBy       String
+  reviewText       String?
+  submittedAt      DateTime?
+  adminComments    String?
+  releasedAt       DateTime?
+  progressReport   ProgressReport @relation(fields: [progressReportId], references: [id], onDelete: Cascade)
+  examiner         Examiner       @relation(fields: [examinerId], references: [id], onDelete: Cascade)
+  administrator    Administrator  @relation("ProgressReportReviewAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict)
+  documents        Document[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([progressReportId, examinerId])
+  @@unique([progressReportId, examinerUserId])
+  @@index([examinerId])
+  @@index([assignedBy])
+  @@map("progress_report_reviews")
 }
 
 model ReviewPanelStudentAssignment {
@@ -393,19 +408,19 @@ model ReviewPanelStudentAssignment {
 }
 
 model Thesis {
-  id                  String                    @id @default(cuid())
+  id                  String                     @id @default(cuid())
   studentId           String
   title               String
   abstract            String
-  status              ThesisStatus              @default(SUBMITTED)
-  isArchived          Boolean                   @default(false)
-  student             Student                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status              ThesisStatus               @default(SUBMITTED)
+  isArchived          Boolean                    @default(false)
+  student             Student                    @relation(fields: [studentId], references: [id], onDelete: Cascade)
   examinerAssignments ThesisExaminerAssignment[]
   viva                Viva?
   corrections         CorrectionDocument[]
   documents           Document[]
-  createdAt           DateTime                  @default(now())
-  updatedAt           DateTime                  @updatedAt
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
 
   @@index([studentId, status])
   @@map("theses")
@@ -419,10 +434,15 @@ model ThesisExaminerAssignment {
   examinerUserId String
   assignedAt     DateTime      @default(now())
   assignedBy     String
+  reviewText     String?
+  submittedAt    DateTime?
+  adminComments  String?
+  releasedAt     DateTime?
   thesis         Thesis        @relation(fields: [thesisId], references: [id], onDelete: Cascade)
   student        Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
   examiner       Examiner      @relation(fields: [examinerId], references: [id], onDelete: Cascade)
   administrator  Administrator @relation("ThesisExaminerAssignmentsAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict)
+  documents      Document[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -447,7 +467,7 @@ model Viva {
 }
 
 model CorrectionDocument {
-  id            String         @id @default(cuid())
+  id             String         @id @default(cuid())
   thesisId       String
   correctionType CorrectionType
   description    String?
@@ -465,35 +485,44 @@ model CorrectionDocument {
 }
 
 model Document {
-  id                   String              @id @default(cuid())
-  documentType         DocumentType
-  fileName             String
-  storagePath          String
-  mimeType             String
-  version              Int                 @default(1)
-  isCurrentVersion     Boolean             @default(true)
-  isDeleted            Boolean             @default(false)
-  applicationId        String?
-  studentId            String?
-  researchProposalId   String?
-  ethicsApprovalId     String?
-  progressReportId     String?
-  thesisId             String?
-  correctionDocumentId String?
-  application          Application?        @relation(fields: [applicationId], references: [id], onDelete: SetNull)
-  student              Student?            @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  researchProposal     ResearchProposal?   @relation(fields: [researchProposalId], references: [id], onDelete: SetNull)
-  ethicsApproval       EthicsApproval?     @relation(fields: [ethicsApprovalId], references: [id], onDelete: SetNull)
-  progressReport       ProgressReport?     @relation(fields: [progressReportId], references: [id], onDelete: SetNull)
-  thesis               Thesis?             @relation(fields: [thesisId], references: [id], onDelete: SetNull)
-  correctionDocument   CorrectionDocument? @relation(fields: [correctionDocumentId], references: [id], onDelete: SetNull)
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
+  id                         String                    @id @default(cuid())
+  documentType               DocumentType
+  fileName                   String
+  storagePath                String
+  mimeType                   String
+  version                    Int                       @default(1)
+  isCurrentVersion           Boolean                   @default(true)
+  isDeleted                  Boolean                   @default(false)
+  applicationId              String?
+  studentId                  String?
+  researchProposalId         String?
+  ethicsApprovalId           String?
+  progressReportId           String?
+  progressReportReviewId     String?
+  thesisId                   String?
+  thesisExaminerAssignmentId String?
+  correctionDocumentId       String?
+  evaluationFormId           String?
+  application                Application?              @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  student                    Student?                  @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  researchProposal           ResearchProposal?         @relation(fields: [researchProposalId], references: [id], onDelete: SetNull)
+  ethicsApproval             EthicsApproval?           @relation(fields: [ethicsApprovalId], references: [id], onDelete: SetNull)
+  progressReport             ProgressReport?           @relation(fields: [progressReportId], references: [id], onDelete: SetNull)
+  progressReportReview       ProgressReportReview?     @relation(fields: [progressReportReviewId], references: [id], onDelete: SetNull)
+  thesis                     Thesis?                   @relation(fields: [thesisId], references: [id], onDelete: SetNull)
+  thesisExaminerAssignment   ThesisExaminerAssignment? @relation(fields: [thesisExaminerAssignmentId], references: [id], onDelete: SetNull)
+  correctionDocument         CorrectionDocument?       @relation(fields: [correctionDocumentId], references: [id], onDelete: SetNull)
+  evaluationForm             EvaluationForm?           @relation(fields: [evaluationFormId], references: [id], onDelete: SetNull)
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
 
   @@index([documentType, isDeleted])
   @@index([researchProposalId, version])
   @@index([ethicsApprovalId])
+  @@index([progressReportReviewId])
   @@index([thesisId, version])
+  @@index([thesisExaminerAssignmentId])
+  @@index([evaluationFormId])
   @@map("documents")
 }
 

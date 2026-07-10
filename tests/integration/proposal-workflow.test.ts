@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("firebase-admin/app", () => ({
   cert: vi.fn(() => "mock-cert"),
-  getApps: vi.fn(() => [{ name: "pgsms-firebase-admin" }]),
+  getApps: vi.fn(() => [{ name: "pglms-firebase-admin" }]),
   initializeApp: vi.fn(),
 }));
 
@@ -28,7 +28,7 @@ vi.mock("@supabase/supabase-js", () => ({
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
+  notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
   notifyProposalStatusChange: vi.fn().mockResolvedValue({
     success: true,
   }),
@@ -164,11 +164,13 @@ describe("proposal workflow integration", () => {
             currentVersion: 2,
             status: ProposalStatus.SUBMITTED,
             documents: {
-              create: expect.objectContaining({
-                storagePath: "proposals/student-1/2/proposal-v2.pdf",
-                version: 2,
-                isCurrentVersion: true,
-              }),
+              create: [
+                expect.objectContaining({
+                  storagePath: "proposals/student-1/2/proposal-v2.pdf",
+                  version: 2,
+                  isCurrentVersion: true,
+                }),
+              ],
             },
           }),
         }),
@@ -285,9 +287,11 @@ describe("proposal workflow integration", () => {
             studentId: "student-1",
             applicationId: "application-1",
             documents: {
-              create: expect.objectContaining({
-                storagePath: "proposals/student-1/1/proposal.pdf",
-              }),
+              create: [
+                expect.objectContaining({
+                  storagePath: "proposals/student-1/1/proposal.pdf",
+                }),
+              ],
             },
           }),
         }),

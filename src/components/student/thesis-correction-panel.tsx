@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SubmissionDocumentDownloadButton } from "@/components/student/submission-document-download-button";
 
 type Correction = {
   id: string;
@@ -56,37 +57,39 @@ export function ThesisCorrectionPanel({
   const router = useRouter();
   const [correctionType, setCorrectionType] = useState("MINOR");
   const [description, setDescription] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const nextFile = event.target.files?.[0] ?? null;
+    const nextFiles = Array.from(event.target.files ?? []);
 
-    if (!nextFile) {
-      setFile(null);
+    if (nextFiles.length === 0) {
+      setFiles([]);
       return;
     }
 
-    const parsedDocument = uploadedPdfDocumentSchema.safeParse({
-      fileName: nextFile.name,
-      mimeType: nextFile.type,
-      sizeBytes: nextFile.size,
-    });
+    for (const nextFile of nextFiles) {
+      const parsedDocument = uploadedPdfDocumentSchema.safeParse({
+        fileName: nextFile.name,
+        mimeType: nextFile.type,
+        sizeBytes: nextFile.size,
+      });
 
-    if (!parsedDocument.success) {
-      setError(
-        parsedDocument.error.issues[0]?.message ??
-          "Choose a valid corrected PDF document.",
-      );
-      setFile(null);
-      event.target.value = "";
-      return;
+      if (!parsedDocument.success) {
+        setError(
+          parsedDocument.error.issues[0]?.message ??
+            "Choose valid corrected PDF or ZIP documents.",
+        );
+        setFiles([]);
+        event.target.value = "";
+        return;
+      }
     }
 
     setError(null);
-    setFile(nextFile);
+    setFiles(nextFiles);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -97,21 +100,19 @@ export function ThesisCorrectionPanel({
     setMessage(null);
     setError(null);
 
-    if (!file) {
-      setError("Choose a corrected PDF document first.");
+    if (files.length === 0) {
+      setError("Choose at least one corrected PDF or ZIP document first.");
       return;
     }
 
     const parsedSubmission = correctionSubmissionSchema.safeParse({
       correctionType,
       description,
-      document: file
-        ? {
-            fileName: file.name,
-            mimeType: file.type,
-            sizeBytes: file.size,
-          }
-        : undefined,
+      documents: files.map((file) => ({
+        fileName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+      })),
     });
 
     if (!parsedSubmission.success) {
@@ -133,29 +134,32 @@ export function ThesisCorrectionPanel({
       });
       const payload = (await response.json()) as {
         error?: string;
-        upload?: {
+        uploads?: Array<{
           signedUrl: string;
           storagePath: string;
-        };
+        }>;
       };
 
-      if (!response.ok || !payload.upload?.signedUrl) {
+      if (!response.ok || !payload.uploads || payload.uploads.length !== files.length) {
         throw new Error(payload.error ?? "Unable to submit corrections.");
       }
 
-      const uploadResponse = await fetch(payload.upload.signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": "application/pdf" },
-        body: file,
-      });
+      for (const [index, file] of files.entries()) {
+        const uploadTarget = payload.uploads[index];
+        const uploadResponse = await fetch(uploadTarget.signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
 
-      if (!uploadResponse.ok) {
-        throw new Error("The correction record was created, but the PDF upload failed.");
+        if (!uploadResponse.ok) {
+          throw new Error("The correction record was created, but a document upload failed.");
+        }
       }
 
       setMessage("Correction document submitted for administrator approval.");
       setDescription("");
-      setFile(null);
+      setFiles([]);
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Correction submission failed.");
@@ -233,13 +237,21 @@ export function ThesisCorrectionPanel({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Corrected PDF</Label>
+                      <Label>Corrected Documents</Label>
                       <Input
                         type="file"
-                        accept="application/pdf"
+                        accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
+                        multiple
                         onChange={handleFileChange}
                         required
                       />
+                      {files.length > 0 && (
+                        <ul className="space-y-1 text-sm text-muted-foreground">
+                          {files.map((file) => (
+                            <li key={`${file.name}-${file.size}`}>{file.name}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                   <Button
@@ -291,11 +303,28 @@ export function ThesisCorrectionPanel({
                         {correction.description}
                       </p>
                     )}
-                    {correction.documents.map((document) => (
-                      <p key={document.id} className="mt-2 break-all text-xs text-muted-foreground">
-                        {document.fileName}: {document.storagePath}
-                      </p>
-                    ))}
+                    <div className="mt-3 space-y-2">
+                      {correction.documents.map((document) => (
+                        <div
+                          key={document.id}
+                          className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {document.fileName}
+                            </p>
+                            <p className="break-all text-xs text-muted-foreground">
+                              {document.storagePath}
+                            </p>
+                          </div>
+                          <SubmissionDocumentDownloadButton
+                            documentId={document.id}
+                            fileName={document.fileName}
+                            className="shrink-0"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>

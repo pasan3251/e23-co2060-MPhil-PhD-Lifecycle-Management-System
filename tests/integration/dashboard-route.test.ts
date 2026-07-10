@@ -51,7 +51,7 @@ describe("GET /api/dashboard/[role]/summary", () => {
     const response = await GET(
       new Request("http://localhost/api/dashboard/supervisor/summary", {
         headers: {
-          cookie: "pgsms_session=session-token",
+          cookie: "pglms_session=session-token",
         },
       }) as never,
       {
@@ -105,7 +105,7 @@ describe("GET /api/dashboard/[role]/summary", () => {
     const response = await GET(
       new Request("http://localhost/api/dashboard/admin/summary", {
         headers: {
-          cookie: "pgsms_session=session-token",
+          cookie: "pglms_session=session-token",
         },
       }) as never,
       {

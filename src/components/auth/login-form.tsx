@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Loader } from "@/components/ui/loader";
@@ -148,21 +149,28 @@ export function LoginForm() {
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="flex flex-col items-center justify-center space-y-4 mb-8 pt-4">
-          <div className="flex items-center justify-center gap-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/uni-logo.png"
-              alt="University of Peradeniya"
-              width={75}
-              height={75}
-              className="object-contain"
-            />
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">
-              Sign In
+        <div className="mb-8 flex flex-col items-center justify-center space-y-3 pt-4 text-center">
+          <Image
+            src="/uni-logo.png"
+            alt="University of Peradeniya"
+            width={82}
+            height={82}
+            priority
+            className="object-contain"
+          />
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              University of Peradeniya
             </h1>
+            <p className="text-lg font-medium text-foreground">
+              Faculty of Engineering
+            </p>
+            <br/>
+            <p className="text-3xl font-medium text-foreground">
+              PGLMS Login
+            </p>
           </div>
-          <p className="text-lg text-muted-foreground text-center">
+          <p className="text-lg text-muted-foreground">
             Use your assigned institutional account to sign in.
           </p>
         </div>

@@ -32,7 +32,7 @@ export const PATCH = withAuth<RouteParams>(
       }
 
       return NextResponse.json(
-        { error: "Unable to sign off the progress report." },
+        { error: "Progress-report sign-off is no longer available." },
         { status: 500 },
       );
     }

@@ -15,12 +15,12 @@ vi.mock("@/lib/firebase/admin", () => ({
     path: "/",
     maxAge: 1800,
   })),
-  SESSION_COOKIE_NAME: "pgsms_session",
+  SESSION_COOKIE_NAME: "pglms_session",
 }));
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
+  notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
   notifyWelcomeAccountCreated: vi.fn().mockResolvedValue({ success: true }),
 }));
 

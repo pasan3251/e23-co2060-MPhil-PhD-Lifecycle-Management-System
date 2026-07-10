@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import useSWR from "swr";
 import {
   Card,
@@ -9,7 +8,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 async function fetcher(url: string) {
   const response = await fetch(url);
@@ -35,27 +33,7 @@ type PendingProgressReport = {
 };
 
 export function ProgressReportSignoffList() {
-  const { data, error, mutate, isLoading } = useSWR("/api/supervisor/progress-reports", fetcher);
-  const [signingId, setSigningId] = useState<string | null>(null);
-
-  async function handleSign(reportId: string) {
-    setSigningId(reportId);
-    try {
-      const response = await fetch(`/api/supervisor/progress-reports/${reportId}/sign`, {
-        method: "POST",
-      });
-      if (response.ok) {
-        mutate();
-      } else {
-        const payload = await response.json();
-        alert(payload.error || "Failed to sign report");
-      }
-    } catch (err) {
-      alert("A network error occurred");
-    } finally {
-      setSigningId(null);
-    }
-  }
+  const { data, error, isLoading } = useSWR("/api/supervisor/progress-reports", fetcher);
 
   if (isLoading) {
     return (
@@ -81,7 +59,7 @@ export function ProgressReportSignoffList() {
       <div className="mt-8 rounded-md border border-dashed p-12 text-center">
         <p className="text-lg font-bold">No reports pending</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          No progress reports need your sign-off.
+          Submitted reports from your assigned students will appear here.
         </p>
       </div>
     );
@@ -104,13 +82,7 @@ export function ProgressReportSignoffList() {
               <CardTitle>{report.student.displayName}</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">{report.student.email}</p>
             </div>
-            <Button
-              onClick={() => handleSign(report.id)}
-              disabled={signingId === report.id}
-              className="shrink-0"
-            >
-              {signingId === report.id ? "Signing..." : "Sign Off"}
-            </Button>
+            <Badge variant="secondary" className="shrink-0">View only</Badge>
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">
@@ -118,7 +90,7 @@ export function ProgressReportSignoffList() {
             </p>
             {report.documents.length > 0 && (
               <p className="mt-3 break-all text-xs text-muted-foreground">
-                Attached PDF: {report.documents.map((document) => document.fileName).join(", ")}
+                Attached documents: {report.documents.map((document) => document.fileName).join(", ")}
               </p>
             )}
           </CardContent>

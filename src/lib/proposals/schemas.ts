@@ -1,27 +1,36 @@
 import { ProposalStatus } from "@prisma/client";
 import { z } from "zod";
 
-import { MAX_STORAGE_FILE_SIZE_BYTES } from "@/lib/validation/uploads";
+import {
+  ALLOWED_DOCUMENT_MIME_TYPES,
+  MAX_STORAGE_FILE_SIZE_BYTES,
+} from "@/lib/validation/uploads";
 import { optionalSanitizedString, sanitizedString } from "@/lib/validation/schemas";
 
 const uploadedProposalDocumentSchema = z.object({
   fileName: sanitizedString.min(1, "A file name is required."),
   storagePath: sanitizedString.min(1, "A storage path is required."),
-  mimeType: z.literal("application/pdf"),
+  mimeType: z.enum(ALLOWED_DOCUMENT_MIME_TYPES),
   sizeBytes: z.number().int().positive().max(MAX_STORAGE_FILE_SIZE_BYTES),
 });
 
 export const proposalUploadRequestSchema = z.object({
   fileName: sanitizedString.min(1, "A file name is required."),
-  contentType: z.literal("application/pdf"),
+  contentType: z.enum(ALLOWED_DOCUMENT_MIME_TYPES),
   fileSizeBytes: z.number().int().positive().max(MAX_STORAGE_FILE_SIZE_BYTES),
 });
 
-export const proposalSubmissionSchema = z.object({
-  title: sanitizedString.min(5, "Proposal title must be at least 5 characters long."),
-  abstract: sanitizedString.min(30, "Proposal abstract must be at least 30 characters long."),
-  document: uploadedProposalDocumentSchema,
-});
+export const proposalSubmissionSchema = z
+  .object({
+    title: sanitizedString.min(5, "Proposal title must be at least 5 characters long."),
+    abstract: sanitizedString.min(1, "Proposal abstract is required."),
+    document: uploadedProposalDocumentSchema.optional(),
+    documents: z.array(uploadedProposalDocumentSchema).max(10).optional(),
+  })
+  .refine(
+    (value) => Boolean(value.document) || Boolean(value.documents?.length),
+    "Upload at least one proposal document.",
+  );
 
 export const proposalStatusUpdateSchema = z.object({
   status: z.enum([

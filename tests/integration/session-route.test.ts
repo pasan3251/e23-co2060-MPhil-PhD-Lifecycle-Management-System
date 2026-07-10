@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("firebase-admin/app", () => ({
   cert: vi.fn(() => "mock-cert"),
-  getApps: vi.fn(() => [{ name: "pgsms-firebase-admin" }]),
+  getApps: vi.fn(() => [{ name: "pglms-firebase-admin" }]),
   initializeApp: vi.fn(),
 }));
 
@@ -59,7 +59,7 @@ describe("POST /api/auth/session", () => {
     const setCookieHeader = response.headers.get("set-cookie") ?? "";
 
     expect(response.status).toBe(200);
-    expect(setCookieHeader).toContain("pgsms_session=session-cookie-value");
+    expect(setCookieHeader).toContain("pglms_session=session-cookie-value");
     expect(setCookieHeader.toLowerCase()).toContain("httponly");
     expect(setCookieHeader.toLowerCase()).toContain("secure");
     expect(setCookieHeader.toLowerCase()).toContain("samesite=lax");
@@ -115,14 +115,14 @@ describe("POST /api/auth/session", () => {
       new Request("http://localhost/api/auth/session", {
         method: "PATCH",
         headers: {
-          cookie: `pgsms_session=session-cookie-value; pgsms_session_activity=${now}`,
+          cookie: `pglms_session=session-cookie-value; pglms_session_activity=${now}`,
         },
       }),
     );
 
     expect(response.status).toBe(200);
     expect(response.headers.get("set-cookie")).toContain(
-      "pgsms_session_activity=",
+      "pglms_session_activity=",
     );
 
     vi.useRealTimers();
@@ -137,7 +137,7 @@ describe("POST /api/auth/session", () => {
       new Request("http://localhost/api/auth/session", {
         method: "PATCH",
         headers: {
-          cookie: `pgsms_session=session-cookie-value; pgsms_session_activity=${staleActivityAt}`,
+          cookie: `pglms_session=session-cookie-value; pglms_session_activity=${staleActivityAt}`,
         },
       }),
     );

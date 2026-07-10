@@ -113,7 +113,7 @@ describe("review panel management and dashboard integration", () => {
     });
   });
 
-  it("stores the designated supervisor ids when an administrator creates a review panel", async () => {
+  it("returns 410 when an administrator tries to create a retired review panel", async () => {
     vi.mocked(prisma.supervisor.findMany).mockResolvedValue([
       { id: "supervisor-1" },
       { id: "supervisor-2" },
@@ -150,31 +150,15 @@ describe("review panel management and dashboard integration", () => {
       {},
     );
 
-    expect(response.status).toBe(201);
-    expect(prisma.reviewPanel.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          memberships: {
-            create: [
-              { supervisorId: "supervisor-1" },
-              { supervisorId: "supervisor-2" },
-            ],
-          },
-        }),
-      }),
-    );
+    expect(response.status).toBe(410);
+    expect(prisma.reviewPanel.create).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toMatchObject({
-      panel: expect.objectContaining({
-        id: "panel-1",
-        memberships: [
-          { supervisorId: "supervisor-1" },
-          { supervisorId: "supervisor-2" },
-        ],
-      }),
+      error:
+        "Supervisor review panels have been replaced by examiner review assignments.",
     });
   });
 
-  it("increments the admin under-review KPI after a second consecutive failing panel evaluation", async () => {
+  it("keeps the admin under-review KPI unchanged when retired panel evaluation is attempted", async () => {
     vi.mocked(prisma.supervisor.findUnique).mockResolvedValue({
       id: "supervisor-1",
       user: {
@@ -185,7 +169,6 @@ describe("review panel management and dashboard integration", () => {
       id: "evaluation-2",
       reviewPanelId: "panel-1",
       progressReportId: "report-2",
-      score: null,
       progressReport: {
         id: "report-2",
         isSupervisorSignedOff: true,
@@ -197,21 +180,18 @@ describe("review panel management and dashboard integration", () => {
       reviewPanelId: "panel-1",
       progressReportId: "report-2",
       supervisorId: "supervisor-1",
-      score: 45,
-      outcome: "FAIL",
       notes: "Still not meeting the expected standard.",
       submittedAt: new Date("2026-05-01T11:00:00.000Z"),
     } as never);
     vi.mocked(prisma.panelEvaluation.findMany).mockResolvedValue([
-      { score: 47 },
-      { score: 45 },
+      { notes: "Needs revision." },
+      { notes: "Still needs revision." },
     ] as never);
 
-    const result = await submitPanelEvaluation(
+    await expect(
+      submitPanelEvaluation(
         {
           progressReportId: "report-2",
-          numericalScore: 45,
-          outcome: "FAIL",
           notes: "Still not meeting the expected standard.",
         },
       {
@@ -221,9 +201,12 @@ describe("review panel management and dashboard integration", () => {
         role: "SUPERVISOR",
         email: "panel1@example.com",
       },
-    );
-
-    expect(result.underReviewTriggered).toBe(true);
+      ),
+    ).rejects.toMatchObject({
+      status: 410,
+      message:
+        "Supervisor review panels have been replaced by examiner review assignments.",
+    });
 
     const summary = await getDashboardSummaryForUser(
       {
@@ -239,7 +222,7 @@ describe("review panel management and dashboard integration", () => {
     expect(summary.cards).toContainEqual(
       expect.objectContaining({
         id: "admin-students-under-review",
-        value: "1",
+        value: "0",
       }),
     );
   });

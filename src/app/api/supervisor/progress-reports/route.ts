@@ -16,16 +16,14 @@ export const GET = withAuth(
         return NextResponse.json({ error: "Supervisor profile not found." }, { status: 404 });
       }
 
-      // Find all progress reports for students assigned to this supervisor
+      // Find all progress reports for students assigned to this supervisor.
       const reports = await prisma.progressReport.findMany({
         where: {
-          isSupervisorSignedOff: false,
           isArchived: false,
           student: {
             supervisorAssignments: {
               some: {
                 supervisorId: supervisor.id,
-                isPrimary: true,
               },
             },
           },
@@ -79,10 +77,10 @@ export const GET = withAuth(
       });
     } catch (error) {
       return NextResponse.json(
-        { error: "Unable to load pending progress reports." },
+        { error: "Unable to load progress reports." },
         { status: 500 },
       );
     }
   },
-  [UserRole.SUPERVISOR, UserRole.ADMINISTRATOR],
+  [UserRole.SUPERVISOR],
 );

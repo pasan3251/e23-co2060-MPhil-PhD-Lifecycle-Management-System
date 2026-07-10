@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("firebase-admin/app", () => ({
   cert: vi.fn(() => "mock-cert"),
-  getApps: vi.fn(() => [{ name: "pgsms-firebase-admin" }]),
+  getApps: vi.fn(() => [{ name: "pglms-firebase-admin" }]),
   initializeApp: vi.fn(),
 }));
 
@@ -163,7 +163,7 @@ describe("withAuth", () => {
     const response = await guardedHandler(
       new Request("http://localhost/api/test", {
         headers: {
-          cookie: `pgsms_session=session-cookie-token; pgsms_session_activity=${new Date(
+          cookie: `pglms_session=session-cookie-token; pglms_session_activity=${new Date(
             "2026-05-01T09:59:00.000Z",
           ).getTime()}`,
         },
@@ -191,7 +191,7 @@ describe("withAuth", () => {
     const response = await guardedHandler(
       new Request("http://localhost/api/test", {
         headers: {
-          cookie: `pgsms_session=session-cookie-token; pgsms_session_activity=${staleActivityAt}`,
+          cookie: `pglms_session=session-cookie-token; pglms_session_activity=${staleActivityAt}`,
         },
       }) as never,
     );

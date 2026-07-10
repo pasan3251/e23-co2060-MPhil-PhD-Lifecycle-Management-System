@@ -13,8 +13,8 @@
  *  APPLICATION_STATUS_CHANGED
  *  PROPOSAL_STATUS_CHANGED
  *  ETHICS_APPROVAL_SUBMITTED
- *  ETHICS_APPROVAL_STATUS_CHANGED
  *  PROGRESS_REPORT_SUBMITTED   ← SLA: supervisor notified within 1 h (REQ-FN-019)
+ *  EXAMINER_REVIEW_SUBMITTED
  *  REGISTRATION_EXPIRY_APPROACHING ← 14-day advance (REQ-FN-018)
  *  VIVA_SCHEDULED
  *  CORRECTIONS_REQUIRED
@@ -24,11 +24,11 @@
 import { NotificationEvent } from "@prisma/client";
 
 import {
-  notifyEthicsApprovalStatusChanged,
   notifyEthicsApprovalSubmittedToAdministrator,
   notifyApplicationStatusChanged,
   notifyCorrectionSubmittedToAdministrator,
   notifyProgressReportSubmitted,
+  notifyProposalEvaluationSubmittedToAdministrator,
   notifyProposalStatusChange,
   notifyRegistrationExpiry,
   notifyThesisArchived,
@@ -67,17 +67,6 @@ export type EthicsApprovalSubmittedPayload = {
   studentName: string;
   studentId: string;
   applicationTitle: string;
-};
-
-export type EthicsApprovalStatusChangedPayload = {
-  event: "ETHICS_APPROVAL_STATUS_CHANGED";
-  recipientUserId: string;
-  to: string;
-  studentName: string;
-  studentId: string;
-  applicationTitle: string;
-  statusLabel: string;
-  reviewNotes?: string;
 };
 
 export type ProgressReportSubmittedPayload = {
@@ -127,16 +116,29 @@ export type CorrectionsRequiredPayload = {
   correctionTypeLabel: string;
 };
 
+export type ExaminerReviewSubmittedPayload = {
+  event: "EXAMINER_REVIEW_SUBMITTED";
+  recipientUserId: string;
+  to: string;
+  administratorName: string;
+  examinerName: string;
+  studentName: string;
+  studentId: string;
+  subjectTitle: string;
+  reviewKind: "proposal" | "progress report" | "thesis";
+  feedback?: string;
+};
+
 export type NotificationPayload =
   | ApplicationStatusChangedPayload
   | ProposalStatusChangedPayload
   | EthicsApprovalSubmittedPayload
-  | EthicsApprovalStatusChangedPayload
   | ProgressReportSubmittedPayload
   | RegistrationExpiryPayload
   | ThesisArchivedPayload
   | VivaScheduledPayload
-  | CorrectionsRequiredPayload;
+  | CorrectionsRequiredPayload
+  | ExaminerReviewSubmittedPayload;
 
 // ---------------------------------------------------------------------------
 // In-app Notification record helpers
@@ -228,26 +230,6 @@ export async function notify(payload: NotificationPayload): Promise<void> {
       break;
     }
 
-    case "ETHICS_APPROVAL_STATUS_CHANGED": {
-      await notifyEthicsApprovalStatusChanged({
-        recipientUserId: payload.recipientUserId,
-        to: payload.to,
-        studentName: payload.studentName,
-        applicationTitle: payload.applicationTitle,
-        statusLabel: payload.statusLabel,
-        reviewNotes: payload.reviewNotes,
-      });
-
-      await writeInAppNotification(
-        payload.recipientUserId,
-        payload.studentId,
-        NotificationEvent.ETHICS_APPROVAL_STATUS_CHANGED,
-        `Ethics approval status updated: ${payload.statusLabel}`,
-        `Your ethics approval application "${payload.applicationTitle}" is now ${payload.statusLabel}.`,
-      );
-      break;
-    }
-
     case "PROGRESS_REPORT_SUBMITTED": {
       // SLA: supervisor email dispatched immediately (within the same request cycle, REQ-FN-019)
       await notifyProgressReportSubmitted({
@@ -263,7 +245,7 @@ export async function notify(payload: NotificationPayload): Promise<void> {
         payload.studentId,
         NotificationEvent.PROGRESS_REPORT_SUBMITTED,
         `Progress report submitted: ${payload.periodLabel}`,
-        `${payload.studentName} has submitted a progress report for ${payload.periodLabel}. Please review and sign off.`,
+        `${payload.studentName} has submitted a progress report for ${payload.periodLabel}. You can view and monitor it.`,
       );
       break;
     }
@@ -341,6 +323,27 @@ export async function notify(payload: NotificationPayload): Promise<void> {
         NotificationEvent.CORRECTIONS_REQUIRED,
         `Correction submitted: ${payload.thesisTitle}`,
         `${payload.studentName} submitted a ${payload.correctionTypeLabel.toLowerCase()} correction package for review.`,
+      );
+      break;
+    }
+
+    case "EXAMINER_REVIEW_SUBMITTED": {
+      await notifyProposalEvaluationSubmittedToAdministrator({
+        recipientUserId: payload.recipientUserId,
+        to: payload.to,
+        administratorName: payload.administratorName,
+        supervisorName: payload.examinerName,
+        studentName: payload.studentName,
+        proposalTitle: payload.subjectTitle,
+        feedback: payload.feedback,
+      });
+
+      await writeInAppNotification(
+        payload.recipientUserId,
+        payload.studentId,
+        NotificationEvent.EXAMINER_REVIEW_SUBMITTED,
+        `Examiner review submitted: ${payload.subjectTitle}`,
+        `${payload.examinerName} submitted a ${payload.reviewKind} review for ${payload.studentName}.`,
       );
       break;
     }

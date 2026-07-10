@@ -8,7 +8,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
+  notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
+  notifyProgressReportSubmitted: vi.fn().mockResolvedValue({ success: true }),
   notifyThesisSubmittedToAdministrator: vi.fn().mockResolvedValue({
     success: true,
   }),
@@ -58,7 +59,9 @@ describe("thesis submission rules", () => {
       },
       registrations: [{ id: "registration-1" }],
       researchProposals: [],
+      ethicsApprovals: [{ id: "ethics-1" }],
       theses: [],
+      supervisorAssignments: [],
     } as never);
 
     await expect(
@@ -66,11 +69,13 @@ describe("thesis submission rules", () => {
         {
           title: "Adaptive Systems Thesis",
           abstract: "A thesis about adaptive systems.",
-          document: {
-            fileName: "thesis.pdf",
-            mimeType: "application/pdf",
-            sizeBytes: 1024 * 1024,
-          },
+          documents: [
+            {
+              fileName: "thesis.pdf",
+              mimeType: "application/pdf",
+              sizeBytes: 1024 * 1024,
+            },
+          ],
         },
         {
           uid: "firebase-student-1",

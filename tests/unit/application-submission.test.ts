@@ -15,7 +15,7 @@ vi.mock("@/lib/firebase/admin", () => ({
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
+  notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
   notifyApplicationSubmittedToAdministrator: vi.fn().mockResolvedValue({
     success: true,
   }),
@@ -57,7 +57,7 @@ describe("application submission utilities", () => {
     vi.clearAllMocks();
   });
 
-  it("rejects a non-PDF supporting file", () => {
+  it("rejects a non-PDF-or-ZIP supporting file", () => {
     expect(() =>
       assertValidApplicationUploadFile({
         draftId: "draft-1",
@@ -66,7 +66,7 @@ describe("application submission utilities", () => {
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         fileSizeBytes: 1024,
       }),
-    ).toThrow("Only PDF documents are allowed.");
+    ).toThrow("Only PDF or ZIP documents are allowed.");
   });
 
   it("rejects a PDF larger than 10MB", () => {
@@ -102,7 +102,7 @@ describe("application submission utilities", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects a submission schema payload with more than one supporting document", () => {
+  it("accepts a submission schema payload with multiple PDF/ZIP supporting documents", () => {
     const result = applicationSubmissionSchema.safeParse({
       applicantName: "Applicant One",
       applicantEmail: "applicant@example.com",
@@ -127,13 +127,7 @@ describe("application submission utilities", () => {
       ],
     });
 
-    expect(result.success).toBe(false);
-
-    if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe(
-        "Upload only one supporting document.",
-      );
-    }
+    expect(result.success).toBe(true);
   });
 
   it("blocks an illegal REJECTED to SUBMITTED transition with a 400 error", async () => {

@@ -195,15 +195,11 @@ async function findStudentProposalContext(
   });
 }
 
-function assertProposalPdfUpload(input: {
+function assertProposalDocumentUpload(input: {
   contentType: string;
   fileSizeBytes: number;
   path: string;
 }) {
-  if (input.contentType !== "application/pdf") {
-    throw new ProposalSubmissionError("Only PDF documents are allowed.", 400);
-  }
-
   try {
     assertFileUploadConstraints(input);
   } catch (error) {
@@ -285,7 +281,7 @@ export function assertValidProposalUploadFile(input: {
     input.fileName,
   );
 
-  assertProposalPdfUpload({
+  assertProposalDocumentUpload({
     contentType: input.contentType,
     fileSizeBytes: input.fileSizeBytes,
     path: storagePath,
@@ -343,19 +339,27 @@ export async function submitResearchProposal(
   const existingProposal = student.application.researchProposal;
   const nextVersion = getExpectedNextVersion(existingProposal);
   const nextStatus = resolveInitialProposalStatus(student);
-  const expectedStoragePath = assertValidProposalUploadFile({
-    studentId: student.id,
-    version: nextVersion,
-    fileName: parsed.data.document.fileName,
-    contentType: parsed.data.document.mimeType,
-    fileSizeBytes: parsed.data.document.sizeBytes,
-  });
+  const documents = parsed.data.documents?.length
+    ? parsed.data.documents
+    : parsed.data.document
+      ? [parsed.data.document]
+      : [];
 
-  if (parsed.data.document.storagePath !== expectedStoragePath) {
-    throw new ProposalSubmissionError(
-      "The uploaded proposal file does not match the expected storage path.",
-      409,
-    );
+  for (const document of documents) {
+    const expectedStoragePath = assertValidProposalUploadFile({
+      studentId: student.id,
+      version: nextVersion,
+      fileName: document.fileName,
+      contentType: document.mimeType,
+      fileSizeBytes: document.sizeBytes,
+    });
+
+    if (document.storagePath !== expectedStoragePath) {
+      throw new ProposalSubmissionError(
+        "The uploaded proposal file does not match the expected storage path.",
+        409,
+      );
+    }
   }
 
   const proposal = await prisma.$transaction(async (tx) => {
@@ -369,14 +373,15 @@ export async function submitResearchProposal(
           status: nextStatus,
           currentVersion: 1,
           documents: {
-            create: {
+            create: documents.map((document) => ({
+              studentId: student.id,
               documentType: DocumentType.PROPOSAL,
-              fileName: parsed.data.document.fileName,
-              storagePath: parsed.data.document.storagePath,
-              mimeType: parsed.data.document.mimeType,
+              fileName: document.fileName,
+              storagePath: document.storagePath,
+              mimeType: document.mimeType,
               version: 1,
               isCurrentVersion: true,
-            },
+            })),
           },
         },
         select: {
@@ -430,14 +435,15 @@ export async function submitResearchProposal(
         status: nextStatus,
         currentVersion: nextVersion,
         documents: {
-          create: {
+          create: documents.map((document) => ({
+            studentId: student.id,
             documentType: DocumentType.PROPOSAL,
-            fileName: parsed.data.document.fileName,
-            storagePath: parsed.data.document.storagePath,
-            mimeType: parsed.data.document.mimeType,
+            fileName: document.fileName,
+            storagePath: document.storagePath,
+            mimeType: document.mimeType,
             version: nextVersion,
             isCurrentVersion: true,
-          },
+          })),
         },
       },
       select: {
@@ -518,7 +524,7 @@ export async function updateResearchProposalStatus(
 
   if (auth.role !== UserRole.ADMINISTRATOR) {
     throw new ProposalSubmissionError(
-      "Only administrators can update the proposal status. Supervisors must submit evaluations instead.",
+      "Only administrators can update the proposal status. Examiners submit textual reviews instead.",
       403,
     );
   }

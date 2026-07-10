@@ -1,6 +1,5 @@
 import {
   DocumentType,
-  EthicsApprovalStatus,
   ProposalStatus,
   ThesisStatus,
   type Prisma,
@@ -68,6 +67,7 @@ const REPOSITORY_DOCUMENT_TYPES = [
   DocumentType.THESIS,
   DocumentType.PROGRESS_REPORT,
   DocumentType.CORRECTION,
+  DocumentType.REVIEW_ATTACHMENT,
 ] as const;
 
 const REPOSITORY_DOCUMENT_TYPE_SET = new Set<string>(REPOSITORY_DOCUMENT_TYPES);
@@ -78,10 +78,6 @@ const proposalStatusTags = new Set<string>(
 
 const thesisStatusTags = new Set<string>(
   Object.values(ThesisStatus).map((status) => status.toLowerCase()),
-);
-
-const ethicsStatusTags = new Set<string>(
-  Object.values(EthicsApprovalStatus).map((status) => status.toLowerCase()),
 );
 
 // ---------------------------------------------------------------------------
@@ -115,6 +111,45 @@ async function buildAccessScope(
               },
             },
           },
+          {
+            researchProposal: {
+              is: {
+                studentId: student.id,
+              },
+            },
+          },
+          {
+            ethicsApproval: {
+              is: {
+                studentId: student.id,
+              },
+            },
+          },
+          {
+            progressReport: {
+              is: {
+                studentId: student.id,
+              },
+            },
+          },
+          {
+            thesis: {
+              is: {
+                studentId: student.id,
+              },
+            },
+          },
+          {
+            correctionDocument: {
+              is: {
+                thesis: {
+                  is: {
+                    studentId: student.id,
+                  },
+                },
+              },
+            },
+          },
         ],
       };
     }
@@ -144,6 +179,55 @@ async function buildAccessScope(
               is: {
                 studentId: {
                   in: assignedStudentIds,
+                },
+              },
+            },
+          },
+          {
+            researchProposal: {
+              is: {
+                studentId: {
+                  in: assignedStudentIds,
+                },
+              },
+            },
+          },
+          {
+            ethicsApproval: {
+              is: {
+                studentId: {
+                  in: assignedStudentIds,
+                },
+              },
+            },
+          },
+          {
+            progressReport: {
+              is: {
+                studentId: {
+                  in: assignedStudentIds,
+                },
+              },
+            },
+          },
+          {
+            thesis: {
+              is: {
+                studentId: {
+                  in: assignedStudentIds,
+                },
+              },
+            },
+          },
+          {
+            correctionDocument: {
+              is: {
+                thesis: {
+                  is: {
+                    studentId: {
+                      in: assignedStudentIds,
+                    },
+                  },
                 },
               },
             },
@@ -211,7 +295,6 @@ type RepositoryDocumentRecord = Prisma.DocumentGetPayload<{
       select: {
         title: true;
         summary: true;
-        status: true;
       };
     };
     application: {
@@ -361,16 +444,6 @@ function buildTagFilter(tag?: string | null): Prisma.DocumentWhereInput {
       thesis: {
         is: {
           status: tagEnumValue as ThesisStatus,
-        },
-      },
-    };
-  }
-
-  if (ethicsStatusTags.has(normalizedTag)) {
-    return {
-      ethicsApproval: {
-        is: {
-          status: tagEnumValue as EthicsApprovalStatus,
         },
       },
     };
@@ -645,7 +718,6 @@ function mapDocumentTags(document: RepositoryDocumentRecord) {
   if (document.ethicsApproval) {
     tags.add("ethics");
     tags.add("ethics-approval");
-    tags.add(document.ethicsApproval.status.toLowerCase().replace(/_/g, "-"));
   }
 
   if (document.application) {
@@ -855,7 +927,6 @@ export async function searchDocuments(
         select: {
           title: true,
           summary: true,
-          status: true,
         },
       },
       application: {

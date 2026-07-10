@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/email", () => ({
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
   notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({
     success: true,
   }),
@@ -10,7 +9,7 @@ vi.mock("@/lib/email", () => ({
 
 vi.mock("@/lib/prisma/client", () => ({
   prisma: {
-    supervisor: {
+    examiner: {
       findUnique: vi.fn(),
     },
     researchProposal: {
@@ -25,6 +24,10 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
+vi.mock("@/lib/notifications", () => ({
+  notify: vi.fn().mockResolvedValue(undefined),
+}));
+
 import {
   createProposalEvaluation,
   proposalEvaluationSchema,
@@ -36,23 +39,23 @@ describe("proposal evaluation utilities", () => {
     vi.clearAllMocks();
   });
 
-  it("rejects scores outside the 0-100 range", () => {
+  it("accepts textual feedback without any score field", () => {
     const result = proposalEvaluationSchema.safeParse({
-      numericalScore: 101,
-      feedback:
-        "This feedback is deliberately long enough to pass the minimum length rule.",
+      feedback: "Text review only.",
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.feedback).toBe("Text review only.");
+    }
   });
 
-  it("returns a 400 error when feedback is shorter than 50 characters", async () => {
+  it("blocks supervisors from submitting proposal reviews", async () => {
     await expect(
       createProposalEvaluation(
         "proposal-1",
         {
-          numericalScore: 70,
-          feedback: "Too short for the validation rule.",
+          feedback: "Text review.",
         },
         {
           uid: "firebase-supervisor-1",
@@ -63,8 +66,8 @@ describe("proposal evaluation utilities", () => {
         },
       ),
     ).rejects.toMatchObject<ProposalEvaluationError>({
-      status: 400,
-      message: "Feedback must be at least 50 characters long.",
+      status: 403,
+      message: "Only examiners can submit proposal reviews.",
     });
   });
 });

@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { SubmissionDocumentDownloadButton } from "@/components/student/submission-document-download-button";
 
 type ThesisDocument = {
   id: string;
@@ -43,37 +44,39 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
   const router = useRouter();
   const [title, setTitle] = useState(thesis?.title ?? "");
   const [abstract, setAbstract] = useState(thesis?.abstract ?? "");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const nextFile = event.target.files?.[0] ?? null;
+    const nextFiles = Array.from(event.target.files ?? []);
 
-    if (!nextFile) {
-      setFile(null);
+    if (nextFiles.length === 0) {
+      setFiles([]);
       return;
     }
 
-    const parsedDocument = uploadedPdfDocumentSchema.safeParse({
-      fileName: nextFile.name,
-      mimeType: nextFile.type,
-      sizeBytes: nextFile.size,
-    });
+    for (const nextFile of nextFiles) {
+      const parsedDocument = uploadedPdfDocumentSchema.safeParse({
+        fileName: nextFile.name,
+        mimeType: nextFile.type,
+        sizeBytes: nextFile.size,
+      });
 
-    if (!parsedDocument.success) {
-      setError(
-        parsedDocument.error.issues[0]?.message ??
-          "Choose a valid PDF thesis document.",
-      );
-      setFile(null);
-      event.target.value = "";
-      return;
+      if (!parsedDocument.success) {
+        setError(
+          parsedDocument.error.issues[0]?.message ??
+            "Choose valid PDF or ZIP thesis documents.",
+        );
+        setFiles([]);
+        event.target.value = "";
+        return;
+      }
     }
 
     setError(null);
-    setFile(nextFile);
+    setFiles(nextFiles);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -81,21 +84,19 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
     setMessage(null);
     setError(null);
 
-    if (!file) {
-      setError("Choose a PDF thesis document first.");
+    if (files.length === 0) {
+      setError("Choose at least one PDF or ZIP thesis document first.");
       return;
     }
 
     const parsedSubmission = thesisSubmissionSchema.safeParse({
       title,
       abstract,
-      document: file
-        ? {
-            fileName: file.name,
-            mimeType: file.type,
-            sizeBytes: file.size,
-          }
-        : undefined,
+      documents: files.map((file) => ({
+        fileName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+      })),
     });
 
     if (!parsedSubmission.success) {
@@ -117,29 +118,32 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
       });
       const payload = (await response.json()) as {
         error?: string;
-        upload?: {
+        uploads?: Array<{
           signedUrl: string;
           storagePath: string;
           version: number;
-        };
+        }>;
       };
 
-      if (!response.ok || !payload.upload?.signedUrl) {
+      if (!response.ok || !payload.uploads || payload.uploads.length !== files.length) {
         throw new Error(payload.error ?? "Unable to submit the thesis.");
       }
 
-      const uploadResponse = await fetch(payload.upload.signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": "application/pdf" },
-        body: file,
-      });
+      for (const [index, file] of files.entries()) {
+        const uploadTarget = payload.uploads[index];
+        const uploadResponse = await fetch(uploadTarget.signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
 
-      if (!uploadResponse.ok) {
-        throw new Error("The thesis record was created, but the PDF upload failed.");
+        if (!uploadResponse.ok) {
+          throw new Error("The thesis record was created, but a document upload failed.");
+        }
       }
 
-      setMessage(`Thesis version ${payload.upload.version} submitted successfully.`);
-      setFile(null);
+      setMessage(`Thesis version ${payload.uploads[0]?.version ?? ""} submitted successfully.`);
+      setFiles([]);
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Thesis submission failed.");
@@ -154,7 +158,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Submit Thesis</h2>
           <p className="text-muted-foreground mt-2">
-            Upload the thesis PDF for examination. New submissions create a new version.
+            Upload thesis PDF/ZIP documents for examination. New submissions create a new version.
           </p>
         </div>
         {thesis && (
@@ -203,13 +207,21 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Thesis PDF</Label>
+                  <Label>Thesis Documents</Label>
                   <Input
                     type="file"
-                    accept="application/pdf"
+                    accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
+                    multiple
                     onChange={handleFileChange}
                     required
                   />
+                  {files.length > 0 && (
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      {files.map((file) => (
+                        <li key={`${file.name}-${file.size}`}>{file.name}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </div>
               <Button
@@ -266,6 +278,11 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
                       <p className="break-all text-xs text-muted-foreground">
                         {document.storagePath}
                       </p>
+                      <SubmissionDocumentDownloadButton
+                        documentId={document.id}
+                        fileName={document.fileName}
+                        className="mt-3"
+                      />
                     </div>
                   ))}
                 </div>

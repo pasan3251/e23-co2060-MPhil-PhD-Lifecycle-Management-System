@@ -8,7 +8,10 @@ import {
   UserRole,
 } from "@prisma/client";
 
-import { notifyThesisSubmittedToAdministrator } from "@/lib/email";
+import {
+  notifyProgressReportSubmitted,
+  notifyThesisSubmittedToAdministrator,
+} from "@/lib/email";
 import { prisma } from "@/lib/prisma/client";
 import {
   assertFileUploadConstraints,
@@ -53,11 +56,22 @@ type ThesisStudentContext = {
     email: string;
   };
   hasActiveRegistration: boolean;
+  hasEthicsSubmission: boolean;
   approvedProposal: {
     id: string;
     status: ProposalStatus;
   } | null;
   activeTheses: ActiveThesisRecord[];
+  supervisorAssignments: Array<{
+    supervisor: {
+      user: {
+        id: string;
+        displayName: string;
+        email: string;
+        isActive: boolean;
+      };
+    };
+  }>;
 };
 
 export class ThesisSubmissionError extends Error {
@@ -133,6 +147,31 @@ async function findThesisStudentContext(
           status: true,
         },
       },
+      ethicsApprovals: {
+        where: {
+          isArchived: false,
+        },
+        select: {
+          id: true,
+        },
+        take: 1,
+      },
+      supervisorAssignments: {
+        select: {
+          supervisor: {
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  displayName: true,
+                  email: true,
+                  isActive: true,
+                },
+              },
+            },
+          },
+        },
+      },
       theses: {
         where: {
           isArchived: false,
@@ -187,8 +226,10 @@ async function findThesisStudentContext(
       academicStatus: student.academicStatus,
       user: student.user,
       hasActiveRegistration: student.registrations.length > 0,
+      hasEthicsSubmission: student.ethicsApprovals.length > 0,
       approvedProposal: student.researchProposals[0] ?? null,
       activeTheses: student.theses,
+      supervisorAssignments: student.supervisorAssignments,
     };
   });
 }
@@ -203,6 +244,13 @@ async function requireStudentThesisContext(auth: AuthenticatedUserContext) {
   if (student.approvedProposal?.status !== ProposalStatus.APPROVED) {
     throw new ThesisSubmissionError(
       "An approved research proposal is required before thesis submission.",
+      409,
+    );
+  }
+
+  if (!student.hasEthicsSubmission) {
+    throw new ThesisSubmissionError(
+      "Ethics documents must be submitted before thesis submission.",
       409,
     );
   }
@@ -246,15 +294,11 @@ async function requireStudentThesisContext(auth: AuthenticatedUserContext) {
   };
 }
 
-function assertThesisPdfUpload(input: {
+function assertThesisDocumentUpload(input: {
   contentType: string;
   fileSizeBytes: number;
   path: string;
 }) {
-  if (input.contentType !== "application/pdf") {
-    throw new ThesisSubmissionError("Only PDF documents are allowed.", 400);
-  }
-
   try {
     assertFileUploadConstraints(input);
   } catch (error) {
@@ -296,7 +340,7 @@ export function assertValidThesisUploadFile(input: {
     input.fileName,
   );
 
-  assertThesisPdfUpload({
+  assertThesisDocumentUpload({
     contentType: input.contentType,
     fileSizeBytes: input.fileSizeBytes,
     path: storagePath,
@@ -342,6 +386,26 @@ async function notifyAdministratorsOfThesisSubmission(input: {
   );
 }
 
+async function notifyAssignedSupervisorsOfThesisSubmission(input: {
+  student: ThesisStudentContext;
+  thesisTitle: string;
+}) {
+  await Promise.all(
+    input.student.supervisorAssignments
+      .map((assignment) => assignment.supervisor.user)
+      .filter((supervisor) => supervisor.isActive && supervisor.email)
+      .map((supervisor) =>
+        notifyProgressReportSubmitted({
+          recipientUserId: supervisor.id,
+          to: supervisor.email,
+          supervisorName: supervisor.displayName,
+          studentName: input.student.user.displayName,
+          periodLabel: `thesis submission: ${input.thesisTitle}`,
+        }),
+      ),
+  );
+}
+
 export async function submitThesis(
   input: ThesisSubmissionInput,
   auth: AuthenticatedUserContext,
@@ -357,18 +421,20 @@ export async function submitThesis(
 
   const student = await requireStudentThesisContext(auth);
   const nextVersion = getExpectedNextVersion(student.activeThesis);
-  const storagePath = assertValidThesisUploadFile({
-    studentId: student.id,
-    version: nextVersion,
-    fileName: parsed.data.document.fileName,
-    contentType: parsed.data.document.mimeType,
-    fileSizeBytes: parsed.data.document.sizeBytes,
-  });
+  const documents = parsed.data.documents.map((document) => {
+    const storagePath = assertValidThesisUploadFile({
+      studentId: student.id,
+      version: nextVersion,
+      fileName: document.fileName,
+      contentType: document.mimeType,
+      fileSizeBytes: document.sizeBytes,
+    });
 
-  const signedUrl = await generateUploadSignedUrl(
-    storagePath,
-    parsed.data.document.mimeType,
-  );
+    return {
+      ...document,
+      storagePath,
+    };
+  });
 
   const thesis = await prisma.$transaction(async (tx) => {
     if (!student.activeThesis) {
@@ -379,15 +445,15 @@ export async function submitThesis(
           abstract: parsed.data.abstract,
           status: ThesisStatus.SUBMITTED,
           documents: {
-            create: {
+            create: documents.map((document) => ({
               studentId: student.id,
               documentType: DocumentType.THESIS,
-              fileName: parsed.data.document.fileName,
-              storagePath,
-              mimeType: parsed.data.document.mimeType,
+              fileName: document.fileName,
+              storagePath: document.storagePath,
+              mimeType: document.mimeType,
               version: 1,
               isCurrentVersion: true,
-            },
+            })),
           },
         },
         select: {
@@ -440,15 +506,15 @@ export async function submitThesis(
         abstract: parsed.data.abstract,
         status: ThesisStatus.SUBMITTED,
         documents: {
-          create: {
+          create: documents.map((document) => ({
             studentId: student.id,
             documentType: DocumentType.THESIS,
-            fileName: parsed.data.document.fileName,
-            storagePath,
-            mimeType: parsed.data.document.mimeType,
+            fileName: document.fileName,
+            storagePath: document.storagePath,
+            mimeType: document.mimeType,
             version: nextVersion,
             isCurrentVersion: true,
-          },
+          })),
         },
       },
       select: {
@@ -486,13 +552,26 @@ export async function submitThesis(
     programType: student.programType,
   });
 
-  return {
-    thesis: mapThesisRecord(thesis),
-    upload: {
-      signedUrl,
-      storagePath,
+  await notifyAssignedSupervisorsOfThesisSubmission({
+    student,
+    thesisTitle: thesis.title,
+  });
+
+  const uploads = await Promise.all(
+    documents.map(async (document) => ({
+      signedUrl: await generateUploadSignedUrl(
+        document.storagePath,
+        document.mimeType,
+      ),
+      storagePath: document.storagePath,
       version: nextVersion,
       expiresInMinutes: 15,
-    },
+    })),
+  );
+
+  return {
+    thesis: mapThesisRecord(thesis),
+    upload: uploads[0] ?? null,
+    uploads,
   };
 }

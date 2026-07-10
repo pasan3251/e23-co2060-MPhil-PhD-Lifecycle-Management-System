@@ -1,4 +1,4 @@
-import { DocumentType, EthicsApprovalStatus, UserRole } from "@prisma/client";
+import { DocumentType, UserRole } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/prisma/client", () => ({
@@ -41,7 +41,7 @@ import {
   submitEthicsApproval,
   updateEthicsApprovalDecision,
 } from "@/lib/ethics/approvals";
-import { notify, notifyInBackground } from "@/lib/notifications";
+import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
 import { generateUploadSignedUrl } from "@/lib/storage";
 import type { AuthenticatedUserContext } from "@/types/auth";
@@ -75,16 +75,12 @@ function makeStudentContext(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function makeApproval(status = EthicsApprovalStatus.SUBMITTED) {
+function makeApproval() {
   return {
     id: "approval-1",
     studentId: "student-1",
     title: "Participant interview ethics",
     summary: "Ethics evidence summary for participant interview data collection.",
-    status,
-    reviewNotes: null,
-    reviewedAt: null,
-    reviewedById: null,
     isArchived: false,
     createdAt: new Date("2026-07-01T08:00:00.000Z"),
     updatedAt: new Date("2026-07-01T08:00:00.000Z"),
@@ -108,7 +104,6 @@ function makeApproval(status = EthicsApprovalStatus.SUBMITTED) {
         email: "student@example.com",
       },
     },
-    reviewedBy: null,
   };
 }
 
@@ -160,7 +155,7 @@ describe("ethics approval workflow", () => {
         studentAuth,
       ),
     ).rejects.toMatchObject({
-      message: "Your proposal must be approved before submitting ethics approval.",
+      message: "Your proposal must be approved before submitting ethics documents.",
     });
   });
 
@@ -193,16 +188,22 @@ describe("ethics approval workflow", () => {
       studentAuth,
     );
 
-    expect(approval.status).toBe(EthicsApprovalStatus.SUBMITTED);
+    expect(approval.documents).toContainEqual(
+      expect.objectContaining({
+        storagePath: "ethics-approvals/student-1/approval-1/ethics.pdf",
+      }),
+    );
     expect(prisma.ethicsApproval.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           id: "approval-1",
           documents: {
-            create: expect.objectContaining({
-              documentType: DocumentType.ETHICS_APPROVAL,
-              storagePath: "ethics-approvals/student-1/approval-1/ethics.pdf",
-            }),
+            create: [
+              expect.objectContaining({
+                documentType: DocumentType.ETHICS_APPROVAL,
+                storagePath: "ethics-approvals/student-1/approval-1/ethics.pdf",
+              }),
+            ],
           },
         }),
       }),
@@ -215,67 +216,17 @@ describe("ethics approval workflow", () => {
     );
   });
 
-  it("records admin decisions and notifies the student", async () => {
-    vi.mocked(prisma.administrator.findUnique).mockResolvedValue({
-      id: "admin-1",
-    } as never);
-    vi.mocked(prisma.ethicsApproval.findUnique).mockResolvedValue(
-      makeApproval(EthicsApprovalStatus.UNDER_REVIEW) as never,
-    );
-    vi.mocked(prisma.ethicsApproval.update).mockResolvedValue(
-      {
-        ...makeApproval(EthicsApprovalStatus.APPROVED),
-        reviewNotes: "Approved by committee.",
-        reviewedAt: new Date("2026-07-02T08:00:00.000Z"),
-        reviewedById: "admin-1",
-      } as never,
-    );
-
-    const approval = await updateEthicsApprovalDecision(
-      "approval-1",
-      {
-        status: EthicsApprovalStatus.APPROVED,
-        reviewNotes: "Approved by committee.",
-      },
-      adminAuth,
-    );
-
-    expect(approval.status).toBe(EthicsApprovalStatus.APPROVED);
-    expect(prisma.ethicsApproval.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          status: EthicsApprovalStatus.APPROVED,
-          reviewNotes: "Approved by committee.",
-          reviewedById: "admin-1",
-        }),
-      }),
-    );
-    expect(notifyInBackground).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event: "ETHICS_APPROVAL_STATUS_CHANGED",
-        recipientUserId: "user-student-1",
-        statusLabel: EthicsApprovalStatus.APPROVED,
-      }),
-    );
-  });
-
-  it("keeps approved ethics records immutable", async () => {
-    vi.mocked(prisma.administrator.findUnique).mockResolvedValue({
-      id: "admin-1",
-    } as never);
-    vi.mocked(prisma.ethicsApproval.findUnique).mockResolvedValue(
-      makeApproval(EthicsApprovalStatus.APPROVED) as never,
-    );
-
+  it("rejects admin ethics decisions because ethics is document-only", async () => {
     await expect(
       updateEthicsApprovalDecision(
         "approval-1",
-        {
-          status: EthicsApprovalStatus.REJECTED,
-          reviewNotes: "Undo approval.",
-        },
+        { status: "APPROVED" },
         adminAuth,
       ),
-    ).rejects.toBeInstanceOf(EthicsApprovalError);
+    ).rejects.toMatchObject<EthicsApprovalError>({
+      status: 410,
+      message: "Ethics is document-only. Approval or rejection decisions are not supported.",
+    });
+    expect(prisma.ethicsApproval.update).not.toHaveBeenCalled();
   });
 });

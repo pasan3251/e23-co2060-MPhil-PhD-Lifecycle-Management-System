@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SubmissionDocumentDownloadButton } from "@/components/student/submission-document-download-button";
 
 type ProgressReportDocument = {
   id: string;
@@ -111,9 +112,28 @@ export function ProgressReportList() {
               {report.narrative}
             </p>
             {report.documents.length > 0 && (
-              <p className="mt-3 break-all text-xs text-muted-foreground">
-                Attached PDF: {report.documents.map((document) => document.fileName).join(", ")}
-              </p>
+              <div className="mt-4 space-y-2">
+                {report.documents.map((document) => (
+                  <div
+                    key={document.id}
+                    className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {document.fileName}
+                      </p>
+                      <p className="break-all text-xs text-muted-foreground">
+                        {document.storagePath}
+                      </p>
+                    </div>
+                    <SubmissionDocumentDownloadButton
+                      documentId={document.id}
+                      fileName={document.fileName}
+                      className="shrink-0"
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>

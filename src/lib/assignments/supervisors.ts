@@ -35,6 +35,7 @@ type StudentAssignmentView = {
     displayName: string;
   };
   supervisorAssignments: Array<{
+    id: string;
     supervisorId: string;
     supervisorUserId: string;
     isPrimary: boolean;
@@ -93,6 +94,7 @@ async function requireStudent(studentId: string): Promise<StudentAssignmentView>
       },
       supervisorAssignments: {
         select: {
+          id: true,
           supervisorId: true,
           supervisorUserId: true,
           isPrimary: true,
@@ -143,22 +145,15 @@ async function requireSupervisor(supervisorId: string): Promise<SupervisorContex
   return supervisor;
 }
 
-function assertSupervisorNotAlreadyAssigned(
+function findExistingSupervisorAssignment(
   student: StudentAssignmentView,
   supervisor: SupervisorContext,
 ) {
-  const duplicateAssignment = student.supervisorAssignments.some(
+  return student.supervisorAssignments.find(
     (assignment) =>
       assignment.supervisorId === supervisor.id ||
       assignment.supervisorUserId === supervisor.userId,
   );
-
-  if (duplicateAssignment) {
-    throw new SupervisorAssignmentError(
-      "This supervisor is already assigned to the selected student.",
-      409,
-    );
-  }
 }
 
 function assertSupervisorNotAssignedAsExaminer(
@@ -194,14 +189,7 @@ function assertAssignmentLimits(
     );
   }
 
-  if (input.isPrimary) {
-    if (primaryAssignments >= 1) {
-      throw new SupervisorAssignmentError(
-        "A student can only have one primary supervisor.",
-        400,
-      );
-    }
-
+  if (input.isPrimary || totalAssignments === 0) {
     return;
   }
 
@@ -224,6 +212,38 @@ function buildAssignmentRoleLabel(isPrimary: boolean) {
   return isPrimary ? "Primary Supervisor" : "Co-supervisor";
 }
 
+async function promoteAssignmentToPrimary(studentId: string, assignmentId: string) {
+  return prisma.$transaction(async (tx) => {
+    await tx.supervisorAssignment.updateMany({
+      where: {
+        studentId,
+        isPrimary: true,
+      },
+      data: {
+        isPrimary: false,
+      },
+    });
+
+    return tx.supervisorAssignment.update({
+      where: {
+        id: assignmentId,
+      },
+      data: {
+        isPrimary: true,
+      },
+      select: {
+        id: true,
+        studentId: true,
+        supervisorId: true,
+        supervisorUserId: true,
+        isPrimary: true,
+        assignedAt: true,
+        assignedBy: true,
+      },
+    });
+  });
+}
+
 export async function assignSupervisorToStudent(
   input: SupervisorAssignmentInput,
   auth: AuthenticatedUserContext,
@@ -243,28 +263,57 @@ export async function assignSupervisorToStudent(
     requireSupervisor(parsed.data.supervisorId),
   ]);
 
-  assertSupervisorNotAlreadyAssigned(student, supervisor);
+  const existingAssignment = findExistingSupervisorAssignment(student, supervisor);
+
+  if (existingAssignment) {
+    if (parsed.data.isPrimary && !existingAssignment.isPrimary) {
+      return promoteAssignmentToPrimary(student.id, existingAssignment.id);
+    }
+
+    throw new SupervisorAssignmentError(
+      "This supervisor is already assigned to the selected student.",
+      409,
+    );
+  }
+
   assertSupervisorNotAssignedAsExaminer(student, supervisor);
   assertAssignmentLimits(student, parsed.data);
 
-  const assignment = await prisma.supervisorAssignment.create({
-    data: {
-      studentId: student.id,
-      supervisorId: supervisor.id,
-      supervisorUserId: supervisor.userId,
-      isPrimary: parsed.data.isPrimary,
-      assignedAt: new Date(),
-      assignedBy: administrator.id,
-    },
-    select: {
-      id: true,
-      studentId: true,
-      supervisorId: true,
-      supervisorUserId: true,
-      isPrimary: true,
-      assignedAt: true,
-      assignedBy: true,
-    },
+  const shouldBePrimary =
+    parsed.data.isPrimary || student.supervisorAssignments.length === 0;
+
+  const assignment = await prisma.$transaction(async (tx) => {
+    if (shouldBePrimary) {
+      await tx.supervisorAssignment.updateMany({
+        where: {
+          studentId: student.id,
+          isPrimary: true,
+        },
+        data: {
+          isPrimary: false,
+        },
+      });
+    }
+
+    return tx.supervisorAssignment.create({
+      data: {
+        studentId: student.id,
+        supervisorId: supervisor.id,
+        supervisorUserId: supervisor.userId,
+        isPrimary: shouldBePrimary,
+        assignedAt: new Date(),
+        assignedBy: administrator.id,
+      },
+      select: {
+        id: true,
+        studentId: true,
+        supervisorId: true,
+        supervisorUserId: true,
+        isPrimary: true,
+        assignedAt: true,
+        assignedBy: true,
+      },
+    });
   });
 
   await notifySupervisorAssigned({
@@ -277,6 +326,38 @@ export async function assignSupervisorToStudent(
   });
 
   return assignment;
+}
+
+export async function setPrimarySupervisorAssignment(
+  assignmentId: string,
+  auth: AuthenticatedUserContext,
+) {
+  await requireAdministratorContext(auth);
+
+  const assignment = await prisma.supervisorAssignment.findUnique({
+    where: {
+      id: assignmentId,
+    },
+    select: {
+      id: true,
+      studentId: true,
+      supervisorId: true,
+      supervisorUserId: true,
+      isPrimary: true,
+      assignedAt: true,
+      assignedBy: true,
+    },
+  });
+
+  if (!assignment) {
+    throw new SupervisorAssignmentError("Assignment not found.", 404);
+  }
+
+  if (assignment.isPrimary) {
+    return assignment;
+  }
+
+  return promoteAssignmentToPrimary(assignment.studentId, assignment.id);
 }
 
 export async function removeSupervisorFromStudent(
@@ -305,12 +386,38 @@ export async function removeSupervisorFromStudent(
     throw new SupervisorAssignmentError("Assignment not found.", 404);
   }
 
-  // Business rule: Cannot remove if it's the last primary supervisor and there are co-supervisors?
-  // Or just allow it and let the system warn.
-  // For now, let's just delete it.
+  const replacement = assignment.isPrimary
+    ? await prisma.supervisorAssignment.findFirst({
+        where: {
+          studentId: assignment.studentId,
+          id: {
+            not: assignment.id,
+          },
+        },
+        orderBy: {
+          assignedAt: "asc",
+        },
+        select: {
+          id: true,
+        },
+      })
+    : null;
 
-  await prisma.supervisorAssignment.delete({
-    where: { id: assignmentId },
+  await prisma.$transaction(async (tx) => {
+    await tx.supervisorAssignment.delete({
+      where: { id: assignmentId },
+    });
+
+    if (replacement) {
+      await tx.supervisorAssignment.update({
+        where: {
+          id: replacement.id,
+        },
+        data: {
+          isPrimary: true,
+        },
+      });
+    }
   });
 
   return {

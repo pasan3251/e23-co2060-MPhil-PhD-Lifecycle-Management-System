@@ -244,9 +244,9 @@ function getCurrentThesisDocument(thesis: ThesisAssignmentView) {
     (document) => document.isCurrentVersion,
   );
 
-  if (thesis.documents.length === 0 || currentDocuments.length !== 1) {
+  if (thesis.documents.length === 0 || currentDocuments.length === 0) {
     throw new ExaminerAssignmentError(
-      "Exactly one current thesis document must exist before assigning an examiner.",
+      "At least one current thesis document must exist before assigning an examiner.",
       409,
     );
   }

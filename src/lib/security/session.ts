@@ -7,7 +7,7 @@ export const SESSION_ABSOLUTE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 export const SESSION_ABSOLUTE_MAX_AGE_MS =
   SESSION_ABSOLUTE_MAX_AGE_SECONDS * 1000;
 export const SESSION_ACTIVITY_COOKIE_NAME =
-  process.env.SESSION_ACTIVITY_COOKIE_NAME ?? "pgsms_session_activity";
+  process.env.SESSION_ACTIVITY_COOKIE_NAME ?? "pglms_session_activity";
 
 export function buildSessionActivityValue(now = Date.now()) {
   return String(now);
