@@ -46,6 +46,7 @@ vi.mock("@/lib/storage", () => ({
 import { GET as getDocumentDownload, PATCH as archiveDocument } from "@/app/api/documents/[id]/route";
 import { authenticateBearerRequest } from "@/lib/firebase/auth";
 import { prisma } from "@/lib/prisma/client";
+import { generateDownloadSignedUrl } from "@/lib/storage";
 
 const makeOwnedDoc = () => ({
   id: "doc-student-1",
@@ -70,6 +71,15 @@ const makeDeletedDoc = () => ({
   ...makeOwnedDoc(),
   id: "doc-deleted-1",
   isDeleted: true,
+});
+
+const makeReviewAttachment = () => ({
+  ...makeOwnedDoc(),
+  id: "review-document-1",
+  documentType: DocumentType.REVIEW_ATTACHMENT,
+  fileName: "examiner-review.pdf",
+  storagePath: "review-attachments/student-1/examiner-review.pdf",
+  researchProposalId: null,
 });
 
 function makeGetRequest(id: string) {
@@ -113,6 +123,75 @@ describe("GET /api/documents/[id] student access", () => {
     });
 
     expect(response.status).toBe(403);
+  });
+
+  it("returns 403 for an owned but unreleased review attachment", async () => {
+    vi.mocked(authenticateBearerRequest).mockResolvedValue({
+      uid: "firebase-student-1",
+      userId: "user-student-1",
+      firebaseUid: "firebase-student-1",
+      role: UserRole.STUDENT,
+    } as never);
+    vi.mocked(prisma.student.findFirst).mockResolvedValue({ id: "student-1" } as never);
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(
+      makeReviewAttachment() as never,
+    );
+    vi.mocked(prisma.document.findFirst).mockResolvedValue(null as never);
+
+    const response = await getDocumentDownload(
+      makeGetRequest("review-document-1"),
+      { params: { id: "review-document-1" } },
+    );
+
+    expect(response.status).toBe(403);
+    expect(generateDownloadSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it("returns a signed URL for an owned review attachment after release", async () => {
+    vi.mocked(authenticateBearerRequest).mockResolvedValue({
+      uid: "firebase-student-1",
+      userId: "user-student-1",
+      firebaseUid: "firebase-student-1",
+      role: UserRole.STUDENT,
+    } as never);
+    vi.mocked(prisma.student.findFirst).mockResolvedValue({ id: "student-1" } as never);
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(
+      makeReviewAttachment() as never,
+    );
+    vi.mocked(prisma.document.findFirst).mockResolvedValue({
+      id: "review-document-1",
+    } as never);
+
+    const response = await getDocumentDownload(
+      makeGetRequest("review-document-1"),
+      { params: { id: "review-document-1" } },
+    );
+
+    expect(response.status).toBe(200);
+    const where = vi.mocked(prisma.document.findFirst).mock.calls[0]?.[0]
+      ?.where as { AND: Array<{ OR?: Array<{ OR?: Array<{ AND: unknown[] }> }> }> };
+    const evaluationReviewBranch = where.AND[1]?.OR?.[1]?.OR?.[0];
+
+    expect(evaluationReviewBranch).toMatchObject({
+      AND: expect.arrayContaining([
+        { documentType: DocumentType.REVIEW_ATTACHMENT },
+        { evaluationFormId: { not: null } },
+        { progressReportReviewId: null },
+        { thesisExaminerAssignmentId: null },
+        {
+          evaluationForm: {
+            is: {
+              releasedAt: { not: null },
+              researchProposal: {
+                is: {
+                  studentId: { in: ["student-1"] },
+                },
+              },
+            },
+          },
+        },
+      ]),
+    });
   });
 });
 

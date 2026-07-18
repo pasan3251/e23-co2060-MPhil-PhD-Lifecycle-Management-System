@@ -50,6 +50,11 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    if (isSubmitting) {
+      event.target.value = "";
+      return;
+    }
+
     const nextFiles = Array.from(event.target.files ?? []);
 
     if (nextFiles.length === 0) {
@@ -57,26 +62,32 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
       return;
     }
 
-    for (const nextFile of nextFiles) {
-      const parsedDocument = uploadedPdfDocumentSchema.safeParse({
-        fileName: nextFile.name,
-        mimeType: nextFile.type,
-        sizeBytes: nextFile.size,
-      });
+    if (nextFiles.length > 1) {
+      setError("Choose one thesis document per submission.");
+      setFiles([]);
+      event.target.value = "";
+      return;
+    }
 
-      if (!parsedDocument.success) {
-        setError(
-          parsedDocument.error.issues[0]?.message ??
-            "Choose valid PDF or ZIP thesis documents.",
-        );
-        setFiles([]);
-        event.target.value = "";
-        return;
-      }
+    const nextFile = nextFiles[0];
+    const parsedDocument = uploadedPdfDocumentSchema.safeParse({
+      fileName: nextFile.name,
+      mimeType: nextFile.type,
+      sizeBytes: nextFile.size,
+    });
+
+    if (!parsedDocument.success) {
+      setError(
+        parsedDocument.error.issues[0]?.message ??
+          "Choose a valid PDF or ZIP thesis document.",
+      );
+      setFiles([]);
+      event.target.value = "";
+      return;
     }
 
     setError(null);
-    setFiles(nextFiles);
+    setFiles([nextFile]);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -85,7 +96,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
     setError(null);
 
     if (files.length === 0) {
-      setError("Choose at least one PDF or ZIP thesis document first.");
+      setError("Choose one PDF or ZIP thesis document first.");
       return;
     }
 
@@ -194,6 +205,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
                   <Input
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
+                    disabled={isSubmitting}
                     required
                   />
                 </div>
@@ -203,16 +215,20 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
                     value={abstract}
                     onChange={(event) => setAbstract(event.target.value)}
                     className="min-h-[160px]"
+                    disabled={isSubmitting}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Thesis Documents</Label>
+                  <Label>Thesis Document</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Upload one PDF, or one ZIP containing the complete thesis package.
+                  </p>
                   <Input
                     type="file"
                     accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
-                    multiple
                     onChange={handleFileChange}
+                    disabled={isSubmitting}
                     required
                   />
                   {files.length > 0 && (

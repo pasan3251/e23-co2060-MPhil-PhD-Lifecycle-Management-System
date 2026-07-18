@@ -227,4 +227,42 @@ describe("thesis submission route", () => {
       error: "Your registration is lapsed. Renew it before submitting a thesis.",
     });
   });
+
+  it("rejects a multi-file thesis request before database or notification work", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/theses", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer student-token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Adaptive Systems Thesis",
+          abstract: "A thesis about adaptive systems.",
+          documents: [
+            {
+              fileName: "thesis.pdf",
+              mimeType: "application/pdf",
+              sizeBytes: 1024,
+            },
+            {
+              fileName: "appendix.zip",
+              mimeType: "application/zip",
+              sizeBytes: 1024,
+            },
+          ],
+        }),
+      }) as never,
+      {},
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Upload one thesis document per submission.",
+    });
+    expect(prisma.student.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.user.findMany).not.toHaveBeenCalled();
+    expect(notifyThesisSubmittedToAdministrator).not.toHaveBeenCalled();
+  });
 });

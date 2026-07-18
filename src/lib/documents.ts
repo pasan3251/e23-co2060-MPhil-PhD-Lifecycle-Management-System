@@ -60,13 +60,17 @@ export type DocumentListItem = {
   updatedAt: Date;
 };
 
-const REPOSITORY_DOCUMENT_TYPES = [
+const STANDARD_REPOSITORY_DOCUMENT_TYPES = [
   DocumentType.APPLICATION_ATTACHMENT,
   DocumentType.PROPOSAL,
   DocumentType.ETHICS_APPROVAL,
   DocumentType.THESIS,
   DocumentType.PROGRESS_REPORT,
   DocumentType.CORRECTION,
+] as const;
+
+const REPOSITORY_DOCUMENT_TYPES = [
+  ...STANDARD_REPOSITORY_DOCUMENT_TYPES,
   DocumentType.REVIEW_ATTACHMENT,
 ] as const;
 
@@ -84,12 +88,20 @@ const thesisStatusTags = new Set<string>(
 // Access control — builds the Prisma `where` scope per role
 // ---------------------------------------------------------------------------
 
+type RoleDocumentAccess = {
+  accessibleStudentIds: string[];
+  where: Prisma.DocumentWhereInput;
+};
+
 async function buildAccessScope(
   auth: AuthenticatedUserContext,
-): Promise<Prisma.DocumentWhereInput> {
+): Promise<RoleDocumentAccess> {
   switch (auth.role) {
     case "ADMINISTRATOR":
-      return {};
+      return {
+        accessibleStudentIds: [],
+        where: {},
+      };
 
     case "STUDENT": {
       const student = await prisma.student.findFirst({
@@ -102,55 +114,58 @@ async function buildAccessScope(
       }
 
       return {
-        OR: [
-          { studentId: student.id },
-          {
-            application: {
-              is: {
-                studentId: student.id,
+        accessibleStudentIds: [student.id],
+        where: {
+          OR: [
+            { studentId: student.id },
+            {
+              application: {
+                is: {
+                  studentId: student.id,
+                },
               },
             },
-          },
-          {
-            researchProposal: {
-              is: {
-                studentId: student.id,
+            {
+              researchProposal: {
+                is: {
+                  studentId: student.id,
+                },
               },
             },
-          },
-          {
-            ethicsApproval: {
-              is: {
-                studentId: student.id,
+            {
+              ethicsApproval: {
+                is: {
+                  studentId: student.id,
+                },
               },
             },
-          },
-          {
-            progressReport: {
-              is: {
-                studentId: student.id,
+            {
+              progressReport: {
+                is: {
+                  studentId: student.id,
+                },
               },
             },
-          },
-          {
-            thesis: {
-              is: {
-                studentId: student.id,
+            {
+              thesis: {
+                is: {
+                  studentId: student.id,
+                },
               },
             },
-          },
-          {
-            correctionDocument: {
-              is: {
-                thesis: {
-                  is: {
-                    studentId: student.id,
+            {
+              correctionDocument: {
+                is: {
+                  thesis: {
+                    is: {
+                      studentId: student.id,
+                    },
                   },
                 },
               },
             },
-          },
-        ],
+          ],
+        },
       };
     }
 
@@ -172,67 +187,70 @@ async function buildAccessScope(
       const assignedStudentIds = assignments.map((a) => a.studentId);
 
       return {
-        OR: [
-          { studentId: { in: assignedStudentIds } },
-          {
-            application: {
-              is: {
-                studentId: {
-                  in: assignedStudentIds,
+        accessibleStudentIds: assignedStudentIds,
+        where: {
+          OR: [
+            { studentId: { in: assignedStudentIds } },
+            {
+              application: {
+                is: {
+                  studentId: {
+                    in: assignedStudentIds,
+                  },
                 },
               },
             },
-          },
-          {
-            researchProposal: {
-              is: {
-                studentId: {
-                  in: assignedStudentIds,
+            {
+              researchProposal: {
+                is: {
+                  studentId: {
+                    in: assignedStudentIds,
+                  },
                 },
               },
             },
-          },
-          {
-            ethicsApproval: {
-              is: {
-                studentId: {
-                  in: assignedStudentIds,
+            {
+              ethicsApproval: {
+                is: {
+                  studentId: {
+                    in: assignedStudentIds,
+                  },
                 },
               },
             },
-          },
-          {
-            progressReport: {
-              is: {
-                studentId: {
-                  in: assignedStudentIds,
+            {
+              progressReport: {
+                is: {
+                  studentId: {
+                    in: assignedStudentIds,
+                  },
                 },
               },
             },
-          },
-          {
-            thesis: {
-              is: {
-                studentId: {
-                  in: assignedStudentIds,
+            {
+              thesis: {
+                is: {
+                  studentId: {
+                    in: assignedStudentIds,
+                  },
                 },
               },
             },
-          },
-          {
-            correctionDocument: {
-              is: {
-                thesis: {
-                  is: {
-                    studentId: {
-                      in: assignedStudentIds,
+            {
+              correctionDocument: {
+                is: {
+                  thesis: {
+                    is: {
+                      studentId: {
+                        in: assignedStudentIds,
+                      },
                     },
                   },
                 },
               },
             },
-          },
-        ],
+          ],
+        },
       };
     }
 
@@ -255,8 +273,11 @@ async function buildAccessScope(
 
       // Examiners may only see THESIS documents for their assigned theses
       return {
-        documentType: DocumentType.THESIS,
-        thesisId: { in: assignedThesisIds },
+        accessibleStudentIds: [],
+        where: {
+          documentType: DocumentType.THESIS,
+          thesisId: { in: assignedThesisIds },
+        },
       };
     }
 
@@ -356,11 +377,105 @@ function normalizeDocumentTypeCategory(category?: string | null) {
   return normalized as DocumentType;
 }
 
-function buildRepositoryScope(): Prisma.DocumentWhereInput {
+function buildReleasedReviewAttachmentScope(
+  accessibleStudentIds: string[],
+): Prisma.DocumentWhereInput {
   return {
-    documentType: {
-      in: [...REPOSITORY_DOCUMENT_TYPES],
-    },
+    OR: [
+      {
+        AND: [
+          { documentType: DocumentType.REVIEW_ATTACHMENT },
+          { evaluationFormId: { not: null } },
+          { progressReportReviewId: null },
+          { thesisExaminerAssignmentId: null },
+          {
+            evaluationForm: {
+              is: {
+                releasedAt: { not: null },
+                researchProposal: {
+                  is: {
+                    studentId: { in: accessibleStudentIds },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      {
+        AND: [
+          { documentType: DocumentType.REVIEW_ATTACHMENT },
+          { evaluationFormId: null },
+          { progressReportReviewId: { not: null } },
+          { thesisExaminerAssignmentId: null },
+          {
+            progressReportReview: {
+              is: {
+                releasedAt: { not: null },
+                progressReport: {
+                  is: {
+                    studentId: { in: accessibleStudentIds },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      {
+        AND: [
+          { documentType: DocumentType.REVIEW_ATTACHMENT },
+          { evaluationFormId: null },
+          { progressReportReviewId: null },
+          { thesisExaminerAssignmentId: { not: null } },
+          {
+            thesisExaminerAssignment: {
+              is: {
+                releasedAt: { not: null },
+                thesis: {
+                  is: {
+                    studentId: { in: accessibleStudentIds },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function buildRepositoryScope(
+  role: AuthenticatedUserContext["role"],
+  accessibleStudentIds: string[],
+): Prisma.DocumentWhereInput {
+  if (role === "ADMINISTRATOR") {
+    return {
+      documentType: {
+        in: [...REPOSITORY_DOCUMENT_TYPES],
+      },
+    };
+  }
+
+  return {
+    OR: [
+      {
+        AND: [
+          {
+            documentType: {
+              in: [...STANDARD_REPOSITORY_DOCUMENT_TYPES],
+            },
+          },
+          { evaluationFormId: null },
+          { progressReportReviewId: null },
+          { thesisExaminerAssignmentId: null },
+        ],
+      },
+      ...(role === "STUDENT" || role === "SUPERVISOR"
+        ? [buildReleasedReviewAttachmentScope(accessibleStudentIds)]
+        : []),
+    ],
   };
 }
 
@@ -823,13 +938,15 @@ export async function checkAccess(
     });
   }
 
-  const accessScope = await buildAccessScope(auth);
+  const access = await buildAccessScope(auth);
 
   return prisma.document.findFirst({
     where: {
-      id: documentId,
-      ...buildRepositoryScope(),
-      ...accessScope,
+      AND: [
+        { id: documentId },
+        buildRepositoryScope(auth.role, access.accessibleStudentIds),
+        access.where,
+      ],
     },
   });
 }
@@ -878,7 +995,7 @@ export async function searchDocuments(
     assertCategoryAccessForRole(auth.role, normalizedCategory);
   }
 
-  const accessScope = await buildAccessScope(auth);
+  const access = await buildAccessScope(auth);
 
   const categoryFilter: Prisma.DocumentWhereInput = normalizedCategory
     ? { documentType: normalizedCategory }
@@ -968,8 +1085,8 @@ export async function searchDocuments(
     where: {
       AND: [
         { isDeleted: false },
-        buildRepositoryScope(),
-        accessScope,
+        buildRepositoryScope(auth.role, access.accessibleStudentIds),
+        access.where,
         categoryFilter,
         textFilter,
         tagFilter,

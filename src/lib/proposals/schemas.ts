@@ -25,11 +25,15 @@ export const proposalSubmissionSchema = z
     title: sanitizedString.min(5, "Proposal title must be at least 5 characters long."),
     abstract: sanitizedString.min(1, "Proposal abstract is required."),
     document: uploadedProposalDocumentSchema.optional(),
-    documents: z.array(uploadedProposalDocumentSchema).max(10).optional(),
+    documents: z
+      .array(uploadedProposalDocumentSchema)
+      .max(1, "Upload one proposal document per submission.")
+      .optional(),
   })
   .refine(
-    (value) => Boolean(value.document) || Boolean(value.documents?.length),
-    "Upload at least one proposal document.",
+    (value) =>
+      (value.document ? 1 : 0) + (value.documents?.length ?? 0) === 1,
+    "Upload exactly one proposal document.",
   );
 
 export const proposalStatusUpdateSchema = z.object({

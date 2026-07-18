@@ -52,6 +52,79 @@ describe("proposal submission utilities", () => {
     expect(result.success).toBe(false);
   });
 
+  it("temporarily rejects more than one proposal document before persistence", async () => {
+    const documents = ["proposal.pdf", "appendix.zip"].map((fileName) => ({
+      fileName,
+      storagePath: `proposals/student-1/1/${fileName}`,
+      mimeType: fileName.endsWith(".pdf")
+        ? ("application/pdf" as const)
+        : ("application/zip" as const),
+      sizeBytes: 2048,
+    }));
+    const parsed = proposalSubmissionSchema.safeParse({
+      title: "Adaptive Thesis Supervision",
+      abstract: "A complete proposal submission.",
+      documents,
+    });
+
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues[0]?.message).toBe(
+        "Upload one proposal document per submission.",
+      );
+    }
+
+    await expect(
+      submitResearchProposal(
+        {
+          title: "Adaptive Thesis Supervision",
+          abstract: "A complete proposal submission.",
+          documents,
+        },
+        {
+          uid: "firebase-student-1",
+          userId: "user-student-1",
+          firebaseUid: "firebase-student-1",
+          role: "STUDENT",
+          email: "student@example.com",
+        },
+      ),
+    ).rejects.toMatchObject<ProposalSubmissionError>({
+      status: 400,
+      message: "Upload one proposal document per submission.",
+    });
+    expect(prisma.student.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects a payload that supplies both legacy and array document fields", () => {
+    const result = proposalSubmissionSchema.safeParse({
+      title: "Adaptive Thesis Supervision",
+      abstract: "A complete proposal submission.",
+      document: {
+        fileName: "legacy.pdf",
+        storagePath: "proposals/student-1/1/legacy.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 1024,
+      },
+      documents: [
+        {
+          fileName: "proposal.pdf",
+          storagePath: "proposals/student-1/1/proposal.pdf",
+          mimeType: "application/pdf",
+          sizeBytes: 1024,
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        "Upload exactly one proposal document.",
+      );
+    }
+  });
+
   it("allows only an Administrator to transition a proposal to APPROVED", async () => {
     const promise = updateResearchProposalStatus(
       "proposal-1",

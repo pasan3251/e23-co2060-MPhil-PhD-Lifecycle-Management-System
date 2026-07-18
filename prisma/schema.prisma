@@ -96,6 +96,12 @@ enum NotificationDeliveryStatus {
   FAILED
 }
 
+enum MaintenanceRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
 enum CorrectionType {
   MINOR
   MAJOR
@@ -558,4 +564,21 @@ model NotificationLog {
   @@index([recipientId, deliveryStatus])
   @@index([event, createdAt])
   @@map("notification_logs")
+}
+
+model MaintenanceRun {
+  id           String               @id @default(cuid())
+  jobName      String
+  runKey       String
+  status       MaintenanceRunStatus @default(RUNNING)
+  result       Json?
+  errorMessage String?
+  startedAt    DateTime             @default(now())
+  completedAt  DateTime?
+  failedAt     DateTime?
+  updatedAt    DateTime             @updatedAt
+
+  @@unique([jobName, runKey])
+  @@index([status, startedAt])
+  @@map("maintenance_runs")
 }

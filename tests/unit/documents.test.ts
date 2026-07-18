@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   DocumentRepositoryError,
@@ -6,6 +6,7 @@ import {
   searchDocuments,
   softDeleteDocument,
 } from "@/lib/documents";
+import { generateDownloadSignedUrl } from "@/lib/storage";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 // ---------------------------------------------------------------------------
@@ -110,21 +111,42 @@ const mockAdminAuth: AuthenticatedUserContext = {
   role: "ADMINISTRATOR",
 };
 
+const mockSupervisorAuth: AuthenticatedUserContext = {
+  uid: "firebase-uid-supervisor",
+  userId: "user-supervisor",
+  firebaseUid: "firebase-uid-supervisor",
+  role: "SUPERVISOR",
+};
+
+function repositoryScopeFromWhere(where: unknown) {
+  return (where as { AND: Array<Record<string, unknown>> }).AND[1] as {
+    OR: Array<{ AND?: unknown[]; OR?: Array<{ AND: unknown[] }> }>;
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe("searchDocuments", () => {
-  it("excludes isDeleted documents from standard search results", async () => {
+  it("excludes deleted documents and release-gates review attachments for students", async () => {
     const { prisma } = await import("@/lib/prisma/client");
     const findManySpy = vi.spyOn(prisma.document, "findMany");
 
     await searchDocuments({}, mockStudentAuth);
 
     const callArgs = findManySpy.mock.calls[0]?.[0];
+    const repositoryScope = repositoryScopeFromWhere(callArgs?.where);
+
     expect(callArgs?.where).toMatchObject({
-      AND: expect.arrayContaining([
-        { isDeleted: false },
+      AND: expect.arrayContaining([{ isDeleted: false }]),
+    });
+    expect(repositoryScope.OR[0]).toEqual({
+      AND: [
         {
           documentType: {
             in: [
@@ -134,8 +156,64 @@ describe("searchDocuments", () => {
               "THESIS",
               "PROGRESS_REPORT",
               "CORRECTION",
-              "REVIEW_ATTACHMENT",
             ],
+          },
+        },
+        { evaluationFormId: null },
+        { progressReportReviewId: null },
+        { thesisExaminerAssignmentId: null },
+      ],
+    });
+    expect(repositoryScope.OR[1]?.OR?.[0]).toEqual({
+      AND: [
+        { documentType: "REVIEW_ATTACHMENT" },
+        { evaluationFormId: { not: null } },
+        { progressReportReviewId: null },
+        { thesisExaminerAssignmentId: null },
+        {
+          evaluationForm: {
+            is: {
+              releasedAt: { not: null },
+              researchProposal: {
+                is: {
+                  studentId: { in: ["student-1"] },
+                },
+              },
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it("derives released-review ownership from a supervisor's assigned students", async () => {
+    const { prisma } = await import("@/lib/prisma/client");
+
+    vi.spyOn(prisma.supervisor, "findFirst").mockResolvedValueOnce({
+      id: "supervisor-1",
+    } as never);
+    vi.spyOn(prisma.supervisorAssignment, "findMany").mockResolvedValueOnce([
+      { studentId: "student-2" },
+    ] as never);
+    const findManySpy = vi.spyOn(prisma.document, "findMany");
+
+    await searchDocuments({}, mockSupervisorAuth);
+
+    const repositoryScope = repositoryScopeFromWhere(
+      findManySpy.mock.calls[0]?.[0]?.where,
+    );
+    expect(repositoryScope.OR[1]?.OR?.[1]).toMatchObject({
+      AND: expect.arrayContaining([
+        {
+          progressReportReview: {
+            is: {
+              releasedAt: { not: null },
+              progressReport: {
+                is: {
+                  studentId: { in: ["student-2"] },
+                },
+              },
+            },
           },
         },
       ]),
@@ -260,19 +338,108 @@ describe("getDocumentDownloadUrl", () => {
 
     expect(findFirstSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          OR: expect.arrayContaining([
-            {
+        where: {
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              OR: expect.arrayContaining([
+                {
+                  researchProposal: {
+                    is: {
+                      studentId: "student-1",
+                    },
+                  },
+                },
+              ]),
+            }),
+          ]),
+        },
+      }),
+    );
+  });
+
+  it("blocks an unreleased review attachment without generating a signed URL", async () => {
+    const { prisma } = await import("@/lib/prisma/client");
+
+    vi.spyOn(prisma.document, "findUnique").mockResolvedValueOnce({
+      id: "review-document-1",
+      documentType: "REVIEW_ATTACHMENT",
+      fileName: "examiner-review.pdf",
+      storagePath: "review-attachments/student-1/examiner-review.pdf",
+      isDeleted: false,
+    } as never);
+    const findFirstSpy = vi
+      .spyOn(prisma.document, "findFirst")
+      .mockResolvedValueOnce(null);
+
+    await expect(
+      getDocumentDownloadUrl("review-document-1", mockStudentAuth),
+    ).rejects.toMatchObject<DocumentRepositoryError>({ status: 403 });
+
+    const repositoryScope = repositoryScopeFromWhere(
+      findFirstSpy.mock.calls[0]?.[0]?.where,
+    );
+    expect(repositoryScope.OR[1]?.OR?.[0]).toMatchObject({
+      AND: expect.arrayContaining([
+        { documentType: "REVIEW_ATTACHMENT" },
+        { evaluationFormId: { not: null } },
+        { progressReportReviewId: null },
+        { thesisExaminerAssignmentId: null },
+        {
+          evaluationForm: {
+            is: {
+              releasedAt: { not: null },
               researchProposal: {
                 is: {
-                  studentId: "student-1",
+                  studentId: { in: ["student-1"] },
                 },
               },
             },
-          ]),
-        }),
-      }),
+          },
+        },
+      ]),
+    });
+    expect(generateDownloadSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it("allows a released, correctly scoped review attachment", async () => {
+    const { prisma } = await import("@/lib/prisma/client");
+
+    vi.spyOn(prisma.document, "findUnique").mockResolvedValueOnce({
+      id: "review-document-1",
+      documentType: "REVIEW_ATTACHMENT",
+      fileName: "examiner-review.pdf",
+      storagePath: "review-attachments/student-1/examiner-review.pdf",
+      isDeleted: false,
+    } as never);
+    vi.spyOn(prisma.document, "findFirst").mockResolvedValueOnce({
+      id: "review-document-1",
+    } as never);
+
+    await expect(
+      getDocumentDownloadUrl("review-document-1", mockStudentAuth),
+    ).resolves.toBe("https://signed-url");
+
+    expect(generateDownloadSignedUrl).toHaveBeenCalledWith(
+      "review-attachments/student-1/examiner-review.pdf",
     );
+  });
+
+  it("allows an administrator to inspect an unreleased review attachment", async () => {
+    const { prisma } = await import("@/lib/prisma/client");
+
+    vi.spyOn(prisma.document, "findUnique").mockResolvedValueOnce({
+      id: "review-document-1",
+      documentType: "REVIEW_ATTACHMENT",
+      fileName: "examiner-review.pdf",
+      storagePath: "review-attachments/student-1/examiner-review.pdf",
+      isDeleted: false,
+    } as never);
+
+    await expect(
+      getDocumentDownloadUrl("review-document-1", mockAdminAuth),
+    ).resolves.toBe("https://signed-url");
+
+    expect(prisma.document.findFirst).not.toHaveBeenCalled();
   });
 });
 

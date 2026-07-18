@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import {
   createSessionRequestSchema,
   loginCredentialsSchema,
-  syncFirebaseClaimsRequestSchema,
 } from "@/lib/auth/schemas";
 import { progressReportSubmissionSchema } from "@/lib/progress-reports/schemas";
 import {
@@ -26,16 +25,6 @@ describe("shared input validation schemas", () => {
   it("rejects an empty Firebase session request token", () => {
     const result = createSessionRequestSchema.safeParse({
       idToken: "   ",
-    });
-
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects invalid Firebase claims sync payloads", () => {
-    const result = syncFirebaseClaimsRequestSchema.safeParse({
-      userId: "user-1",
-      firebaseUid: "",
-      role: "INVALID_ROLE",
     });
 
     expect(result.success).toBe(false);

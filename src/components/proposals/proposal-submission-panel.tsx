@@ -137,9 +137,20 @@ export function ProposalSubmissionPanel() {
   }, []);
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
+    if (isSubmitting) {
+      event.target.value = "";
+      return;
+    }
+
     const selectedFiles = Array.from(event.target.files ?? []);
 
     if (selectedFiles.length === 0) {
+      return;
+    }
+
+    if (selectedFiles.length > 1) {
+      setErrorMessage("Upload one proposal document per submission.");
+      event.target.value = "";
       return;
     }
 
@@ -148,69 +159,66 @@ export function ProposalSubmissionPanel() {
     setIsUploading(true);
 
     try {
-      const nextDocuments: UploadedProposalDocument[] = [];
+      const file = selectedFiles[0];
+      const parsedUploadRequest = proposalUploadRequestSchema.safeParse({
+        fileName: file.name,
+        contentType: file.type,
+        fileSizeBytes: file.size,
+      });
 
-      for (const file of selectedFiles) {
-        const parsedUploadRequest = proposalUploadRequestSchema.safeParse({
-          fileName: file.name,
-          contentType: file.type,
-          fileSizeBytes: file.size,
-        });
+      if (!parsedUploadRequest.success) {
+        throw new Error(
+          parsedUploadRequest.error.issues[0]?.message ??
+            "Unable to upload the proposal document.",
+        );
+      }
 
-        if (!parsedUploadRequest.success) {
-          throw new Error(
-            parsedUploadRequest.error.issues[0]?.message ??
-              "Unable to upload the proposal document.",
-          );
-        }
+      const uploadUrlResponse = await fetch("/api/proposals/upload-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          fileName: parsedUploadRequest.data.fileName,
+          contentType: parsedUploadRequest.data.contentType,
+          fileSizeBytes: parsedUploadRequest.data.fileSizeBytes,
+        }),
+      });
+      const uploadUrlPayload = (await uploadUrlResponse.json()) as {
+        error?: string;
+        signedUrl?: string;
+        storagePath?: string;
+      };
 
-        const uploadUrlResponse = await fetch("/api/proposals/upload-url", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            fileName: parsedUploadRequest.data.fileName,
-            contentType: parsedUploadRequest.data.contentType,
-            fileSizeBytes: parsedUploadRequest.data.fileSizeBytes,
-          }),
-        });
-        const uploadUrlPayload = (await uploadUrlResponse.json()) as {
-          error?: string;
-          signedUrl?: string;
-          storagePath?: string;
-        };
+      if (
+        !uploadUrlResponse.ok ||
+        !uploadUrlPayload.signedUrl ||
+        !uploadUrlPayload.storagePath
+      ) {
+        throw new Error(uploadUrlPayload.error ?? "Unable to prepare the proposal upload.");
+      }
 
-        if (
-          !uploadUrlResponse.ok ||
-          !uploadUrlPayload.signedUrl ||
-          !uploadUrlPayload.storagePath
-        ) {
-          throw new Error(uploadUrlPayload.error ?? "Unable to prepare the proposal upload.");
-        }
+      const uploadResponse = await fetch(uploadUrlPayload.signedUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
 
-        const uploadResponse = await fetch(uploadUrlPayload.signedUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": file.type,
-          },
-          body: file,
-        });
+      if (!uploadResponse.ok) {
+        throw new Error("Proposal file upload failed.");
+      }
 
-        if (!uploadResponse.ok) {
-          throw new Error("Proposal file upload failed.");
-        }
-
-        nextDocuments.push({
+      setUploadedDocuments([
+        {
           fileName: file.name,
           storagePath: uploadUrlPayload.storagePath,
           mimeType: file.type,
           sizeBytes: file.size,
-        });
-      }
-
-      setUploadedDocuments((current) => [...current, ...nextDocuments]);
+        },
+      ]);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -230,7 +238,7 @@ export function ProposalSubmissionPanel() {
     setSuccessMessage(null);
 
     if (uploadedDocuments.length === 0) {
-      setErrorMessage("Upload at least one PDF or ZIP proposal document before submitting.");
+      setErrorMessage("Upload one PDF or ZIP proposal document before submitting.");
       return;
     }
 
@@ -369,14 +377,19 @@ export function ProposalSubmissionPanel() {
                       </Label>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Upload one or more PDF/ZIP files to create a new version.
+                      Upload one PDF, or one ZIP containing the complete proposal package.
+                      Selecting another file replaces the current selection.
                     </p>
                     <Input
                       type="file"
                       accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
-                      multiple
                       onChange={handleFileUpload}
-                      disabled={isLoading || !overview?.canSubmitNewVersion || isUploading}
+                      disabled={
+                        isLoading ||
+                        !overview?.canSubmitNewVersion ||
+                        isUploading ||
+                        isSubmitting
+                      }
                     />
                     {uploadedDocuments.length > 0 && (
                       <div className="mt-4 space-y-2">

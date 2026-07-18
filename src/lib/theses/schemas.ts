@@ -21,11 +21,15 @@ export const thesisSubmissionSchema = z
     title: sanitizedString.min(1, "Thesis title is required."),
     abstract: sanitizedString.min(1, "Thesis abstract is required."),
     document: uploadedThesisDocumentSchema.optional(),
-    documents: z.array(uploadedThesisDocumentSchema).max(10).optional(),
+    documents: z
+      .array(uploadedThesisDocumentSchema)
+      .max(1, "Upload one thesis document per submission.")
+      .optional(),
   })
   .refine(
-    (value) => Boolean(value.document) || Boolean(value.documents?.length),
-    "Upload at least one thesis document.",
+    (value) =>
+      (value.document ? 1 : 0) + (value.documents?.length ?? 0) === 1,
+    "Upload exactly one thesis document.",
   )
   .transform((value) => ({
     ...value,
